@@ -6,21 +6,28 @@ import {
   Menu, X, ShoppingBag, Heart, Star, ArrowRight,
   Phone, Mail, MapPin, ChevronDown, Package, Truck, CreditCard,
   Shield, CheckCircle, Plus, Minus, Trash2, Clock, Instagram,
-  Send, Zap, RefreshCw, Check, ChevronLeft,
+  Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon,
 } from "lucide-react";
+import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { auth, googleProvider, db } from "@/app/firebase";
+import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup } from "firebase/firestore";
 
-import logoImg from "@/imports/Vallabh_Jewels_Transparent.png";
+import logoImg from "@/imports/IMG_5778.PNG";
 import pearlImg from "@/imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
 import heartImg from "@/imports/ChatGPT_Image_Jun_10__2026__03_25_26_PM.png";
 import butterflyImg from "@/imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.png";
 import ringImg from "@/imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Page = "home" | "product" | "checkout" | "confirmation" | "track";
+type Page = "home" | "product" | "checkout" | "confirmation" | "track" | "account" | "admin";
 type Product = {
   id: number; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string;
   badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
+  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean;
+};
+type Combo = {
+  id: string; name: string; desc: string; price: number; original: number; saving: number; imgs: string[];
 };
 type CartItem = { product: Product; qty: number };
 type DeliveryForm = { name: string; phone: string; email: string; address: string; city: string; state: string; pincode: string };
@@ -34,6 +41,9 @@ type AppCtx = {
   selectedProduct: Product | null; setSelectedProduct: (p: Product | null) => void;
   order: OrderData | null; setOrder: (o: OrderData) => void;
   wishlist: number[]; toggleWishlist: (id: number) => void;
+  user: any; login: () => void; logout: () => void;
+  products: Product[];
+  combos: Combo[];
 };
 
 // ── Data ───────────────────────────────────────────────────────────────────
@@ -48,7 +58,7 @@ const TESTIMONIALS = [
   { id: 1, name: "Priya Sharma", city: "Mumbai", rating: 5, text: "Absolutely stunning! The Pearl Seashell Necklace arrived beautifully packaged and exceeded all my expectations. The quality feels genuinely luxurious for the price.", order: "Pearl Seashell Necklace", verified: true },
   { id: 2, name: "Anjali Mehta", city: "Delhi", rating: 5, text: "I ordered the Butterfly Bloom Necklace for my anniversary — it was perfect. Fast delivery, beautiful packaging, and it looked even better in person!", order: "Butterfly Bloom Necklace", verified: true },
   { id: 3, name: "Sneha Patel", city: "Ahmedabad", rating: 5, text: "My go-to for jewellery gifting. The Heart Necklace was delicate and premium. My sister absolutely loved it. Will definitely order again!", order: "Petite Heart Necklace", verified: true },
-  { id: 4, name: "Riya Desai", city: "Surat", rating: 5, text: "The Infinity Ring fits beautifully and catches so much light. I receive compliments every time I wear it. Shri Vallabh Jewels never disappoints!", order: "Infinity Spark Ring", verified: true },
+  { id: 4, name: "Riya Desai", city: "Jaipur", rating: 5, text: "The Infinity Ring fits beautifully and catches so much light. I receive compliments every time I wear it. Shri Vallabh Jewels never disappoints!", order: "Infinity Spark Ring", verified: true },
 ];
 
 const FAQS = [
@@ -345,7 +355,7 @@ function CartDrawer() {
 
 // ── Navbar ─────────────────────────────────────────────────────────────────
 function Navbar() {
-  const { cartCount, setCartOpen, setPage, wishlist } = useApp();
+  const { cartCount, setCartOpen, setPage, wishlist, user, login } = useApp();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => {
@@ -362,14 +372,36 @@ function Navbar() {
     { label: "Track Order", action: () => { setPage("track"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
     { label: "Contact Us", action: () => scroll("contact") },
   ];
+  const marqueeItems = [
+    "Free Shipping on Prepaid Orders",
+    "COD Currently Unavailable",
+    "Combo Offers Available",
+    "Fast Delivery in 5–7 Days",
+    "Save ₹49 — Choose Prepaid at Checkout",
+    "100% Quality Guaranteed",
+    "Easy 1-Day Returns",
+  ];
   return (
     <>
+      {/* Marquee Announcement Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[60] overflow-hidden"
+        style={{ background: "linear-gradient(90deg, #3D2B1F, #5A4035, #3D2B1F)", height: "32px" }}>
+        <div className="marquee-track flex items-center h-full whitespace-nowrap">
+          {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((item, i) => (
+            <span key={i} className="inline-flex items-center text-[11px] font-semibold tracking-wide mx-6"
+              style={{ color: "#E8DCC8" }}>
+              {item}
+              <span className="mx-6" style={{ color: "rgba(207,161,141,0.5)" }}>✦</span>
+            </span>
+          ))}
+        </div>
+      </div>
       <motion.header initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.85 }}
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+        className="fixed top-[32px] left-0 right-0 z-50 transition-all duration-500"
         style={{ background: scrolled ? "rgba(248,246,242,0.96)" : "rgba(248,246,242,0.6)", backdropFilter: "blur(24px)", borderBottom: scrolled ? "1px solid rgba(203,184,169,0.3)" : "1px solid transparent", boxShadow: scrolled ? "0 4px 32px rgba(207,161,141,0.1)" : "none" }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 lg:px-8 h-20 flex items-center justify-between">
           <button onClick={() => { setPage("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex-shrink-0">
-            <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="h-9 w-auto object-contain" />
+            <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="h-16 w-auto object-contain" />
           </button>
           <nav className="hidden lg:flex items-center gap-5">
             {links.map(({ label, action }) => (
@@ -380,6 +412,10 @@ function Navbar() {
             ))}
           </nav>
           <div className="flex items-center gap-1">
+            <button onClick={() => user ? setPage("account") : login()} className="relative flex w-9 h-9 items-center justify-center rounded-full transition-colors hover:bg-secondary" style={{ color: "#5A4035" }} title={user ? "My Account" : "Login"}>
+              <UserIcon size={16} />
+              {user && <span className="absolute top-0 right-0 w-2 h-2 rounded-full" style={{ background: "#059669" }} />}
+            </button>
             <button className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-full transition-colors hover:bg-secondary" style={{ color: "#5A4035" }}>
               <Heart size={16} />
               {wishlist.length > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold text-white" style={{ background: "#CFA18D" }}>{wishlist.length}</span>}
@@ -456,7 +492,7 @@ function HeroSection() {
   const { scrollY } = useScroll();
   const imgY = useTransform(scrollY, [0, 600], [0, 80]);
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-16"
+    <section className="relative min-h-screen flex items-center overflow-hidden pt-24"
       style={{ background: "linear-gradient(135deg, #F8F6F2 0%, #EFE7DD 50%, #E8DCC8 100%)" }}>
       <div className="absolute top-1/3 right-0 w-96 h-96 rounded-full opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle, #CFA18D, transparent)", filter: "blur(80px)", transform: "translate(30%)" }} />
       <div className="absolute bottom-1/4 left-0 w-72 h-72 rounded-full opacity-15 pointer-events-none" style={{ background: "radial-gradient(circle, #E8DCC8, transparent)", filter: "blur(60px)", transform: "translate(-20%)" }} />
@@ -500,7 +536,7 @@ function HeroSection() {
             </button>
           </motion.div>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="flex flex-wrap gap-5 mt-8">
-            {[{ e: "🚚", t: "Free Prepaid Delivery" }, { e: "💳", t: "COD Available" }, { e: "↩️", t: "Easy 7-Day Returns" }, { e: "🛡️", t: "Quality Guaranteed" }].map(x => (
+            {[{ e: "🚚", t: "Free Prepaid Delivery" }, { e: "💳", t: "COD Available" }, { e: "↩️", t: "Easy 1-Day Returns" }, { e: "🛡️", t: "Quality Guaranteed" }].map(x => (
               <div key={x.t} className="flex items-center gap-1.5 text-[11px]" style={{ color: "#8C7B6B" }}>
                 {x.e} {x.t}
               </div>
@@ -545,7 +581,7 @@ function TrustBar() {
   const items = [
     { Icon: Shield, label: "Secure Checkout", sub: "100% safe & encrypted" },
     { Icon: Truck, label: "Free Prepaid Delivery", sub: "Save ₹49 with prepaid" },
-    { Icon: RefreshCw, label: "7-Day Easy Returns", sub: "Hassle-free returns" },
+    { Icon: RefreshCw, label: "1-Day Easy Returns", sub: "Hassle-free returns" },
     { Icon: Package, label: "Quality Guaranteed", sub: "Each piece inspected" },
   ];
   return (
@@ -570,15 +606,7 @@ function TrustBar() {
   );
 }
 
-// ── Prepaid Banner ─────────────────────────────────────────────────────────
-function PrepaidBanner() {
-  return (
-    <div className="py-2.5 px-4 text-center text-xs font-bold"
-      style={{ background: "linear-gradient(90deg, rgba(207,161,141,0.15), rgba(232,220,200,0.3), rgba(207,161,141,0.15))", borderBottom: "1px solid rgba(207,161,141,0.2)", color: "#92400E" }}>
-      🎉 <strong>Save ₹49 on Delivery!</strong> Choose Prepaid (UPI / Card / Net Banking) at checkout — <span style={{ color: "#CFA18D", textDecoration: "underline" }}>FREE SHIPPING</span> on all prepaid orders.
-    </div>
-  );
-}
+// ── Prepaid Banner (replaced by marquee in Navbar) ────────────────────────
 
 // ── Testimonial Card ───────────────────────────────────────────────────────
 function TestiCard({ t, delay }: { t: typeof TESTIMONIALS[0]; delay: number }) {
@@ -674,20 +702,19 @@ function BrandStory() {
 
 // ── Combo Section ──────────────────────────────────────────────────────────
 function ComboSection() {
-  const { addToCart } = useApp();
-  const combos = [
-    { name: "The Romance Set", desc: "The perfect pair for soft, romantic elegance. Pearl Seashell + Petite Heart Necklace.", price: 599, original: 748, imgs: [pearlImg, heartImg], saving: 149 },
-    { name: "The Golden Dream Set", desc: "Bold yet delicate — for those who wear their dreams. Butterfly Bloom + Infinity Spark Ring.", price: 439, original: 569, imgs: [butterflyImg, ringImg], saving: 130 },
-  ];
+  const { addToCart, combos } = useApp();
+  
+  if (combos.length === 0) return null;
+
   return (
     <section className="py-24 lg:py-28" style={{ background: "linear-gradient(135deg, #EFE7DD, #F8F6F2, #E8DCC8)" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
         <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {combos.map((c, i) => (
-            <Reveal key={i} delay={i * 0.15}>
+            <Reveal key={c.id} delay={i * 0.15}>
               <div className="rounded-3xl overflow-hidden group cursor-pointer" style={{ background: "#FCFBF8", boxShadow: "0 8px 40px rgba(207,161,141,0.15)", border: "1px solid rgba(203,184,169,0.2)" }}>
-                <div className="grid grid-cols-2">
+                <div className={`grid ${c.imgs.length === 1 ? 'grid-cols-1' : (c.imgs.length % 3 === 0 || c.imgs.length === 5) ? 'grid-cols-3' : 'grid-cols-2'}`}>
                   {c.imgs.map((img, j) => (
                     <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
                       <div className="absolute inset-0">
@@ -759,15 +786,14 @@ function InstagramGallery() {
 
 // ── Product Detail Page ────────────────────────────────────────────────────
 function ProductDetailPage() {
-  const { selectedProduct, addToCart, setPage, setCartOpen } = useApp();
+  const { setPage, addToCart, selectedProduct: p, wishlist, toggleWishlist, products } = useApp();
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
-  const [wished, setWished] = useState(false);
+  if (!p) return null;
+  const wished = wishlist.includes(p.id);
   const allImgs = [pearlImg, heartImg, butterflyImg, ringImg];
-  if (!selectedProduct) return null;
-  const p = selectedProduct;
   return (
-    <div className="min-h-screen pt-16" style={{ background: "#F8F6F2" }}>
+    <div className="min-h-screen pt-24" style={{ background: "#F8F6F2" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8 py-10">
         <button onClick={() => setPage("home")} className="flex items-center gap-2 text-sm mb-8 transition-colors hover:text-primary" style={{ color: "#8C7B6B" }}>
           <ChevronLeft size={16} /> Back to Shop
@@ -853,7 +879,7 @@ function ProductDetailPage() {
         <div className="mt-16">
           <STitle eyebrow="More to Love" title="You May Also Like" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {PRODUCTS.filter(pr => pr.id !== p.id).map((pr, i) => <ProductCard key={pr.id} product={pr} delay={i * 0.1} />)}
+            {products.filter(pr => pr.id !== p.id).map((pr, i) => <ProductCard key={pr.id} product={pr} delay={i * 0.1} />)}
           </div>
         </div>
       </div>
@@ -863,38 +889,67 @@ function ProductDetailPage() {
 
 // ── Checkout Page ──────────────────────────────────────────────────────────
 function CheckoutPage() {
-  const { cart, cartTotal, setPage, setOrder, clearCart } = useApp();
-  const [step, setStep] = useState<"delivery" | "payment" | "otp">("delivery");
-  const [form, setForm] = useState<DeliveryForm>({ name: "", phone: "", email: "", address: "", city: "", state: "", pincode: "" });
+  const { cart, cartTotal, setPage, setOrder, clearCart, user, login } = useApp();
+  const [step, setStep] = useState<"delivery" | "payment">("delivery");
+  const [form, setForm] = useState<DeliveryForm>({ name: user?.displayName || "", phone: "", email: user?.email || "", address: "", city: "", state: "", pincode: "" });
   const [payment, setPayment] = useState<"prepaid" | "cod">("prepaid");
-  const [prepaidType, setPrepaidType] = useState<"upi" | "card" | "netbanking">("upi");
-  const [upiId, setUpiId] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpSent, setOtpSent] = useState(false);
-  const [resend, setResend] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      setForm(prev => ({
+        ...prev,
+        name: prev.name || user.displayName || "",
+        email: prev.email || user.email || ""
+      }));
+    }
+  }, [user]);
   const [paying, setPaying] = useState(false);
   const delivery = 49;
   const total = cartTotal + (payment === "cod" ? delivery : 0);
 
-  const sendOTP = () => {
-    setOtpSent(true); setResend(30);
-    toast.success("OTP sent!", { description: `Sent to +91 ******${form.phone.slice(-4)}` });
-    const iv = setInterval(() => setResend(r => { if (r <= 1) { clearInterval(iv); return 0; } return r - 1; }), 1000);
+  const placeOrder = async () => {
+    if (!user) return;
+    setPaying(true);
+    try {
+      const orderId = "SVJ-" + Math.floor(100000 + Math.random() * 900000);
+      const ord: OrderData = { id: orderId, items: [...cart], delivery: { ...form }, payment, total, placed: new Date() };
+      
+      await addDoc(collection(db, "users", user.uid, "orders"), {
+        ...ord,
+        placed: Timestamp.fromDate(ord.placed)
+      });
+      
+      setOrder(ord);
+      clearCart();
+      setPage("confirmation");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      console.error("Order error:", err);
+      toast.error("Failed to place order", { description: "Please try again." });
+    } finally {
+      setPaying(false);
+    }
   };
 
-  const placeOrder = () => {
-    if (payment === "cod" && otp.join("").length < 6) { toast.error("Please enter the 6-digit OTP"); return; }
-    if (payment === "prepaid") { setPaying(true); setTimeout(confirm, 2000); }
-    else confirm();
-  };
+  if (!user) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center" style={{ background: "#F8F6F2" }}>
+        <div className="text-center bg-white p-10 rounded-2xl shadow-sm border border-[rgba(203,184,169,0.2)] max-w-md w-full mx-5">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: "rgba(207,161,141,0.12)" }}>
+            <UserIcon size={28} style={{ color: "#CFA18D" }} />
+          </div>
+          <h2 className="text-2xl font-bold mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Login Required</h2>
+          <p className="text-sm mb-6" style={{ color: "#8C7B6B" }}>Please log in to your account to securely complete your purchase and track your orders.</p>
+          <button onClick={login} className="w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02]"
+            style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
+            Login with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const confirm = () => {
-    setPaying(false);
-    const ord: OrderData = { id: "SVJ-" + Math.floor(100000 + Math.random() * 900000), items: [...cart], delivery: { ...form }, payment, total, placed: new Date() };
-    setOrder(ord); clearCart(); setPage("confirmation"); window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  if (cart.length === 0 && step !== "otp") {
+  if (cart.length === 0) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center" style={{ background: "#F8F6F2" }}>
         <div className="text-center">
@@ -906,7 +961,7 @@ function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16" style={{ background: "#F8F6F2" }}>
+    <div className="min-h-screen pt-24" style={{ background: "#F8F6F2" }}>
       <div className="max-w-5xl mx-auto px-5 lg:px-8 py-10">
         <div className="flex items-center gap-3 mb-8">
           <button onClick={() => step === "delivery" ? setPage("home") : setStep(step === "otp" ? "payment" : "delivery")}
@@ -914,7 +969,7 @@ function CheckoutPage() {
             <ChevronLeft size={16} /> Back
           </button>
           <div className="flex-1 flex items-center gap-2">
-            {[{ id: "delivery", label: "Delivery" }, { id: "payment", label: "Payment" }, ...(payment === "cod" ? [{ id: "otp", label: "Verify" }] : [])].map((s, i, arr) => (
+            {[{ id: "delivery", label: "Delivery" }, { id: "payment", label: "Payment" }].map((s, i, arr) => (
               <div key={s.id} className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
@@ -981,79 +1036,27 @@ function CheckoutPage() {
                       <p className="text-xs font-bold" style={{ color: "#059669" }}>FREE</p>
                     </div>
                   </button>
-                  <button onClick={() => setPayment("cod")} className="w-full p-4 rounded-xl flex items-center gap-3 text-left transition-all"
-                    style={{ border: payment === "cod" ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", background: payment === "cod" ? "rgba(207,161,141,0.06)" : "#fff" }}>
-                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: "#CFA18D" }}>
-                      {payment === "cod" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#CFA18D" }} />}
+                  <div className="w-full p-4 rounded-xl flex items-center gap-3 text-left opacity-50 cursor-not-allowed"
+                    style={{ border: "2px solid rgba(203,184,169,0.2)", background: "rgba(203,184,169,0.05)" }}>
+                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: "rgba(203,184,169,0.4)" }}>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold" style={{ color: "#3D2B1F" }}>Cash on Delivery</p>
-                      <p className="text-xs" style={{ color: "#8C7B6B" }}>Pay when your order arrives · OTP verification required</p>
+                      <p className="text-sm font-bold" style={{ color: "#8C7B6B" }}>Cash on Delivery</p>
+                      <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>Currently Unavailable</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold" style={{ color: "#DC2626" }}>+₹49</p>
+                      <p className="text-xs font-bold" style={{ color: "#8C7B6B" }}>+₹49</p>
                     </div>
-                  </button>
-                </div>
-
-                {payment === "prepaid" && (
-                  <div className="space-y-3 mb-5">
-                    {[["upi", "UPI / Google Pay / PhonePe / Paytm"], ["card", "Debit / Credit Card"], ["netbanking", "Net Banking"]].map(([v, l]) => (
-                      <button key={v} onClick={() => setPrepaidType(v as "upi" | "card" | "netbanking")}
-                        className="w-full p-3.5 rounded-xl flex items-center gap-3 text-left transition-all"
-                        style={{ border: prepaidType === v ? "1.5px solid #CFA18D" : "1.5px solid rgba(203,184,169,0.3)", background: prepaidType === v ? "rgba(207,161,141,0.05)" : "#fff" }}>
-                        <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: "#CFA18D" }}>
-                          {prepaidType === v && <div className="w-2 h-2 rounded-full" style={{ background: "#CFA18D" }} />}
-                        </div>
-                        <span className="text-sm font-medium" style={{ color: "#3D2B1F" }}>{l}</span>
-                      </button>
-                    ))}
-                    {prepaidType === "upi" && (
-                      <input value={upiId} onChange={e => setUpiId(e.target.value)} placeholder="Enter UPI ID (e.g. name@upi)"
-                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 ring-[#CFA18D]"
-                        style={{ border: "1px solid rgba(203,184,169,0.4)", background: "#F8F6F2", color: "#3D2B1F" }} />
-                    )}
                   </div>
-                )}
-
-                {payment === "cod" && (
-                  <div className="p-3.5 rounded-xl mb-4 text-xs" style={{ background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)", color: "#B91C1C" }}>
-                    📱 An OTP will be sent to <strong>+91 ******{form.phone.slice(-4)}</strong> for phone verification. This helps reduce fake orders and ensures faster delivery.
-                  </div>
-                )}
-
-                <button onClick={() => { if (payment === "cod") { sendOTP(); setStep("otp"); } else placeOrder(); }}
-                  disabled={paying}
-                  className="w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02] disabled:opacity-70"
-                  style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
-                  {paying ? "Processing Payment…" : payment === "cod" ? "Send OTP & Verify →" : `Pay ₹${total} Now →`}
-                </button>
-              </div>
-            )}
-
-            {step === "otp" && (
-              <div className="rounded-2xl p-6 text-center" style={{ background: "#FCFBF8", boxShadow: "0 4px 24px rgba(207,161,141,0.1)", border: "1px solid rgba(203,184,169,0.2)" }}>
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(207,161,141,0.12)" }}>
-                  <Phone size={22} style={{ color: "#CFA18D" }} />
                 </div>
-                <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Verify Your Number</h2>
-                <p className="text-sm mb-6" style={{ color: "#6B5A4E" }}>
-                  OTP sent to <strong style={{ color: "#3D2B1F" }}>+91 ******{form.phone.slice(-4)}</strong>
-                </p>
-                <OTPInput value={otp} onChange={setOtp} />
-                <div className="mt-4 mb-6">
-                  {resend > 0 ? (
-                    <p className="text-xs" style={{ color: "#8C7B6B" }}>Resend OTP in <strong style={{ color: "#CFA18D" }}>{resend}s</strong></p>
-                  ) : (
-                    <button onClick={sendOTP} className="text-xs font-bold" style={{ color: "#CFA18D" }}>Resend OTP</button>
-                  )}
-                </div>
+
+
                 <button onClick={placeOrder}
-                  className="w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02]"
+                  disabled={paying}
+                  className="w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02] disabled:opacity-70 mt-6"
                   style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
-                  Verify & Place Order →
+                  {paying ? "Processing…" : `Pay ₹${total} Now →`}
                 </button>
-                <p className="text-[10px] mt-3" style={{ color: "#8C7B6B" }}>OTP verification prevents fake orders & ensures fast delivery</p>
               </div>
             )}
           </div>
@@ -1104,7 +1107,7 @@ function OrderConfirmation() {
   const delivery = new Date(order.placed);
   delivery.setDate(delivery.getDate() + 7);
   return (
-    <div className="min-h-screen pt-16 flex items-center justify-center px-5" style={{ background: "#F8F6F2" }}>
+    <div className="min-h-screen pt-24 flex items-center justify-center px-5" style={{ background: "#F8F6F2" }}>
       <div className="max-w-md w-full text-center py-16">
         <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", damping: 15, stiffness: 200 }}
           className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
@@ -1112,9 +1115,10 @@ function OrderConfirmation() {
           <Check size={36} className="text-white" />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <p className="text-[11px] uppercase tracking-[0.3em] font-bold mb-2" style={{ color: "#CFA18D" }}>Order Placed Successfully!</p>
-          <h1 className="text-3xl mb-2" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Thank You, {order.delivery.name.split(" ")[0]}! 🎉</h1>
-          <p className="text-sm mb-6" style={{ color: "#6B5A4E" }}>Your order has been confirmed and will be delivered soon.</p>
+          <p className="text-[11px] uppercase tracking-[0.3em] font-bold mb-2" style={{ color: "#CFA18D" }}>Order Placed & Confirmed!</p>
+          <h1 className="text-3xl mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Thank You, {order.delivery.name.split(" ")[0]}! 🎉</h1>
+          <p className="text-sm font-semibold mb-2" style={{ color: "#5A4035" }}>Your order will be packed and shipped soon.</p>
+          <p className="text-sm mb-6" style={{ color: "#6B5A4E" }}>Delivery will be done in <strong style={{ color: "#CFA18D" }}>5-7 days</strong> and you will receive your parcel. For more details, contact us on WhatsApp.</p>
           <div className="rounded-2xl p-5 mb-6 text-left" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)", boxShadow: "0 4px 20px rgba(207,161,141,0.1)" }}>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Order ID</p><p className="font-bold" style={{ color: "#3D2B1F" }}>{order.id}</p></div>
@@ -1179,32 +1183,23 @@ function TrackOrderPage() {
           </div>
         </div>
         {tracked && (
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-6"
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-6 text-center"
             style={{ background: "#FCFBF8", boxShadow: "0 4px 24px rgba(207,161,141,0.1)", border: "1px solid rgba(203,184,169,0.2)" }}>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <p className="text-xs font-bold" style={{ color: "#CFA18D" }}>Order {orderId}</p>
-                <p className="text-sm font-semibold" style={{ color: "#3D2B1F" }}>Estimated: 2–4 more days</p>
-              </div>
-              <span className="text-[10px] px-3 py-1 rounded-full font-bold" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>In Transit</span>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(207,161,141,0.12)" }}>
+              <Package size={28} style={{ color: "#CFA18D" }} />
             </div>
-            <div className="space-y-0">
-              {steps.map((s, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: s.done ? "#CFA18D" : "rgba(203,184,169,0.25)", border: i === steps.findLastIndex(x => x.done) ? "2px dashed #CFA18D" : "none" }}>
-                      {s.done ? <Check size={13} className="text-white" /> : <div className="w-2 h-2 rounded-full" style={{ background: "rgba(203,184,169,0.5)" }} />}
-                    </div>
-                    {i < steps.length - 1 && <div className="w-0.5 h-8 mt-1" style={{ background: s.done ? "rgba(207,161,141,0.4)" : "rgba(203,184,169,0.2)" }} />}
-                  </div>
-                  <div className="pb-6">
-                    <p className="text-sm font-bold" style={{ color: s.done ? "#3D2B1F" : "#CBB8A9" }}>{s.label}</p>
-                    <p className="text-xs" style={{ color: s.done ? "#6B5A4E" : "#CBB8A9" }}>{s.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h3 className="text-xl font-bold mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Order Information</h3>
+            <p className="text-sm font-semibold mb-4" style={{ color: "#5A4035" }}>
+              Orders will be delivered within <span style={{ color: "#CFA18D" }}>5-7 days</span>.
+            </p>
+            <p className="text-sm mb-6" style={{ color: "#8C7B6B" }}>
+              For more details and real-time updates regarding your order, please contact us on WhatsApp.
+            </p>
+            <a href="https://wa.me/917801949426" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105"
+              style={{ background: "#25D366", color: "#FFF", boxShadow: "0 4px 16px rgba(37,211,102,0.3)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Chat on WhatsApp
+            </a>
           </motion.div>
         )}
       </div>
@@ -1222,7 +1217,7 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           <div>
             <div className="mb-4 p-3 rounded-xl inline-block" style={{ background: "rgba(255,255,255,0.07)" }}>
-              <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="h-10 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+              <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="h-14 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
             </div>
             <p className="text-[13px] leading-relaxed mb-5" style={{ color: "rgba(239,231,221,0.65)" }}>
               Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
@@ -1268,7 +1263,7 @@ function Footer() {
         </div>
         <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: "rgba(203,184,169,0.15)" }}>
           <p className="text-[11px]" style={{ color: "rgba(239,231,221,0.35)" }}>© 2026 Shri Vallabh Jewels. All rights reserved.</p>
-          <p className="text-[11px]" style={{ color: "rgba(239,231,221,0.35)" }}>Crafted with ✦ in Surat, Gujarat · Ph: 7801949426</p>
+          <p className="text-[11px]" style={{ color: "rgba(239,231,221,0.35)" }}>Crafted with ✦ · Ph: 7801949426</p>
         </div>
       </div>
     </footer>
@@ -1277,16 +1272,18 @@ function Footer() {
 
 // ── Home Page ──────────────────────────────────────────────────────────────
 function HomePage() {
+  const { products } = useApp();
   return (
     <>
-      <PrepaidBanner />
+      {/* Marquee banner is now fixed above the navbar */}
       <HeroSection />
       <TrustBar />
       <section id="featured" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Handpicked for You" title="Featured Collections" subtitle="Our most-loved pieces, curated for timeless elegance." />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {PRODUCTS.slice(0, 3).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
+            {products.filter(p => p.isFeatured).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
+            {products.filter(p => p.isFeatured).length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center">No featured products selected.</p>}
           </div>
           <div className="text-center"><Reveal><button onClick={() => {}} className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" style={{ border: "1.5px solid #CFA18D", color: "#CFA18D" }}>View All Products</button></Reveal></div>
         </div>
@@ -1296,7 +1293,8 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Most Loved" title="Best Sellers" subtitle="The pieces our customers keep coming back for." />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {[...PRODUCTS].reverse().map((p, i) => <ProductCard key={p.id + 10} product={p} delay={i * 0.1} />)}
+            {products.filter(p => p.isBestseller).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.1} />)}
+            {products.filter(p => p.isBestseller).length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No bestsellers selected.</p>}
           </div>
         </div>
       </section>
@@ -1304,7 +1302,8 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Fresh In" title="New Arrivals" subtitle="Just landed — discover what's new in our latest drop." />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {PRODUCTS.map((p, i) => <ProductCard key={p.id + 20} product={{ ...p, badge: "New In" }} delay={i * 0.1} />)}
+            {products.filter(p => p.isNewArrival).map((p, i) => <ProductCard key={p.id} product={{ ...p, badge: p.badge || "New In" }} delay={i * 0.1} />)}
+            {products.filter(p => p.isNewArrival).length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No new arrivals selected.</p>}
           </div>
         </div>
       </section>
@@ -1331,7 +1330,7 @@ function HomePage() {
               <p className="text-[11px] uppercase tracking-[0.28em] mb-4 font-bold" style={{ color: "#CFA18D" }}>Get in Touch</p>
               <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>We'd Love to<br /><em>Hear From You</em></h2>
               <p className="text-[15px] leading-relaxed mb-10" style={{ color: "#6B5A4E" }}>Questions, custom orders, or just want to say hello — we're always here.</p>
-              {[{ Icon: Phone, label: "WhatsApp", val: "+91 7801949426" }, { Icon: Mail, label: "Email", val: "shrivallabhjewels@gmail.com" }, { Icon: Instagram, label: "Instagram", val: "@shrivallabh_jewels" }, { Icon: MapPin, label: "Location", val: "Surat, Gujarat, India" }].map(({ Icon, label, val }) => (
+              {[{ Icon: Phone, label: "WhatsApp", val: "+91 7801949426" }, { Icon: Mail, label: "Email", val: "shrivallabhjewels@gmail.com" }, { Icon: Instagram, label: "Instagram", val: "@shrivallabh_jewels" }].map(({ Icon, label, val }) => (
                 <div key={label} className="flex items-center gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(207,161,141,0.12)" }}>
                     <Icon size={15} style={{ color: "#CFA18D" }} />
@@ -1380,6 +1379,452 @@ function ContactForm() {
   );
 }
 
+// ── Account / Order History Page ───────────────────────────────────────────
+function AccountPage() {
+  const { user, logout, setPage } = useApp();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setPage("home");
+      return;
+    }
+    const fetchOrders = async () => {
+      try {
+        const q = query(collection(db, "users", user.uid, "orders"), orderBy("placed", "desc"));
+        const snapshot = await getDocs(q);
+        const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setOrders(fetchedOrders);
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [user, setPage]);
+
+  if (!user) return null;
+
+  return (
+    <div className="min-h-screen pt-28 px-5 lg:px-8 pb-20" style={{ background: "#F8F6F2" }}>
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between mb-8 pb-8 border-b" style={{ borderColor: "rgba(203,184,169,0.3)" }}>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold uppercase" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>
+              {user.displayName?.charAt(0) || user.email?.charAt(0)}
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{user.displayName || "My Account"}</h1>
+              <p className="text-sm" style={{ color: "#8C7B6B" }}>{user.email}</p>
+            </div>
+          </div>
+          <button onClick={logout} className="px-6 py-2.5 rounded-full text-sm font-bold border transition-all hover:bg-[rgba(207,161,141,0.1)] w-fit"
+            style={{ borderColor: "#CFA18D", color: "#CFA18D" }}>
+            Sign Out
+          </button>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Order History</h2>
+          
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#CFA18D", borderTopColor: "transparent" }} />
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl" style={{ background: "#FCFBF8", border: "1px dashed rgba(203,184,169,0.4)" }}>
+              <Package size={40} className="mx-auto mb-4" style={{ color: "rgba(207,161,141,0.5)" }} />
+              <p className="text-lg font-semibold mb-2" style={{ color: "#3D2B1F" }}>No orders yet</p>
+              <p className="text-sm mb-6" style={{ color: "#8C7B6B" }}>When you place orders, they will appear here.</p>
+              <button onClick={() => setPage("home")} className="px-6 py-2.5 rounded-full text-sm font-bold transition-all hover:scale-[1.02]"
+                style={{ background: "#CFA18D", color: "#FCFBF8" }}>
+                Start Shopping
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {orders.map((ord, idx) => (
+                <div key={idx} className="rounded-2xl p-5" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)", boxShadow: "0 4px 20px rgba(207,161,141,0.05)" }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b" style={{ borderColor: "rgba(203,184,169,0.2)" }}>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "#8C7B6B" }}>Order ID</p>
+                      <p className="font-bold" style={{ color: "#3D2B1F" }}>{ord.id || ord.orderId || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "#8C7B6B" }}>Date</p>
+                      <p className="font-semibold" style={{ color: "#5A4035" }}>
+                        {ord.placed ? new Date(ord.placed.seconds * 1000).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}
+                      </p>
+                    </div>
+                    <div className="sm:text-right">
+                      <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "#8C7B6B" }}>Total</p>
+                      <p className="font-bold text-lg" style={{ color: "#CFA18D" }}>₹{ord.total}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {ord.items?.map((item: CartItem, i: number) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <img src={item.product.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-[#F8F6F2]" />
+                        <div className="flex-1">
+                          <p className="text-sm font-bold leading-tight line-clamp-1" style={{ color: "#3D2B1F" }}>{item.product.name}</p>
+                          <p className="text-xs" style={{ color: "#8C7B6B" }}>Qty: {item.qty}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Admin Page ─────────────────────────────────────────────────────────────
+function AdminPage() {
+  const { products, combos } = useApp();
+  const [authed, setAuthed] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [tab, setTab] = useState<"products"|"combos"|"orders">("products");
+
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [formData, setFormData] = useState<Partial<Product>>({});
+  
+  const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
+  const [comboData, setComboData] = useState<Partial<Combo>>({});
+  
+  const [loading, setLoading] = useState(false);
+  const [ordersList, setOrdersList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (tab === "orders" && authed) {
+      const q = query(collectionGroup(db, "orders"));
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+          // Sort by placed date desc
+          fetched.sort((a: any, b: any) => {
+            const dateA = a.placed?.toMillis ? a.placed.toMillis() : 0;
+            const dateB = b.placed?.toMillis ? b.placed.toMillis() : 0;
+            return dateB - dateA;
+          });
+          setOrdersList(fetched);
+        } else {
+          setOrdersList([]);
+        }
+      }, (error) => {
+        toast.error("Permissions error fetching orders", { description: "Please update your Firestore rules to allow reading the 'orders' collectionGroup." });
+      });
+      return () => unsub();
+    }
+  }, [tab, authed]);
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F6F2]">
+        <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-sm w-full">
+          <h2 className="text-xl font-bold mb-4" style={{ color: "#3D2B1F" }}>Admin Access</h2>
+          <input type="password" placeholder="Enter Password" value={pwd} onChange={e => setPwd(e.target.value)} 
+            className="border p-3 rounded w-full mb-4 text-center" onKeyDown={e => e.key === 'Enter' && (pwd === '1212' ? setAuthed(true) : toast.error("Incorrect Password"))} />
+          <button onClick={() => pwd === '1212' ? setAuthed(true) : toast.error("Incorrect Password")} className="w-full py-3 bg-black text-white font-bold rounded">Login</button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleEdit = (p: Product) => { setEditing(p); setFormData(p); };
+  const handleAddNew = () => { 
+    setEditing({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false }); 
+    setFormData({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false });
+  };
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    try { await deleteDoc(doc(db, "products", id.toString())); toast.success("Product deleted"); } 
+    catch (e: any) { toast.error("Error", { description: e.message }); }
+  };
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const MAX_WIDTH = 800;
+        let width = img.width; let height = img.height;
+        if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
+        canvas.width = width; canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+        setFormData(prev => ({ ...prev, image: canvas.toDataURL("image/jpeg", 0.7) }));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+  const saveProduct = async () => {
+    if (!formData.name || !formData.image) return toast.error("Name and Image are required");
+    setLoading(true);
+    try { await setDoc(doc(db, "products", formData.id!.toString()), formData); toast.success("Product saved!"); setEditing(null); } 
+    catch (e: any) { toast.error("Save failed", { description: e.message }); }
+    setLoading(false);
+  };
+
+  const handleEditCombo = (c: Combo) => { setEditingCombo(c); setComboData(c); };
+  const handleAddCombo = () => {
+    setEditingCombo({ id: Date.now().toString(), name: "", desc: "", price: 0, original: 0, saving: 0, imgs: [] });
+    setComboData({ id: Date.now().toString(), name: "", desc: "", price: 0, original: 0, saving: 0, imgs: [] });
+  };
+  const handleDeleteCombo = async (id: string) => {
+    if (!confirm("Delete combo?")) return;
+    await deleteDoc(doc(db, "combos", id));
+  };
+  const saveCombo = async () => {
+    if (!comboData.name || !comboData.imgs?.length) return toast.error("Name and Images required");
+    setLoading(true);
+    try { await setDoc(doc(db, "combos", comboData.id!), comboData); toast.success("Combo saved!"); setEditingCombo(null); } 
+    catch(e: any) { toast.error(e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen pt-28 px-5 lg:px-8 bg-[#F8F6F2]">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Admin Panel</h1>
+          <div className="flex gap-2 bg-white rounded-lg p-1 border">
+            <button onClick={() => setTab("products")} className={`px-4 py-1.5 rounded-md text-sm font-bold ${tab === "products" ? "bg-black text-white" : "text-gray-500"}`}>Products</button>
+            <button onClick={() => setTab("combos")} className={`px-4 py-1.5 rounded-md text-sm font-bold ${tab === "combos" ? "bg-black text-white" : "text-gray-500"}`}>Combos</button>
+            <button onClick={() => setTab("orders")} className={`px-4 py-1.5 rounded-md text-sm font-bold ${tab === "orders" ? "bg-black text-white" : "text-gray-500"}`}>Orders</button>
+          </div>
+        </div>
+
+        {tab === "products" && (
+          <>
+            <div className="flex justify-end mb-4">
+              <button onClick={handleAddNew} className="px-5 py-2.5 bg-[#CFA18D] text-white rounded-xl font-bold text-sm">+ Add Product</button>
+            </div>
+            {editing ? (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border mb-8">
+                <h2 className="text-xl font-bold mb-4">Edit Product</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="border p-2 rounded" />
+                  <input placeholder="Subtitle" value={formData.subtitle} onChange={e => setFormData({ ...formData, subtitle: e.target.value })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Price" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Original Price" value={formData.originalPrice} onChange={e => setFormData({ ...formData, originalPrice: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input placeholder="Category" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="border p-2 rounded" />
+                  <input placeholder="Badge (e.g. Bestseller)" value={formData.badge} onChange={e => setFormData({ ...formData, badge: e.target.value })} className="border p-2 rounded" />
+                  
+                  <div className="col-span-1 md:col-span-2 flex flex-wrap gap-4 py-2 border-y my-2">
+                    <label className="flex items-center gap-2 font-bold cursor-pointer">
+                      <input type="checkbox" checked={formData.isFeatured || false} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} /> Show in Featured
+                    </label>
+                    <label className="flex items-center gap-2 font-bold cursor-pointer">
+                      <input type="checkbox" checked={formData.isBestseller || false} onChange={e => setFormData({ ...formData, isBestseller: e.target.checked })} /> Show in Best Sellers
+                    </label>
+                    <label className="flex items-center gap-2 font-bold cursor-pointer">
+                      <input type="checkbox" checked={formData.isNewArrival || false} onChange={e => setFormData({ ...formData, isNewArrival: e.target.checked })} /> Show in New Arrivals
+                    </label>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input placeholder="Badge Color (e.g. #CFA18D)" value={formData.badgeColor} onChange={e => setFormData({ ...formData, badgeColor: e.target.value })} className="border p-2 rounded flex-1" />
+                    <div className="w-10 h-10 rounded border" style={{ backgroundColor: formData.badgeColor }} />
+                  </div>
+                  <input type="number" placeholder="Stock" value={formData.stock} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Rating (e.g. 4.8)" step="0.1" value={formData.rating} onChange={e => setFormData({ ...formData, rating: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Total Reviews" value={formData.reviews} onChange={e => setFormData({ ...formData, reviews: Number(e.target.value) })} className="border p-2 rounded" />
+                  <div className="col-span-1 md:col-span-2">
+                    <textarea placeholder="Description" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="border p-2 rounded w-full" />
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <textarea placeholder="Care Instructions" rows={2} value={formData.care} onChange={e => setFormData({ ...formData, care: e.target.value })} className="border p-2 rounded w-full" />
+                  </div>
+                  <div className="col-span-1 md:col-span-2 border p-4 rounded bg-gray-50 flex gap-4 items-center">
+                    {formData.image && <img src={formData.image} className="w-20 h-20 object-cover rounded" />}
+                    <div>
+                      <label className="block text-sm font-bold mb-1">Upload Image (Will be compressed to fit Firestore limits)</label>
+                      <input type="file" accept="image/*" onChange={handleImageUpload} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button onClick={saveProduct} disabled={loading} className="px-6 py-2 bg-black text-white rounded font-bold">{loading ? "Saving..." : "Save Product"}</button>
+                  <button onClick={() => setEditing(null)} className="px-6 py-2 bg-gray-200 text-black rounded font-bold">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[700px]">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="p-4 font-bold">Image</th>
+                      <th className="p-4 font-bold">Name</th>
+                      <th className="p-4 font-bold">Price</th>
+                      <th className="p-4 font-bold">Placements</th>
+                      <th className="p-4 font-bold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...products].sort((a,b) => b.id - a.id).map(p => (
+                      <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="p-4"><img src={p.image} className="w-12 h-12 rounded object-cover" /></td>
+                        <td className="p-4 font-semibold">{p.name}</td>
+                        <td className="p-4">₹{p.price}</td>
+                        <td className="p-4">
+                          <div className="flex flex-wrap gap-1">
+                            {p.isFeatured && <span className="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Featured</span>}
+                            {p.isBestseller && <span className="text-[9px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Bestseller</span>}
+                            {p.isNewArrival && <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded">New Arrival</span>}
+                          </div>
+                        </td>
+                        <td className="p-4 flex gap-3">
+                          <button onClick={() => handleEdit(p)} className="text-blue-600 font-bold hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(p.id)} className="text-red-600 font-bold hover:underline">Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === "combos" && (
+          <>
+            <div className="flex justify-end mb-4">
+              <button onClick={handleAddCombo} className="px-5 py-2.5 bg-[#CFA18D] text-white rounded-xl font-bold text-sm">+ Add Combo</button>
+            </div>
+            {editingCombo ? (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border mb-8">
+                <h2 className="text-xl font-bold mb-4">Edit Combo</h2>
+                <div className="grid grid-cols-1 gap-4">
+                  <input placeholder="Combo Name" value={comboData.name} onChange={e => setComboData({ ...comboData, name: e.target.value })} className="border p-2 rounded" />
+                  <textarea placeholder="Description" value={comboData.desc} onChange={e => setComboData({ ...comboData, desc: e.target.value })} className="border p-2 rounded" />
+                  
+                  <div className="border p-4 rounded bg-gray-50">
+                    <p className="font-bold mb-2">Select Products for Combo</p>
+                    <div className="flex flex-wrap gap-2">
+                      {products.map(p => {
+                        const isSel = comboData.imgs?.includes(p.image);
+                        return (
+                          <div key={p.id} onClick={() => {
+                            let imgs = comboData.imgs || [];
+                            let original = comboData.original || 0;
+                            if (isSel) { imgs = imgs.filter(img => img !== p.image); original -= p.price; } 
+                            else { imgs = [...imgs, p.image]; original += p.price; }
+                            setComboData({ ...comboData, imgs, original });
+                          }} className={`flex items-center gap-2 p-2 border rounded cursor-pointer ${isSel ? 'border-black bg-black text-white' : 'bg-white'}`}>
+                            <img src={p.image} className="w-8 h-8 rounded object-cover" />
+                            <span className="text-xs font-bold">{p.name}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Total Original (Auto)</label>
+                      <input type="number" readOnly value={comboData.original} className="border p-2 rounded w-full bg-gray-100" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Combo Price</label>
+                      <input type="number" value={comboData.price} onChange={e => setComboData({ ...comboData, price: Number(e.target.value), saving: (comboData.original || 0) - Number(e.target.value) })} className="border p-2 rounded w-full" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Savings (Auto)</label>
+                      <input type="number" readOnly value={comboData.saving} className="border p-2 rounded w-full bg-gray-100" />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button onClick={saveCombo} disabled={loading} className="px-6 py-2 bg-black text-white rounded font-bold">{loading ? "Saving..." : "Save Combo"}</button>
+                  <button onClick={() => setEditingCombo(null)} className="px-6 py-2 bg-gray-200 text-black rounded font-bold">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[700px]">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="p-4 font-bold">Images</th>
+                      <th className="p-4 font-bold">Name</th>
+                      <th className="p-4 font-bold">Price</th>
+                      <th className="p-4 font-bold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...combos].sort((a,b) => Number(b.id) - Number(a.id)).map(c => (
+                      <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="p-4 flex gap-1">
+                          {c.imgs.map((img, idx) => <img key={idx} src={img} className="w-8 h-8 rounded-full object-cover border" />)}
+                        </td>
+                        <td className="p-4 font-semibold">{c.name}</td>
+                        <td className="p-4">₹{c.price} (Saved ₹{c.saving})</td>
+                        <td className="p-4 flex gap-3">
+                          <button onClick={() => handleEditCombo(c)} className="text-blue-600 font-bold hover:underline">Edit</button>
+                          <button onClick={() => handleDeleteCombo(c.id)} className="text-red-600 font-bold hover:underline">Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {combos.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-gray-500">No combos created yet.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === "orders" && (
+          <div className="bg-white rounded-2xl shadow-sm border overflow-x-auto">
+            <table className="w-full text-left text-sm min-w-[700px]">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="p-4 font-bold">Order ID</th>
+                  <th className="p-4 font-bold">Date</th>
+                  <th className="p-4 font-bold">Customer Details</th>
+                  <th className="p-4 font-bold">Items</th>
+                  <th className="p-4 font-bold">Total Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ordersList.map(o => (
+                  <tr key={o.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="p-4 font-mono text-xs text-gray-500">{o.id.slice(0,8)}</td>
+                    <td className="p-4">{o.placed?.toDate ? o.placed.toDate().toLocaleString() : "Just now"}</td>
+                    <td className="p-4">
+                      <div className="font-bold">{o.customer?.name}</div>
+                      <div className="text-xs text-gray-500">{o.customer?.email}</div>
+                      <div className="text-xs text-gray-500">{o.customer?.phone}</div>
+                      <div className="text-xs text-gray-500 mt-1">{o.shipping?.address}, {o.shipping?.city} {o.shipping?.pincode}</div>
+                    </td>
+                    <td className="p-4">
+                      <ul className="list-disc pl-4 text-xs">
+                        {o.items?.map((item: any, idx: number) => (
+                          <li key={idx}>{item.qty}x {item.product?.name || "Combo"}</li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td className="p-4 font-bold">₹{o.total}</td>
+                  </tr>
+                ))}
+                {ordersList.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-500">No orders found.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── App ────────────────────────────────────────────────────────────────────
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -1389,8 +1834,63 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [order, setOrder] = useState<OrderData | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS); // fallback to hardcoded initially
+  const [combos, setCombos] = useState<Combo[]>([]);
 
-  const setPage = (p: Page) => { setPageState(p); };
+  useEffect(() => {
+    const handleLocation = () => {
+      const path = window.location.pathname;
+      if (path === "/admin") setPageState("admin");
+      else if (path === "/") setPageState("home");
+    };
+    window.addEventListener("popstate", handleLocation);
+    handleLocation();
+    return () => window.removeEventListener("popstate", handleLocation);
+  }, []);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, u => setUser(u));
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, "products"), orderBy("id", "asc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.data().id }) as Product);
+        setProducts(fetched);
+      }
+    });
+    const comboQ = query(collection(db, "combos"));
+    const unsubCombo = onSnapshot(comboQ, (snapshot) => {
+      if (!snapshot.empty) {
+        setCombos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Combo));
+      }
+    });
+    return () => { unsub(); unsubCombo(); };
+  }, []);
+
+  const login = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      toast.success("Logged in successfully");
+    } catch (err: any) {
+      toast.error("Login failed", { description: err.message });
+    }
+  };
+
+  const logout = async () => {
+    await signOut(auth);
+    setPageState("home");
+    toast.success("Logged out");
+  };
+
+  const setPage = (p: Page) => { 
+    setPageState(p); 
+    if (p === "admin" && window.location.pathname !== "/admin") window.history.pushState({}, "", "/admin");
+    if (p === "home" && window.location.pathname === "/admin") window.history.pushState({}, "", "/");
+  };
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -1405,8 +1905,8 @@ export default function App() {
 
   // Recent order notifications
   useEffect(() => {
-    if (loading) return;
-    let idx = 0;
+    if (loading || page === "admin") return;
+    let idx = Math.floor(Math.random() * RECENT_ORDERS.length);
     const show = () => {
       const o = RECENT_ORDERS[idx % RECENT_ORDERS.length]; idx++;
       toast(`🛍️ ${o.name} from ${o.city} just ordered`, { description: o.product, duration: 4000 });
@@ -1414,13 +1914,16 @@ export default function App() {
     const t1 = setTimeout(show, 8000);
     const t2 = setInterval(show, 55000);
     return () => { clearTimeout(t1); clearInterval(t2); };
-  }, [loading]);
+  }, [loading, page]);
 
-  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, order, setOrder, wishlist, toggleWishlist };
+  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos };
 
   return (
     <Ctx.Provider value={ctx}>
       <style>{`
+        @keyframes marquee-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }
+        .marquee-track { animation: marquee-scroll 30s linear infinite; }
+        .marquee-track:hover { animation-play-state: paused; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
         @keyframes sparkle { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
         @keyframes scrollPulse { 0% { transform: translateY(-100%); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(250%); opacity: 0; } }
@@ -1445,6 +1948,8 @@ export default function App() {
           {page === "checkout" && <CheckoutPage />}
           {page === "confirmation" && <OrderConfirmation />}
           {page === "track" && <TrackOrderPage />}
+          {page === "account" && <AccountPage />}
+          {page === "admin" && <AdminPage />}
         </>
       )}
     </Ctx.Provider>
