@@ -694,7 +694,7 @@ function BrandStory() {
 
 // ── Combo Section ──────────────────────────────────────────────────────────
 function ComboSection() {
-  const { addToCart, combos } = useApp();
+  const { addToCart, combos, setCartOpen } = useApp();
   
   if (combos.length === 0) return null;
 
@@ -727,7 +727,7 @@ function ComboSection() {
                       <span className="text-xl font-bold" style={{ color: "#CFA18D" }}>₹{c.price}</span>
                       <span className="text-sm line-through" style={{ color: "#CBB8A9" }}>₹{c.original}</span>
                     </div>
-                    <button onClick={() => { addToCart({ ...c, originalPrice: c.original } as unknown as Product); toast.success("Combo set added to bag! ✦"); }}
+                    <button onClick={() => { addToCart({ ...c, originalPrice: c.original, image: c.imgs[0], description: c.desc } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
                       className="px-5 py-2.5 rounded-full text-xs font-bold transition-all hover:scale-105"
                       style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
                       Add Combo
@@ -799,7 +799,7 @@ function PostersSection() {
 
 // ── Shop Page ───────────────────────────────────────────────────────────────
 function ShopPage() {
-  const { products, combos, setPage, setSelectedProduct } = useApp();
+  const { products, combos, setPage, setSelectedProduct, addToCart, setCartOpen } = useApp();
   const [category, setCategory] = useState("All");
 
   useEffect(() => {
@@ -855,7 +855,7 @@ function ShopPage() {
                           <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
                           <span className="text-sm line-through text-[#CBB8A9]">₹{c.original}</span>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.original } as unknown as Product); toast.success("Combo set added to bag! ✦"); }}
+                        <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.original, image: c.imgs[0], description: c.desc } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
                           className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
                           style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
                           Add Combo
