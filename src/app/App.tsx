@@ -64,12 +64,10 @@ const TESTIMONIALS = [
 const FAQS = [
   { q: "How long does delivery take?", a: "Orders are typically delivered within 5–7 business days across India. Express delivery (2–3 days) is available at checkout for select pin codes." },
   { q: "Why is COD ₹49 more expensive?", a: "Cash on Delivery orders incur a ₹49 handling fee to cover packaging and secure verification costs. Choose any prepaid method (UPI, Cards, Net Banking) to get FREE delivery!" },
-  { q: "What is the return policy?", a: "We offer a 7-day easy return policy. Contact us within 7 days of delivery with photos, and we will arrange a free replacement or full refund — no questions asked." },
+  { q: "What is the return policy?", a: "We offer a 1-day easy return policy. Contact us within 1 day of delivery with photos, and we will arrange a free replacement or full refund — no questions asked." },
   { q: "Why is OTP required for COD?", a: "OTP verification helps us ensure genuine orders, protect our customers, and deliver faster. It also helps us eliminate fake or incomplete addresses that cause delivery failures." },
   { q: "Are the pieces nickel-free and skin-safe?", a: "Yes! All our jewellery is nickel-free, lead-free, and cadmium-free. Made with premium anti-tarnish coating. Safe for sensitive skin and daily wear." },
-  { q: "Do you offer gift wrapping?", a: "Every single order ships in our signature champagne gift box at absolutely no extra cost. Personalised handwritten message cards are available on request." },
-  { q: "How do I track my order?", a: "Once your order ships, you'll receive a tracking link via SMS and WhatsApp. You can also enter your Order ID on our Track Order page anytime." },
-  { q: "Can I cancel or modify my order?", a: "Orders can be cancelled or modified within 12 hours of placing. Contact us via WhatsApp at +91 7801949426 as soon as possible after placing." },
+  { q: "How do I track my order?", a: "Once your order ships, you'll receive a tracking link via SMS and WhatsApp. You can also enter your Order ID on our Track Order page anytime." }
 ];
 
 const RECENT_ORDERS = [
@@ -784,6 +782,28 @@ function InstagramGallery() {
   );
 }
 
+// ── Posters Section ────────────────────────────────────────────────────────
+function PostersSection() {
+  // Replace these URLs with imports if you move the images into src/imports
+  const posters = [
+    "https://images.unsplash.com/photo-1599643478524-fb66f70d00f8?q=80&w=600&auto=format&fit=crop", // placeholder 1
+    "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=crop", // placeholder 2
+    "https://images.unsplash.com/photo-1573408301145-b98c4af30f40?q=80&w=600&auto=format&fit=crop"  // placeholder 3
+  ];
+
+  return (
+    <section className="bg-[#F8F6F2]">
+      <div className="grid grid-cols-1 md:grid-cols-3 w-full">
+        {posters.map((src, idx) => (
+          <div key={idx} className="relative aspect-[4/5] overflow-hidden">
+            <img src={src} alt={`Poster ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.03]" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ── Product Detail Page ────────────────────────────────────────────────────
 function ProductDetailPage() {
   const { setPage, addToCart, selectedProduct: p, wishlist, toggleWishlist, products } = useApp();
@@ -1317,6 +1337,13 @@ function HomePage() {
         </div>
       </section>
       <InstagramGallery />
+      <PostersSection />
+      <section className="py-24 lg:py-28" style={{ background: "#EFE7DD" }}>
+        <div className="max-w-3xl mx-auto px-5 lg:px-8">
+          <STitle eyebrow="Questions Answered" title="FAQs" subtitle="Everything you need to know before shopping with us." />
+          <div>{FAQS.map((faq, i) => <FAQItem key={i} faq={faq} />)}</div>
+        </div>
+      </section>
       <section id="contact" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
