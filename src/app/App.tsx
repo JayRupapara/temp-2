@@ -62,12 +62,11 @@ const TESTIMONIALS = [
 ];
 
 const FAQS = [
-  { q: "How long does delivery take?", a: "Orders are typically delivered within 5–7 business days across India. Express delivery (2–3 days) is available at checkout for select pin codes." },
+  { q: "How long does delivery take?", a: "Orders are typically delivered within 5–8 business days across India. Express delivery is available at checkout for select pin codes." },
   { q: "Why is COD ₹49 more expensive?", a: "Cash on Delivery orders incur a ₹49 handling fee to cover packaging and secure verification costs. Choose any prepaid method (UPI, Cards, Net Banking) to get FREE delivery!" },
   { q: "What is the return policy?", a: "We offer a 1-day easy return policy. Contact us within 1 day of delivery with photos, and we will arrange a free replacement or full refund — no questions asked." },
-  { q: "Why is OTP required for COD?", a: "OTP verification helps us ensure genuine orders, protect our customers, and deliver faster. It also helps us eliminate fake or incomplete addresses that cause delivery failures." },
   { q: "Are the pieces nickel-free and skin-safe?", a: "Yes! All our jewellery is nickel-free, lead-free, and cadmium-free. Made with premium anti-tarnish coating. Safe for sensitive skin and daily wear." },
-  { q: "How do I track my order?", a: "Once your order ships, you'll receive a tracking link via SMS and WhatsApp. You can also enter your Order ID on our Track Order page anytime." }
+  { q: "How do I track my order?", a: "To track your order, please contact us directly on WhatsApp." }
 ];
 
 const RECENT_ORDERS = [
@@ -374,7 +373,7 @@ function Navbar() {
     "Free Shipping on Prepaid Orders",
     "COD Currently Unavailable",
     "Combo Offers Available",
-    "Fast Delivery in 5–7 Days",
+    "Fast Delivery in 5–8 Days",
     "Save ₹49 — Choose Prepaid at Checkout",
     "100% Quality Guaranteed",
     "Easy 1-Day Returns",
@@ -945,7 +944,7 @@ function ProductDetailPage() {
               <div className="flex items-center gap-2 mb-2 text-sm font-bold" style={{ color: "#059669" }}>
                 <Zap size={14} /> Save ₹49 — Choose Prepaid for FREE Delivery
               </div>
-              <p className="text-xs" style={{ color: "#6B5A4E" }}>Prepaid: FREE delivery · COD: ₹49 extra · All India delivery in 5–7 days</p>
+              <p className="text-xs" style={{ color: "#6B5A4E" }}>Prepaid: FREE delivery · COD: ₹49 extra · All India delivery in 5–8 days</p>
             </div>
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center rounded-full overflow-hidden" style={{ border: "1.5px solid rgba(203,184,169,0.5)" }}>
@@ -1225,7 +1224,7 @@ function OrderConfirmation() {
           <p className="text-[11px] uppercase tracking-[0.3em] font-bold mb-2" style={{ color: "#CFA18D" }}>Order Placed & Confirmed!</p>
           <h1 className="text-3xl mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Thank You, {order.delivery.name.split(" ")[0]}! 🎉</h1>
           <p className="text-sm font-semibold mb-2" style={{ color: "#5A4035" }}>Your order will be packed and shipped soon.</p>
-          <p className="text-sm mb-6" style={{ color: "#6B5A4E" }}>Delivery will be done in <strong style={{ color: "#CFA18D" }}>5-7 days</strong> and you will receive your parcel. For more details, contact us on WhatsApp.</p>
+          <p className="text-sm mb-6" style={{ color: "#6B5A4E" }}>Delivery will be done in <strong style={{ color: "#CFA18D" }}>5-8 days</strong> and you will receive your parcel. For more details, contact us on WhatsApp.</p>
           <div className="rounded-2xl p-5 mb-6 text-left" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)", boxShadow: "0 4px 20px rgba(207,161,141,0.1)" }}>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Order ID</p><p className="font-bold" style={{ color: "#3D2B1F" }}>{order.id}</p></div>
@@ -1297,7 +1296,7 @@ function TrackOrderPage() {
             </div>
             <h3 className="text-xl font-bold mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Order Information</h3>
             <p className="text-sm font-semibold mb-4" style={{ color: "#5A4035" }}>
-              Orders will be delivered within <span style={{ color: "#CFA18D" }}>5-7 days</span>.
+              Orders will be delivered within <span style={{ color: "#CFA18D" }}>5-8 days</span>.
             </p>
             <p className="text-sm mb-6" style={{ color: "#8C7B6B" }}>
               For more details and real-time updates regarding your order, please contact us on WhatsApp.
@@ -1370,7 +1369,7 @@ function Footer() {
         </div>
         <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: "rgba(203,184,169,0.15)" }}>
           <p className="text-[11px]" style={{ color: "rgba(239,231,221,0.35)" }}>© 2026 Shri Vallabh Jewels. All rights reserved.</p>
-          <p className="text-[11px]" style={{ color: "rgba(239,231,221,0.35)" }}>Crafted with ✦ · Ph: 7801949426</p>
+          <p className="text-[11px]" style={{ color: "rgba(239,231,221,0.35)" }}>Ph: 7801949426</p>
         </div>
       </div>
     </footer>
@@ -1379,7 +1378,7 @@ function Footer() {
 
 // ── Home Page ──────────────────────────────────────────────────────────────
 function HomePage() {
-  const { products } = useApp();
+  const { products, setPage } = useApp();
   return (
     <>
       {/* Marquee banner is now fixed above the navbar */}
@@ -1393,7 +1392,7 @@ function HomePage() {
             {products.filter(p => p.isFeatured).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
             {products.filter(p => p.isFeatured).length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center">No featured products selected.</p>}
           </div>
-          <div className="text-center"><Reveal><button onClick={() => {}} className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" style={{ border: "1.5px solid #CFA18D", color: "#CFA18D" }}>View All Products</button></Reveal></div>
+          <div className="text-center"><Reveal><button onClick={() => { window.scrollTo(0, 0); setPage("shop"); }} className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" style={{ border: "1.5px solid #CFA18D", color: "#CFA18D" }}>Our Complete Collection</button></Reveal></div>
         </div>
       </section>
       <BrandStory />
