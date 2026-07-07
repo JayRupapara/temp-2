@@ -19,7 +19,7 @@ import butterflyImg from "@/imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.png";
 import ringImg from "@/imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Page = "home" | "product" | "checkout" | "confirmation" | "track" | "account" | "admin";
+type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "track" | "account" | "admin";
 type Product = {
   id: number; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string;
@@ -364,7 +364,7 @@ function Navbar() {
   const scroll = (id: string) => { setPage("home"); setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 120); setMobileOpen(false); };
   const links = [
     { label: "Home", action: () => { setPage("home"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
-    { label: "Shop", action: () => scroll("featured") },
+    { label: "Shop", action: () => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
     { label: "New Arrivals", action: () => scroll("new-arrivals") },
     { label: "Best Sellers", action: () => scroll("bestsellers") },
     { label: "Track Order", action: () => { setPage("track"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
@@ -709,7 +709,7 @@ function ComboSection() {
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
         <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {combos.map((c, i) => (
+          {combos.slice(0, 4).map((c, i) => (
             <Reveal key={c.id} delay={i * 0.15}>
               <div className="rounded-3xl overflow-hidden group cursor-pointer" style={{ background: "#FCFBF8", boxShadow: "0 8px 40px rgba(207,161,141,0.15)", border: "1px solid rgba(203,184,169,0.2)" }}>
                 <div className={`grid ${c.imgs.length === 1 ? 'grid-cols-1' : (c.imgs.length % 3 === 0 || c.imgs.length === 5) ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -800,6 +800,94 @@ function PostersSection() {
         ))}
       </div>
     </section>
+  );
+}
+
+// ── Shop Page ───────────────────────────────────────────────────────────────
+function ShopPage() {
+  const { products, combos, setPage, setSelectedProduct } = useApp();
+  const [category, setCategory] = useState("All");
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Ensure Combos is an option, and extract dynamic categories
+  const categories = ["All", "Combos", ...Array.from(new Set(products.map(p => p.category)))];
+
+  return (
+    <div className="pt-32 pb-24 min-h-screen" style={{ background: "#F8F6F2" }}>
+      <div className="max-w-7xl mx-auto px-5 lg:px-8">
+        <STitle eyebrow="Discover" title="Our Complete Collection" subtitle="Explore our finely crafted pieces designed just for you." />
+        
+        {/* Category Filters */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`px-6 py-2 rounded-full text-sm font-bold transition-colors ${category === cat ? 'bg-[#CFA18D] text-white' : 'bg-white text-[#5A4035] border border-gray-200 hover:border-[#CFA18D]'}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Unified Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-8 lg:gap-y-12 mb-16">
+          
+          {/* Render Combos if "All" or "Combos" is selected */}
+          {(category === "All" || category === "Combos") && (
+            combos.map((c, i) => (
+              <div key={`combo-${c.id}`} className="col-span-2 md:col-span-4 mb-4">
+                <Reveal delay={0.1}>
+                  <div className="rounded-3xl overflow-hidden group cursor-pointer bg-[#FCFBF8] border shadow-sm flex flex-col md:flex-row border-gray-200">
+                    <div className={`grid ${c.imgs.length === 1 ? 'grid-cols-1' : (c.imgs.length % 3 === 0 || c.imgs.length === 5) ? 'grid-cols-3' : 'grid-cols-2'} md:w-2/5`}>
+                      {c.imgs.map((img, j) => (
+                        <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
+                          <img src={img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>Combo Set</span>
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(5,150,105,0.1)", color: "#059669" }}>Save ₹{c.saving}</span>
+                      </div>
+                      <h3 className="text-2xl font-serif text-[#3D2B1F] mb-3">{c.name}</h3>
+                      <p className="text-sm text-gray-600 mb-6">{c.desc}</p>
+                      <div className="flex items-center justify-between mt-auto">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
+                          <span className="text-sm line-through text-[#CBB8A9]">₹{c.original}</span>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); toast.success("Combo set added to bag! ✦"); }}
+                          className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
+                          style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
+                          Add Combo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              </div>
+            ))
+          )}
+
+          {/* Render Products */}
+          {products.filter(p => category === "All" || p.category === category).map((p, i) => (
+            <ProductCard key={`prod-${p.id}`} product={p} delay={0.1} />
+          ))}
+
+        </div>
+        
+        {category !== "All" && category !== "Combos" && products.filter(p => p.category === category).length === 0 && (
+          <div className="text-center py-20 text-gray-500">
+            No products found in this category.
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1250,7 +1338,7 @@ function Footer() {
             </div>
           </div>
           {[
-            { title: "Shop", links: [["featured", "All Jewellery"], ["featured", "Necklaces"], ["featured", "Rings"], ["featured", "Combo Sets"], ["new-arrivals", "New Arrivals"]] },
+            { title: "Shop", links: [["shop", "All Jewellery"], ["featured", "Necklaces"], ["featured", "Rings"], ["featured", "Combo Sets"], ["new-arrivals", "New Arrivals"]] },
             { title: "Quick Links", links: [["bestsellers", "Best Sellers"], ["contact", "About Us"], ["contact", "Contact Us"]] },
             { title: "Policies", links: [["contact", "Shipping Policy"], ["contact", "Return Policy"], ["contact", "Privacy Policy"], ["contact", "Terms of Service"]] },
           ].map(({ title, links }) => (
@@ -1258,7 +1346,7 @@ function Footer() {
               <h4 className="text-[11px] uppercase tracking-[0.25em] font-bold mb-5" style={{ color: "#CFA18D" }}>{title}</h4>
               <ul className="space-y-2.5">
                 {links.map(([id, label]) => (
-                  <li key={label}><button onClick={() => scroll(id)} className="text-[13px] hover:text-[#CFA18D] transition-colors text-left" style={{ color: "rgba(239,231,221,0.6)" }}>{label}</button></li>
+                  <li key={label}><button onClick={() => id === "shop" ? setPage("shop") : scroll(id)} className="text-[13px] hover:text-[#CFA18D] transition-colors text-left" style={{ color: "rgba(239,231,221,0.6)" }}>{label}</button></li>
                 ))}
               </ul>
             </div>
@@ -1964,6 +2052,7 @@ export default function App() {
           <StickyMobileCTA page={page} />
 
           {page === "home" && <HomePage />}
+          {page === "shop" && <ShopPage />}
           {page === "product" && <ProductDetailPage />}
           {page === "checkout" && <CheckoutPage />}
           {page === "confirmation" && <OrderConfirmation />}
