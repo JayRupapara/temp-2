@@ -494,9 +494,7 @@ function HeroSection() {
       <div className="absolute bottom-1/4 left-0 w-72 h-72 rounded-full opacity-15 pointer-events-none" style={{ background: "radial-gradient(circle, #E8DCC8, transparent)", filter: "blur(60px)", transform: "translate(-20%)" }} />
       <div className="max-w-7xl mx-auto px-5 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center py-20">
         <div>
-          <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-[11px] uppercase tracking-[0.3em] mb-4 font-bold" style={{ color: "#CFA18D" }}>
-            ✦ New Collection · 2026
-          </motion.p>
+
           <motion.h1 initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 1, ease: [0.22, 1, 0.36, 1] }}
             className="text-5xl sm:text-6xl lg:text-[68px] leading-[1.08] mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
             <em>Jewels</em> That<br />Tell Your<br /><span className="font-semibold not-italic">Story</span>
