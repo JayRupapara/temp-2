@@ -31,7 +31,7 @@ type Combo = {
 };
 type CartItem = { product: Product; qty: number };
 type DeliveryForm = { name: string; phone: string; email: string; address: string; city: string; state: string; pincode: string };
-type OrderData = { id: string; items: CartItem[]; delivery: DeliveryForm; payment: "prepaid" | "cod"; total: number; placed: Date };
+type OrderData = { id: string; items: CartItem[]; delivery: DeliveryForm; payment: "prepaid" | "cod"; total: number; placed: Date; confirmed?: boolean };
 type AppCtx = {
   page: Page; setPage: (p: Page) => void;
   cart: CartItem[]; addToCart: (p: Product, qty?: number) => void;
@@ -1011,7 +1011,7 @@ function CheckoutPage() {
     setPaying(true);
     try {
       const orderId = "SVJ-" + Math.floor(100000 + Math.random() * 900000);
-      const ord: OrderData = { id: orderId, items: [...cart], delivery: { ...form }, payment, total, placed: new Date() };
+      const ord: OrderData = { id: orderId, items: [...cart], delivery: { ...form }, payment, total, placed: new Date(), confirmed: false };
       
       await addDoc(collection(db, "users", user.uid, "orders"), {
         ...ord,
