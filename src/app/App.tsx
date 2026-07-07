@@ -1385,6 +1385,7 @@ function HomePage() {
       {/* Marquee banner is now fixed above the navbar */}
       <HeroSection />
       <TrustBar />
+      <PostersSection />
       <section id="featured" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Handpicked for You" title="Featured Collections" subtitle="Our most-loved pieces, curated for timeless elegance." />
@@ -1424,7 +1425,6 @@ function HomePage() {
         </div>
       </section>
       <InstagramGallery />
-      <PostersSection />
       <section className="py-24 lg:py-28" style={{ background: "#EFE7DD" }}>
         <div className="max-w-3xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Questions Answered" title="FAQs" subtitle="Everything you need to know before shopping with us." />
