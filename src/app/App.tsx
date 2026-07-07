@@ -674,11 +674,7 @@ function BrandStory() {
               <p className="text-[15px] leading-relaxed mb-8" style={{ color: "#6B5A4E" }}>
                 Every piece is thoughtfully designed with premium anti-tarnish coating, hypoallergenic materials, and attention to detail that makes you feel special.
               </p>
-              {[{ icon: "✦", t: "Premium anti-tarnish coating" }, { icon: "✦", t: "Nickel-free & skin-safe" }, { icon: "✦", t: "Signature champagne gift box" }, { icon: "✦", t: "Trusted by 10,000+ customers" }].map(x => (
-                <div key={x.t} className="flex items-center gap-2.5 mb-2 text-[13px]" style={{ color: "#6B5A4E" }}>
-                  <span style={{ color: "#CFA18D" }}>{x.icon}</span>{x.t}
-                </div>
-              ))}
+
             </motion.div>
           </div>
           <motion.div initial={{ opacity: 0, x: 48 }} animate={visible ? { opacity: 1, x: 0 } : {}} transition={{ duration: 0.85, delay: 0.2 }} className="relative">
@@ -1722,7 +1718,7 @@ function AdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="border p-2 rounded" />
                   <input placeholder="Subtitle" value={formData.subtitle} onChange={e => setFormData({ ...formData, subtitle: e.target.value })} className="border p-2 rounded" />
-                  <input type="number" placeholder="Discounted Price" value={formData.price} onChange={e => { const p = Number(e.target.value); setFormData({ ...formData, price: p, originalPrice: p * 2 }); }} className="border p-2 rounded" />
+                  <input type="number" placeholder="Discounted Price" value={formData.price || ''} onChange={e => { const p = Number(e.target.value); setFormData({ ...formData, price: p, originalPrice: p * 2 }); }} className="border p-2 rounded" />
                   <select value={formData.category || ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="border p-2 rounded bg-white">
                     <option value="" disabled>Select Category</option>
                     <option value="Necklace">Necklace</option>
@@ -1749,9 +1745,9 @@ function AdminPage() {
                     <input placeholder="Badge Color (e.g. #CFA18D)" value={formData.badgeColor} onChange={e => setFormData({ ...formData, badgeColor: e.target.value })} className="border p-2 rounded flex-1" />
                     <div className="w-10 h-10 rounded border" style={{ backgroundColor: formData.badgeColor }} />
                   </div>
-                  <input type="number" placeholder="Stock" value={formData.stock} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="border p-2 rounded" />
-                  <input type="number" placeholder="Rating (e.g. 4.8)" step="0.1" value={formData.rating} onChange={e => setFormData({ ...formData, rating: Number(e.target.value) })} className="border p-2 rounded" />
-                  <input type="number" placeholder="Total Reviews" value={formData.reviews} onChange={e => setFormData({ ...formData, reviews: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Stock" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Rating (e.g. 4.8)" step="0.1" value={formData.rating || ''} onChange={e => setFormData({ ...formData, rating: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Total Reviews" value={formData.reviews || ''} onChange={e => setFormData({ ...formData, reviews: Number(e.target.value) })} className="border p-2 rounded" />
                   <div className="col-span-1 md:col-span-2">
                     <textarea placeholder="Description" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="border p-2 rounded w-full" />
                   </div>
