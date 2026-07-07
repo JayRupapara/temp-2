@@ -783,13 +783,12 @@ function InstagramGallery() {
 }
 
 // ── Posters Section ────────────────────────────────────────────────────────
+import poster1 from "@/imports/poster1.png";
+import poster2 from "@/imports/poster2.png";
+import poster3 from "@/imports/poster3.png";
+
 function PostersSection() {
-  // Replace these URLs with imports if you move the images into src/imports
-  const posters = [
-    "https://images.unsplash.com/photo-1599643478524-fb66f70d00f8?q=80&w=600&auto=format&fit=crop", // placeholder 1
-    "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=crop", // placeholder 2
-    "https://images.unsplash.com/photo-1573408301145-b98c4af30f40?q=80&w=600&auto=format&fit=crop"  // placeholder 3
-  ];
+  const posters = [poster1, poster2, poster3];
 
   return (
     <section className="bg-[#F8F6F2]">
