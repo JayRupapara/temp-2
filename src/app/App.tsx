@@ -1853,10 +1853,10 @@ function AdminPage() {
                     <td className="p-4 font-mono text-xs text-gray-500">{o.id.slice(0,8)}</td>
                     <td className="p-4">{o.placed?.toDate ? o.placed.toDate().toLocaleString() : "Just now"}</td>
                     <td className="p-4">
-                      <div className="font-bold">{o.customer?.name}</div>
-                      <div className="text-xs text-gray-500">{o.customer?.email}</div>
-                      <div className="text-xs text-gray-500">{o.customer?.phone}</div>
-                      <div className="text-xs text-gray-500 mt-1">{o.shipping?.address}, {o.shipping?.city} {o.shipping?.pincode}</div>
+                      <div className="font-bold">{o.delivery?.name || o.customer?.name}</div>
+                      <div className="text-xs text-gray-500">{o.delivery?.email || o.customer?.email}</div>
+                      <div className="text-xs text-gray-500">{o.delivery?.phone || o.customer?.phone}</div>
+                      <div className="text-xs text-gray-500 mt-1">{o.delivery?.address || o.shipping?.address}, {o.delivery?.city || o.shipping?.city} {o.delivery?.pincode || o.shipping?.pincode}</div>
                     </td>
                     <td className="p-4">
                       <ul className="list-disc pl-4 text-xs">
