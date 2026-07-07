@@ -6,7 +6,7 @@ import {
   Menu, X, ShoppingBag, Heart, Star, ArrowRight,
   Phone, Mail, MapPin, ChevronDown, Package, Truck, CreditCard,
   Shield, CheckCircle, Plus, Minus, Trash2, Clock, Instagram,
-  Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon,
+  Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon, MessageCircle
 } from "lucide-react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider, db } from "@/app/firebase";
@@ -1520,6 +1520,19 @@ function AccountPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                  <div className="mt-5 pt-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ borderColor: "rgba(203,184,169,0.2)" }}>
+                    <p className="text-xs font-semibold flex items-center gap-2" style={{ color: "#8C7B6B" }}>
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px]" style={{ background: "rgba(37,211,102,0.15)", color: "#25D366" }}>
+                        <MessageCircle size={12} />
+                      </span>
+                      For more details or tracking orders, reach out to us on WhatsApp
+                    </p>
+                    <a href="https://wa.me/917801949426" target="_blank" rel="noopener noreferrer" 
+                      className="text-xs font-bold px-5 py-2.5 rounded-full inline-block text-center transition-all hover:scale-105" 
+                      style={{ background: "#25D366", color: "#FFF", boxShadow: "0 2px 10px rgba(37,211,102,0.25)" }}>
+                      Contact on WhatsApp
+                    </a>
                   </div>
                 </div>
               ))}
