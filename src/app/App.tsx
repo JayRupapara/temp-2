@@ -1723,8 +1723,7 @@ function AdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="border p-2 rounded" />
                   <input placeholder="Subtitle" value={formData.subtitle} onChange={e => setFormData({ ...formData, subtitle: e.target.value })} className="border p-2 rounded" />
-                  <input type="number" placeholder="Price" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} className="border p-2 rounded" />
-                  <input type="number" placeholder="Original Price" value={formData.originalPrice} onChange={e => setFormData({ ...formData, originalPrice: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Discounted Price" value={formData.price} onChange={e => { const p = Number(e.target.value); setFormData({ ...formData, price: p, originalPrice: p * 2 }); }} className="border p-2 rounded" />
                   <select value={formData.category || ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="border p-2 rounded bg-white">
                     <option value="" disabled>Select Category</option>
                     <option value="Necklace">Necklace</option>
