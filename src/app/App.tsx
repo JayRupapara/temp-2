@@ -1943,7 +1943,7 @@ export default function App() {
     <Ctx.Provider value={ctx}>
       <style>{`
         @keyframes marquee-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }
-        .marquee-track { animation: marquee-scroll 30s linear infinite; }
+        .marquee-track { animation: marquee-scroll 15s linear infinite; }
         .marquee-track:hover { animation-play-state: paused; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
         @keyframes sparkle { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
