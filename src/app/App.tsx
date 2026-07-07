@@ -1,6 +1,7 @@
+/// <reference path="../vite-env.d.ts" />
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "motion/react";
-import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import { Toaster, toast } from "sonner";
 import {
   Menu, X, ShoppingBag, Heart, Star, ArrowRight,
@@ -9,14 +10,14 @@ import {
   Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon, MessageCircle
 } from "lucide-react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { auth, googleProvider, db } from "@/app/firebase";
+import { auth, googleProvider, db } from "./firebase";
 import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup, updateDoc } from "firebase/firestore";
 
-import logoImg from "@/imports/IMG_5778.PNG";
-import pearlImg from "@/imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
-import heartImg from "@/imports/ChatGPT_Image_Jun_10__2026__03_25_26_PM.png";
-import butterflyImg from "@/imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.png";
-import ringImg from "@/imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.png";
+import logoImg from "../imports/IMG_5778.PNG";
+import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
+import heartImg from "../imports/ChatGPT_Image_Jun_10__2026__03_25_26_PM.png";
+import butterflyImg from "../imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.png";
+import ringImg from "../imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin";
@@ -775,9 +776,9 @@ function InstagramGallery() {
 }
 
 // ── Posters Section ────────────────────────────────────────────────────────
-import poster1 from "@/imports/poster1.png";
-import poster2 from "@/imports/poster2.png";
-import poster3 from "@/imports/poster3.png";
+import poster1 from "../imports/poster1.png";
+import poster2 from "../imports/poster2.png";
+import poster3 from "../imports/poster3.png";
 
 function PostersSection() {
   const posters = [poster1, poster3, poster2];
@@ -885,7 +886,7 @@ function ShopPage() {
 
 // ── Product Detail Page ────────────────────────────────────────────────────
 function ProductDetailPage() {
-  const { setPage, addToCart, selectedProduct: p, wishlist, toggleWishlist, products } = useApp();
+  const { setPage, addToCart, selectedProduct: p, wishlist, toggleWishlist, products, setCartOpen } = useApp();
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   if (!p) return null;
@@ -945,7 +946,7 @@ function ProductDetailPage() {
                 <span className="w-10 text-center font-bold" style={{ color: "#3D2B1F" }}>{qty}</span>
                 <button onClick={() => setQty(qty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-secondary" style={{ color: "#5A4035" }}><Plus size={14} /></button>
               </div>
-              <button onClick={() => { toggleWishlist: setWished(!wished); toast(wished ? "Removed from wishlist" : "Saved to wishlist ♡"); }}
+              <button onClick={() => { toggleWishlist(p.id); toast(wished ? "Removed from wishlist" : "Saved to wishlist ♡"); }}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110"
                 style={{ border: "1.5px solid rgba(203,184,169,0.4)", color: wished ? "#F43F5E" : "#8C7B6B" }}>
                 <Heart size={16} className={wished ? "fill-rose-400" : ""} />
@@ -1063,7 +1064,7 @@ function CheckoutPage() {
     <div className="min-h-screen pt-24" style={{ background: "#F8F6F2" }}>
       <div className="max-w-5xl mx-auto px-5 lg:px-8 py-10">
         <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => step === "delivery" ? setPage("home") : setStep(step === "otp" ? "payment" : "delivery")}
+          <button onClick={() => step === "delivery" ? setPage("home") : setStep("delivery")}
             className="flex items-center gap-1.5 text-sm" style={{ color: "#8C7B6B" }}>
             <ChevronLeft size={16} /> Back
           </button>
