@@ -1268,9 +1268,16 @@ function Footer() {
               Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
             </p>
             <div className="space-y-2">
-              {[{ Icon: Phone, t: "+91 7801949426" }, { Icon: Mail, t: "shrivallabhjewels@gmail.com" }, { Icon: Instagram, t: "@shrivallabh_jewels" }].map(({ Icon, t }) => (
+              {[{ Icon: Phone, t: "+91 7801949426" }, { Icon: Mail, t: "shrivallabhjewels@gmail.com" }, { Icon: Instagram, t: "@shrivallabh_jewels", link: "https://instagram.com/shrivallabh_jewels" }].map(({ Icon, t, link }) => (
                 <div key={t} className="flex items-center gap-2.5 text-[13px]" style={{ color: "rgba(239,231,221,0.65)" }}>
-                  <Icon size={13} style={{ color: "#CFA18D" }} /> {t}
+                  <Icon size={13} style={{ color: "#CFA18D" }} />
+                  {link ? (
+                    <a href={link} target="_blank" rel="noopener noreferrer" className="hover:text-[#CFA18D] transition-colors">
+                      {t}
+                    </a>
+                  ) : (
+                    <span>{t}</span>
+                  )}
                 </div>
               ))}
             </div>
