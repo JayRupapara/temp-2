@@ -1317,12 +1317,6 @@ function HomePage() {
         </div>
       </section>
       <InstagramGallery />
-      <section className="py-24 lg:py-28" style={{ background: "#EFE7DD" }}>
-        <div className="max-w-3xl mx-auto px-5 lg:px-8">
-          <STitle eyebrow="Questions Answered" title="FAQs" subtitle="Everything you need to know before shopping with us." />
-          <div>{FAQS.map((faq, i) => <FAQItem key={i} faq={faq} />)}</div>
-        </div>
-      </section>
       <section id="contact" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
