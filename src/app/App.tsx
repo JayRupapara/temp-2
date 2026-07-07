@@ -727,7 +727,7 @@ function ComboSection() {
                       <span className="text-xl font-bold" style={{ color: "#CFA18D" }}>₹{c.price}</span>
                       <span className="text-sm line-through" style={{ color: "#CBB8A9" }}>₹{c.original}</span>
                     </div>
-                    <button onClick={() => toast.success("Combo set added to bag! ✦")}
+                    <button onClick={() => { addToCart({ ...c, originalPrice: c.original } as unknown as Product); toast.success("Combo set added to bag! ✦"); }}
                       className="px-5 py-2.5 rounded-full text-xs font-bold transition-all hover:scale-105"
                       style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
                       Add Combo
@@ -782,7 +782,7 @@ import poster2 from "@/imports/poster2.png";
 import poster3 from "@/imports/poster3.png";
 
 function PostersSection() {
-  const posters = [poster1, poster2, poster3];
+  const posters = [poster1, poster3, poster2];
 
   return (
     <section className="bg-[#F8F6F2]">
@@ -855,7 +855,7 @@ function ShopPage() {
                           <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
                           <span className="text-sm line-through text-[#CBB8A9]">₹{c.original}</span>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); toast.success("Combo set added to bag! ✦"); }}
+                        <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.original } as unknown as Product); toast.success("Combo set added to bag! ✦"); }}
                           className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
                           style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
                           Add Combo
