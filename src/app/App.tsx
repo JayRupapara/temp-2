@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider, db } from "@/app/firebase";
-import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup, updateDoc } from "firebase/firestore";
 
 import logoImg from "@/imports/IMG_5778.PNG";
 import pearlImg from "@/imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
@@ -1566,7 +1566,7 @@ function AdminPage() {
       const q = query(collectionGroup(db, "orders"));
       const unsub = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
-          const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+          const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, ref: doc.ref }));
           // Sort by placed date desc
           fetched.sort((a: any, b: any) => {
             const dateA = a.placed?.toMillis ? a.placed.toMillis() : 0;
@@ -1605,6 +1605,10 @@ function AdminPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
     try { await deleteDoc(doc(db, "products", id.toString())); toast.success("Product deleted"); } 
+    catch (e: any) { toast.error("Error", { description: e.message }); }
+  };
+  const toggleOrderConfirmed = async (o: any) => {
+    try { await updateDoc(o.ref, { confirmed: !o.confirmed }); toast.success(o.confirmed ? "Order marked as unconfirmed" : "Order confirmed"); } 
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1858,6 +1862,7 @@ function AdminPage() {
                   <th className="p-4 font-bold">Customer Details</th>
                   <th className="p-4 font-bold">Items</th>
                   <th className="p-4 font-bold">Total Amount</th>
+                  <th className="p-4 font-bold text-center">Confirmed</th>
                 </tr>
               </thead>
               <tbody>
@@ -1879,6 +1884,12 @@ function AdminPage() {
                       </ul>
                     </td>
                     <td className="p-4 font-bold">₹{o.total}</td>
+                    <td className="p-4 text-center">
+                      <button onClick={() => toggleOrderConfirmed(o)} 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${o.confirmed ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-50 text-red-600 hover:bg-green-50 hover:text-green-600"}`}>
+                        {o.confirmed ? "Yes" : "No"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {ordersList.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-500">No orders found.</td></tr>}
