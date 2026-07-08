@@ -18,6 +18,7 @@ import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
 import heartImg from "../imports/ChatGPT_Image_Jun_10__2026__03_25_26_PM.png";
 import butterflyImg from "../imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.png";
 import ringImg from "../imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.png";
+import storyImg from "../imports/new pn.png.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin";
@@ -676,13 +677,8 @@ function BrandStory() {
             </motion.div>
           </div>
           <motion.div initial={{ opacity: 0, x: 48 }} animate={visible ? { opacity: 1, x: 0 } : {}} transition={{ duration: 0.85, delay: 0.2 }} className="relative">
-            <div className="grid grid-cols-2 gap-4">
-              {[heartImg, butterflyImg, ringImg, pearlImg].map((img, i) => (
-                <div key={i} className={`rounded-2xl overflow-hidden aspect-square ${i % 2 !== 0 ? "mt-6" : ""}`}
-                  style={{ boxShadow: "0 8px 32px rgba(207,161,141,0.18)" }}>
-                  <ImageWithFallback src={img} alt="Shri Vallabh Jewels" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
-                </div>
-              ))}
+            <div className="rounded-[2rem] overflow-hidden aspect-[4/5] sm:aspect-square lg:aspect-[4/5]" style={{ boxShadow: "0 20px 60px rgba(207,161,141,0.25)", border: "1px solid rgba(207,161,141,0.3)" }}>
+              <ImageWithFallback src={storyImg} alt="Shri Vallabh Jewels - Timeless Elegance" className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000" />
             </div>
           </motion.div>
         </div>
