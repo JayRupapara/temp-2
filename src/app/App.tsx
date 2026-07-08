@@ -19,9 +19,15 @@ import heartImg from "../imports/ChatGPT_Image_Jun_10__2026__03_25_26_PM.png";
 import butterflyImg from "../imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.png";
 import ringImg from "../imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.png";
 import storyImg from "../imports/new pn.png.png";
+import heroBannerImg1 from "../imports/hero-banner 1.jpg.png";
+import heroBannerImg2 from "../imports/hero-banner 2.png";
+import heroBannerImg3 from "../imports/hero-banner 3 (2).png";
+import heroBannerImg4 from "../imports/hero-banner 4 (2).png";
+import heroBannerImg5 from "../imports/hero-banner 5 (2).png";
+import promiseImg4 from "../imports/Untitled design (5).png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin";
+type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms";
 type Product = {
   id: number; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string;
@@ -126,7 +132,6 @@ function STitle({ eyebrow, title, subtitle, center = true }: { eyebrow?: string;
   return (
     <div ref={ref} className={`mb-12 ${center ? "text-center" : ""}`}>
       <motion.div initial={{ opacity: 0, y: 24 }} animate={visible ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7 }}>
-        {eyebrow && <p className="text-[11px] uppercase tracking-[0.3em] mb-3 font-bold" style={{ color: "#CFA18D" }}>{eyebrow}</p>}
         <h2 className="text-4xl md:text-5xl leading-tight mb-4" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{title}</h2>
         {subtitle && <p className="text-[15px] leading-relaxed max-w-lg" style={{ color: "#8C7B6B", ...(center ? { margin: "0 auto" } : {}) }}>{subtitle}</p>}
         <div className={`mt-4 h-px w-14 ${center ? "mx-auto" : ""}`} style={{ background: "linear-gradient(90deg, transparent, #CFA18D, #E8DCC8)" }} />
@@ -225,9 +230,10 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
               </div>
             </div>
             <button onClick={() => { addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
-              className="mt-3 w-full py-2.5 rounded-full text-xs font-bold tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-95"
-              style={{ background: "#5A4035", color: "#FCFBF8", boxShadow: "0 4px 14px rgba(90,64,53,0.3)" }}>
-              Add to Bag
+              className="group relative overflow-hidden mt-3 w-full py-2.5 rounded-full text-xs font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
+              style={{ background: "linear-gradient(135deg, #3D2B1F, #5A4035)", color: "#FCFBF8", boxShadow: "0 6px 16px rgba(61,43,31,0.25)" }}>
+              <span className="relative z-10">Add to Bag</span>
+              <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.4)] to-transparent skew-x-12 group-hover:translate-x-[150%] transition-transform duration-1000 ease-out" />
             </button>
           </div>
         </div>
@@ -489,28 +495,55 @@ function StickyMobileCTA({ page }: { page: Page }) {
 // ── Hero Section ───────────────────────────────────────────────────────────
 function HeroSection() {
   const countdown = useCountdown();
-  const { scrollY } = useScroll();
-  const imgY = useTransform(scrollY, [0, 600], [0, 80]);
-  return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-24"
-      style={{ background: "linear-gradient(135deg, #F8F6F2 0%, #EFE7DD 50%, #E8DCC8 100%)" }}>
-      {/* Subtle dark overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/5 pointer-events-none mix-blend-multiply" />
-      <div className="absolute top-1/3 right-0 w-96 h-96 rounded-full opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle, #CFA18D, transparent)", filter: "blur(80px)", transform: "translate(30%)" }} />
-      <div className="absolute bottom-1/4 left-0 w-72 h-72 rounded-full opacity-15 pointer-events-none" style={{ background: "radial-gradient(circle, #E8DCC8, transparent)", filter: "blur(60px)", transform: "translate(-20%)" }} />
-      <div className="max-w-7xl mx-auto px-5 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center py-20">
-        <div>
+  const { setPage } = useApp();
+  const [currentSlide, setCurrentSlide] = useState(0);
 
+  const banners = [
+    { src: heroBannerImg1, title: "Diamond Bow Necklace", price: "299", pos: "top-[25%] right-0", imgOpacity: 0.7 },
+    { src: heroBannerImg2, title: "Golden Flutter Necklace", price: "399", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg3, title: "Amora Pearl Heart Bracelet", price: "249", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg4, title: "Pack of 5 Earrings", price: "299", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg5, title: "Infinity Ring", price: "149", pos: "bottom-10 right-0", imgOpacity: 1 },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % banners.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
+  return (
+    <section className="relative min-h-screen flex items-center overflow-hidden pt-24 bg-[#EFE7DD]">
+      {/* Animated Background Images */}
+      <div className="absolute inset-0 z-0 bg-[#EFE7DD]">
+        {banners.map((b, i) => (
+          <div 
+            key={i} 
+            className="absolute inset-0 transition-all duration-1000 ease-in-out"
+            style={{ opacity: i === currentSlide ? b.imgOpacity : 0, transform: i === currentSlide ? 'scale(1)' : 'scale(1.05)' }}
+          >
+            <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} className="w-full h-full object-cover object-[75%_top] lg:object-center" />
+          </div>
+        ))}
+        {/* Gradient overlay focused only on the left text area to keep jewelry bright and visible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F8F6F2] via-[#F8F6F2]/70 to-transparent w-full lg:w-[55%] z-10 pointer-events-none"></div>
+        {/* Mobile overlay for readability when image stacks */}
+        <div className="absolute inset-0 bg-[#F8F6F2]/30 lg:hidden z-10 pointer-events-none"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center py-20">
+        <div className="max-w-xl">
           <motion.h1 initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 1, ease: [0.22, 1, 0.36, 1] }}
             className="text-5xl sm:text-6xl lg:text-[72px] leading-[1.05] mb-6 tracking-tight drop-shadow-sm" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
             <em>Jewels</em> That<br />Tell Your<br /><span className="font-semibold not-italic">Story</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-            className="text-[16px] md:text-[18px] max-w-md leading-relaxed mb-8 drop-shadow-sm font-medium tracking-wide" style={{ color: "#5A4035" }}>
+            className="text-[16px] md:text-[18px] leading-relaxed mb-8 drop-shadow-sm font-medium tracking-wide" style={{ color: "#5A4035" }}>
             Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.72 }}
-            className="flex items-center gap-3 mb-8 p-3 rounded-2xl w-fit" style={{ background: "rgba(207,161,141,0.1)", border: "1px solid rgba(207,161,141,0.25)" }}>
+            className="flex items-center gap-3 mb-8 p-3 rounded-2xl w-fit bg-[#FCFBF8]/80 backdrop-blur-md" style={{ border: "1px solid rgba(207,161,141,0.25)" }}>
             <Clock size={14} style={{ color: "#CFA18D" }} />
             <span className="text-xs font-bold" style={{ color: "#6B5A4E" }}>Sale ends in:</span>
             {[{ v: countdown.h, l: "HRS" }, { v: countdown.m, l: "MIN" }, { v: countdown.s, l: "SEC" }].map(({ v, l }, i) => (
@@ -530,42 +563,35 @@ function HeroSection() {
               Shop Collection
             </button>
             <button onClick={() => document.getElementById("bestsellers")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-white/40 hover:shadow-md flex items-center justify-center gap-3 w-full sm:w-auto"
-              style={{ border: "1px solid rgba(61,43,31,0.2)", color: "#3D2B1F", background: "transparent" }}>
+              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-white/80 hover:shadow-md flex items-center justify-center gap-3 w-full sm:w-auto bg-white/40 backdrop-blur-sm"
+              style={{ border: "1px solid rgba(61,43,31,0.2)", color: "#3D2B1F" }}>
               View Best Sellers <ArrowRight size={14} />
             </button>
           </motion.div>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="flex flex-wrap items-center gap-x-6 gap-y-4 mt-10 p-4 rounded-2xl w-fit" style={{ background: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.4)", backdropFilter: "blur(10px)" }}>
-            {[{ e: "🚚", t: "Free Prepaid Delivery" }, { e: "💳", t: "COD Available" }, { e: "↩️", t: "Easy 1-Day Returns" }, { e: "🛡️", t: "Quality Guaranteed" }].map(x => (
-              <div key={x.t} className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-semibold" style={{ color: "#5A4035" }}>
-                <span className="text-xs opacity-80">{x.e}</span> {x.t}
-              </div>
-            ))}
-          </motion.div>
         </div>
-        <motion.div initial={{ opacity: 0, x: 48, scale: 0.95 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ delay: 0.5, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-          style={{ y: imgY }} className="relative flex justify-center items-center">
-          <div className="absolute w-[320px] h-[320px] lg:w-[400px] lg:h-[400px] rounded-full border border-dashed opacity-20 animate-[spin_22s_linear_infinite]" style={{ borderColor: "#CFA18D" }} />
-          <div className="relative w-[270px] h-[270px] sm:w-[310px] sm:h-[310px] lg:w-[370px] lg:h-[370px] rounded-[2rem] overflow-hidden animate-[float_7s_ease-in-out_infinite]"
-            style={{ boxShadow: "0 40px 100px rgba(207,161,141,0.4), 0 8px 32px rgba(61,43,31,0.1)", border: "2px solid rgba(207,161,141,0.35)" }}>
-            <ImageWithFallback src={pearlImg} alt="Pearl Seashell Necklace — featured piece" className="w-full h-full object-cover" />
-          </div>
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }}
-            className="absolute -bottom-4 -left-4 lg:-left-10 px-4 py-3 rounded-2xl animate-[float_7s_ease-in-out_infinite_1.5s]"
-            style={{ background: "rgba(252,251,248,0.94)", backdropFilter: "blur(16px)", border: "1px solid rgba(203,184,169,0.35)", boxShadow: "0 10px 32px rgba(207,161,141,0.22)" }}>
-            <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: "#CFA18D" }}>Bestseller · 128 reviews</p>
-            <p className="text-[13px] font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Pearl Seashell Necklace</p>
+        
+        {/* Empty right column allowing the beautiful image to shine through */}
+        <div className="hidden lg:block relative h-full min-h-[400px]">
+          {/* Subtle floating product badge matching the active image */}
+          <motion.div 
+            key={currentSlide}
+            initial={{ opacity: 0, y: 15 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5 }}
+            onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            className={`absolute px-4 py-3 rounded-2xl animate-[float_7s_ease-in-out_infinite] cursor-pointer hover:scale-105 transition-transform ${banners[currentSlide].pos}`}
+            style={{ background: "rgba(252,251,248,0.94)", backdropFilter: "blur(16px)", border: "1px solid rgba(203,184,169,0.35)", boxShadow: "0 10px 32px rgba(207,161,141,0.22)", zIndex: 20 }}>
+            <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: "#CFA18D" }}>Just Launched</p>
+            <p className="text-[13px] font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{banners[currentSlide].title}</p>
             <div className="flex items-center justify-between mt-1 gap-3">
-              <p className="text-xs font-bold" style={{ color: "#CFA18D" }}>₹349 <span className="line-through text-[10px] font-normal" style={{ color: "#CBB8A9" }}>₹499</span></p>
+              <p className="text-xs font-bold" style={{ color: "#CFA18D" }}>₹{banners[currentSlide].price}</p>
               <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} size={9} className="fill-amber-400 text-amber-400" />)}</div>
             </div>
           </motion.div>
-          <div className="absolute top-4 right-4 text-xl pointer-events-none animate-[sparkle_3s_ease-in-out_infinite]" style={{ color: "#CFA18D" }}>✦</div>
-          <div className="absolute top-1/3 -right-4 text-sm pointer-events-none animate-[sparkle_3s_ease-in-out_infinite_1s]" style={{ color: "#CBB8A9" }}>◆</div>
-        </motion.div>
+        </div>
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
         <p className="text-[9px] uppercase tracking-[0.25em]" style={{ color: "#8C7B6B" }}>Scroll</p>
         <div className="w-px h-8 overflow-hidden" style={{ background: "rgba(207,161,141,0.2)" }}>
           <div className="w-full animate-[scrollPulse_2s_ease-in-out_infinite]" style={{ height: "40%", background: "#CFA18D" }} />
@@ -662,32 +688,47 @@ function FAQItem({ faq }: { faq: typeof FAQS[0] }) {
 function BrandStory() {
   const { ref, visible } = useReveal();
   return (
-    <section className="py-24 lg:py-32 overflow-hidden" style={{ background: "#EFE7DD" }}>
-      <div className="max-w-7xl mx-auto px-5 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div ref={ref}>
-            <motion.div initial={{ opacity: 0, x: -48 }} animate={visible ? { opacity: 1, x: 0 } : {}} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}>
-              <p className="text-[11px] uppercase tracking-[0.28em] mb-4 font-bold" style={{ color: "#CFA18D" }}>Our Promise</p>
-              <h2 className="text-4xl md:text-5xl mb-6 leading-tight" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
+    <>
+      {/* Editorial Split Hero Section (Single Banner) */}
+      <section className="relative w-full min-h-[750px] lg:min-h-[90vh] flex flex-col lg:flex-row items-center bg-[#F3EBE1] overflow-hidden pt-20 lg:pt-0 pb-20 lg:pb-0">
+        
+        {/* Right Side: Single Banner Image */}
+        <div className="absolute top-0 right-0 bottom-0 w-full lg:w-[60%] z-0 h-full hidden lg:block" style={{ maskImage: "linear-gradient(to right, transparent 0%, transparent 15%, black 60%)", WebkitMaskImage: "linear-gradient(to right, transparent 0%, transparent 15%, black 60%)" }}>
+          <ImageWithFallback src={promiseImg4} alt="Timeless Elegance" className="w-full h-full object-cover object-center" />
+        </div>
+        <div className="absolute top-0 right-0 bottom-0 w-full z-0 h-full lg:hidden">
+          <ImageWithFallback src={promiseImg4} alt="Timeless Elegance" className="w-full h-full object-cover object-[center_right]" />
+          <div className="absolute inset-0 bg-[#F3EBE1]/70"></div>
+        </div>
+
+        {/* Left Side: Content Container */}
+        <div className="relative z-10 w-full max-w-[1400px] mx-auto px-5 lg:px-8 flex h-full">
+          <div className="w-full lg:w-[45%] pt-24 lg:pt-36 pb-16 lg:pb-24 pr-0 lg:pr-12 flex flex-col justify-center h-full" ref={ref}>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={visible ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}>
+              <h2 className="text-5xl md:text-[56px] lg:text-[64px] mb-12 leading-[1.1]" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
                 Timeless Elegance,<br /><em>Everyday Luxury</em>
               </h2>
-              <p className="text-[15px] leading-relaxed mb-5" style={{ color: "#6B5A4E" }}>
-                At Shri Vallabh Jewels, we craft beautiful jewellery that blends elegance, quality, and affordability — designed for the modern Indian woman who shines every day.
-              </p>
-              <p className="text-[15px] leading-relaxed mb-8" style={{ color: "#6B5A4E" }}>
-                Every piece is thoughtfully designed with premium anti-tarnish coating, hypoallergenic materials, and attention to detail that makes you feel special.
-              </p>
+              
+              <div className="space-y-8 max-w-md mb-12">
+                <p className="text-[16px] lg:text-[17px] leading-[1.8]" style={{ color: "#5C4B40" }}>
+                  At Shri Vallabh Jewels, we craft beautiful jewellery that blends elegance, quality, and affordability — designed for the modern Indian woman who shines every day.
+                </p>
+                <p className="text-[16px] lg:text-[17px] leading-[1.8]" style={{ color: "#5C4B40" }}>
+                  Every piece is thoughtfully designed with premium anti-tarnish coating, hypoallergenic materials, and attention to detail that makes you feel special.
+                </p>
+              </div>
 
+              {/* Shop Collection Button */}
+              <button onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
+                className="px-8 py-5 text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-black/80 flex items-center justify-between max-w-[260px] shadow-lg shadow-black/10"
+                style={{ background: "#3D2B1F", color: "#F8F6F2" }}>
+                <span>Shop Collection</span> <ArrowRight size={14} style={{ color: "#CFA18D" }} />
+              </button>
             </motion.div>
           </div>
-          <motion.div initial={{ opacity: 0, x: 48 }} animate={visible ? { opacity: 1, x: 0 } : {}} transition={{ duration: 0.85, delay: 0.2 }} className="relative">
-            <div className="rounded-[2rem] overflow-hidden aspect-[4/5] sm:aspect-square lg:aspect-[4/5]" style={{ boxShadow: "0 20px 60px rgba(207,161,141,0.25)", border: "1px solid rgba(207,161,141,0.3)" }}>
-              <ImageWithFallback src={storyImg} alt="Shri Vallabh Jewels - Timeless Elegance" className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000" />
-            </div>
-          </motion.div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
 
@@ -746,28 +787,48 @@ function ComboSection() {
 function InstagramGallery() {
   const imgs = [pearlImg, heartImg, butterflyImg, ringImg, pearlImg, heartImg];
   return (
-    <section className="py-20" style={{ background: "#F8F6F2" }}>
+    <section className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
-        <STitle eyebrow="@shrivallabh_jewels" title="Follow Our World" subtitle="Daily drops, styling inspiration & new arrivals on Instagram." />
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <STitle eyebrow="" title="Follow Shri Vallabh Jewels" subtitle="Discover new arrivals, customer favorites, styling inspiration, and exclusive offers on Instagram." />
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-14 text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "#3D2B1F" }}>
+          <span className="flex items-center gap-2.5">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0" style={{ background: "rgba(212,175,55,0.08)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.2)" }}>✓</span>
+            Daily New Arrivals
+          </span>
+          <span className="hidden sm:inline" style={{ color: "rgba(212,175,55,0.3)" }}>|</span>
+          <span className="flex items-center gap-2.5">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0" style={{ background: "rgba(212,175,55,0.08)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.2)" }}>✓</span>
+            Trusted by 1000+ Customers
+          </span>
+          <span className="hidden sm:inline" style={{ color: "rgba(212,175,55,0.3)" }}>|</span>
+          <span className="flex items-center gap-2.5">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0" style={{ background: "rgba(212,175,55,0.08)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.2)" }}>✓</span>
+            Exclusive Offers & Launches
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-5">
           {imgs.map((img, i) => (
             <Reveal key={i} delay={i * 0.06}>
-              <div className="rounded-xl overflow-hidden aspect-square group cursor-pointer relative"
-                style={{ boxShadow: "0 4px 16px rgba(207,161,141,0.12)" }}>
+              <div className="rounded-2xl overflow-hidden aspect-square group cursor-pointer relative transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:z-10"
+                style={{ border: "1px solid rgba(203,184,169,0.3)", boxShadow: "0 10px 30px rgba(207,161,141,0.08)" }}>
                 <ImageWithFallback src={img} alt="Instagram" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ background: "rgba(207,161,141,0.5)", backdropFilter: "blur(2px)" }}>
-                  <Instagram size={20} className="text-white" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{ background: "rgba(207,161,141,0.35)", backdropFilter: "blur(4px)" }}>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-transform duration-500 delay-100" style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)" }}>
+                    <Instagram size={22} className="text-white drop-shadow-md" />
+                  </div>
                 </div>
               </div>
             </Reveal>
           ))}
         </div>
-        <div className="text-center mt-8">
+        <div className="text-center mt-12 md:mt-16">
           <a href="https://www.instagram.com/shrivallabh_jewels" target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
-            style={{ border: "1.5px solid rgba(207,161,141,0.6)", color: "#CFA18D" }}>
-            <Instagram size={15} /> Follow @shrivallabh_jewels
+            className="inline-flex items-center gap-3 px-8 py-4 rounded-full text-[12px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-95"
+            style={{ background: "linear-gradient(135deg, #D4AF37, #C5A028)", color: "#FFFFFF", boxShadow: "0 4px 20px rgba(212,175,55,0.25)" }}>
+            <Instagram size={16} /> Explore Our Instagram
           </a>
         </div>
       </div>
@@ -954,9 +1015,10 @@ function ProductDetailPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <button onClick={() => { addToCart(p, qty); setCartOpen(true); }}
-                className="flex-1 py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02]"
-                style={{ border: "1.5px solid #5A4035", color: "#5A4035" }}>
-                Add to Bag
+                className="group relative overflow-hidden flex-1 py-3.5 rounded-full font-bold text-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
+                style={{ background: "linear-gradient(135deg, #3D2B1F, #5A4035)", color: "#FCFBF8", boxShadow: "0 6px 20px rgba(61,43,31,0.25)" }}>
+                <span className="relative z-10">Add to Bag</span>
+                <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.4)] to-transparent skew-x-12 group-hover:translate-x-[150%] transition-transform duration-1000 ease-out" />
               </button>
               <button onClick={() => { addToCart(p, qty); setPage("checkout"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className="flex-1 py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02]"
@@ -1253,69 +1315,141 @@ function OrderConfirmation() {
 
 
 
+// ── Policy Pages ───────────────────────────────────────────────────────────
+function PolicyPage({ type }: { type: "shipping" | "return" | "privacy" | "terms" }) {
+  useEffect(() => { window.scrollTo(0, 0); }, [type]);
+  const content: Record<string, { title: string, text: React.ReactNode }> = {
+    shipping: { 
+      title: "Shipping Policy", 
+      text: (
+        <div className="space-y-4">
+          <p>At Shri Vallabh Jewels, we strive to deliver your orders quickly and safely across India.</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>Free Shipping</strong> on all prepaid orders.</li>
+            <li><strong>Cash on Delivery (COD)</strong> is available on eligible PIN codes with a <strong>₹49 COD charge</strong>.</li>
+            <li>Orders are usually processed within <strong>1–2 business days</strong>.</li>
+            <li>Delivery typically takes <strong>3–7 business days</strong>, depending on your location.</li>
+            <li>Delivery timelines may vary during festivals, sales, or due to unforeseen courier delays.</li>
+          </ul>
+          <p>For any shipping-related queries, please contact our customer support team.</p>
+          <p>Thank you for shopping with Shri Vallabh Jewels.</p>
+        </div>
+      )
+    },
+    return: { 
+      title: "Return & Refund Policy", 
+      text: (
+        <div className="space-y-4">
+          <p>At Shri Vallabh Jewels, customer satisfaction is important to us.</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Returns are accepted within <strong>1 day of delivery</strong>.</li>
+            <li>To be eligible for a return, the product must be unused and in its original condition and packaging.</li>
+            <li>If you receive a <strong>damaged product</strong> or if <strong>any item is missing</strong> from your order, an <strong>uninterrupted opening video</strong> of the package is mandatory for verification.</li>
+            <li>Claims regarding damaged, defective, or missing items without an opening video may not be accepted.</li>
+            <li>Once the issue is verified, we will provide a suitable replacement or refund as applicable.</li>
+          </ul>
+          <p>For any return-related assistance, please contact our customer support team within 24 hours of delivery.</p>
+          <p>Thank you for shopping with Shri Vallabh Jewels.</p>
+        </div>
+      )
+    },
+    privacy: { 
+      title: "Privacy Policy", 
+      text: (
+        <div className="space-y-4">
+          <p>At Shri Vallabh Jewels, we value your privacy and are committed to protecting your personal information.</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>We collect only the information necessary to process and deliver your orders, such as your name, phone number, email address, and shipping address.</li>
+            <li>Your personal information is used solely for order processing, customer support, and service-related communication.</li>
+            <li>We do not sell, rent, or share your personal information with third parties except as required to complete your order or comply with legal obligations.</li>
+            <li>We take reasonable measures to protect your information from unauthorized access or misuse.</li>
+            <li>By using our website, you agree to the collection and use of information in accordance with this Privacy Policy.</li>
+          </ul>
+          <p>For any privacy-related questions, please contact our customer support team.</p>
+          <p>Thank you for trusting Shri Vallabh Jewels.</p>
+        </div>
+      )
+    },
+    terms: { 
+      title: "Terms of Service", 
+      text: (
+        <div className="space-y-4">
+          <p>Welcome to Shri Vallabh Jewels. By using our website and placing an order, you agree to the following terms:</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>All product prices are listed in Indian Rupees (₹) and are subject to change without prior notice.</li>
+            <li>Orders are subject to availability and confirmation.</li>
+            <li>We reserve the right to cancel or refuse any order due to pricing errors, stock issues, or suspected fraudulent activity.</li>
+            <li>Product images are for illustrative purposes only. Slight variations in color, design, or appearance may occur due to lighting and screen settings.</li>
+            <li>Customers are responsible for providing accurate shipping and contact information when placing an order.</li>
+            <li>Returns and replacements are governed by our Return Policy.</li>
+            <li>Shri Vallabh Jewels reserves the right to update or modify these terms at any time without prior notice.</li>
+          </ul>
+          <p>By continuing to use our website, you acknowledge and agree to these Terms of Service.</p>
+          <p>Thank you for choosing Shri Vallabh Jewels.</p>
+        </div>
+      )
+    }
+  };
+  const { title, text } = content[type];
+  return (
+    <div className="min-h-screen pt-32 px-5 pb-24" style={{ background: "#F8F6F2" }}>
+      <div className="max-w-3xl mx-auto rounded-2xl p-8 lg:p-12 shadow-sm" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)" }}>
+        <h1 className="text-3xl font-bold mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{title}</h1>
+        <div className="text-sm leading-relaxed" style={{ color: "#6B5A4E" }}>{text}</div>
+        <p className="text-sm leading-relaxed mt-8 pt-6 border-t" style={{ color: "#6B5A4E", borderColor: "rgba(203,184,169,0.3)" }}>For any further queries, please reach out to our support team on WhatsApp or via Email at shrivallabhjewels@gmail.com.</p>
+      </div>
+    </div>
+  );
+}
+
 // ── Footer ─────────────────────────────────────────────────────────────────
 function Footer() {
   const { setPage } = useApp();
   const scroll = (id: string) => { setPage("home"); setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 120); };
   return (
     <footer style={{ background: "#3D2B1F" }}>
-      <div className="max-w-7xl mx-auto px-5 lg:px-8 pt-16 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+      <div className="max-w-7xl mx-auto px-5 lg:px-8 pt-20 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-10 mb-16">
           <div>
-            <div className="mb-4 p-3 rounded-xl inline-block" style={{ background: "rgba(255,255,255,0.07)" }}>
+            <div className="mb-6 p-3 rounded-xl inline-block" style={{ background: "rgba(255,255,255,0.07)" }}>
               <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="h-14 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
             </div>
-            <p className="text-[13px] leading-relaxed mb-5" style={{ color: "rgba(239,231,221,0.65)" }}>
-              Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
+            <p className="text-[14px] leading-relaxed mb-6" style={{ color: "rgba(239,231,221,0.7)" }}>
+              Shri Vallabh Jewels offers elegant and affordable jewellery designed to elevate your everyday style and special occasions.
             </p>
-            <div className="space-y-2">
-              {[{ Icon: Phone, t: "+91 7801949426" }, { Icon: Mail, t: "shrivallabhjewels@gmail.com" }, { Icon: Instagram, t: "@shrivallabh_jewels", link: "https://instagram.com/shrivallabh_jewels" }].map(({ Icon, t, link }) => (
-                <div key={t} className="flex items-center gap-2.5 text-[13px]" style={{ color: "rgba(239,231,221,0.65)" }}>
-                  <Icon size={13} style={{ color: "#CFA18D" }} />
-                  {link ? (
-                    <a href={link} target="_blank" rel="noopener noreferrer" className="hover:text-[#CFA18D] transition-colors">
-                      {t}
-                    </a>
-                  ) : (
-                    <span>{t}</span>
-                  )}
+            <div className="space-y-3">
+              {[{ Icon: Phone, t: "+91 78019 49426", link: "https://wa.me/917801949426" }, { Icon: Mail, t: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }, { Icon: Instagram, t: "@shrivallabh_jewels", link: "https://instagram.com/shrivallabh_jewels" }].map(({ Icon, t, link }) => (
+                <div key={t} className="flex items-center gap-3 text-[14px]" style={{ color: "rgba(239,231,221,0.7)" }}>
+                  <Icon size={14} style={{ color: "#CFA18D" }} />
+                  <a href={link} target="_blank" rel="noopener noreferrer" className="hover:text-[#CFA18D] transition-colors">
+                    {t}
+                  </a>
                 </div>
               ))}
             </div>
           </div>
           {[
             { title: "Shop", links: [["shop", "All Jewellery"], ["featured", "Necklaces"], ["featured", "Rings"], ["featured", "Combo Sets"], ["new-arrivals", "New Arrivals"]] },
-            { title: "Quick Links", links: [["bestsellers", "Best Sellers"], ["contact", "About Us"], ["contact", "Contact Us"]] },
-            { title: "Policies", links: [["contact", "Shipping Policy"], ["contact", "Return Policy"], ["contact", "Privacy Policy"], ["contact", "Terms of Service"]] },
+            { title: "Quick Links", links: [["shop", "Shop"], ["new-arrivals", "New Arrivals"], ["bestsellers", "Best Sellers"], ["contact", "About Us"], ["contact", "Contact Us"]] },
+            { title: "Policies", links: [["shipping", "Shipping Policy"], ["return", "Return Policy"], ["privacy", "Privacy Policy"], ["terms", "Terms of Service"]] },
           ].map(({ title, links }) => (
             <div key={title}>
-              <h4 className="text-[11px] uppercase tracking-[0.25em] font-bold mb-5" style={{ color: "#CFA18D" }}>{title}</h4>
-              <ul className="space-y-2.5">
+              <h4 className="text-[12px] uppercase tracking-[0.25em] font-bold mb-6" style={{ color: "#CFA18D" }}>{title}</h4>
+              <ul className="space-y-3">
                 {links.map(([id, label]) => (
-                  <li key={label}><button onClick={() => id === "shop" ? setPage("shop") : scroll(id)} className="text-[13px] hover:text-[#CFA18D] transition-colors text-left" style={{ color: "rgba(239,231,221,0.6)" }}>{label}</button></li>
+                  <li key={label}><button onClick={() => { if(["shop", "shipping", "return", "privacy", "terms"].includes(id)) { setPage(id as any); window.scrollTo({ top: 0, behavior: "smooth" }); } else scroll(id); }} className="text-[14px] hover:text-[#CFA18D] transition-colors text-left" style={{ color: "rgba(239,231,221,0.6)" }}>{label}</button></li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="rounded-2xl p-5 mb-10" style={{ background: "rgba(207,161,141,0.1)", border: "1px solid rgba(207,161,141,0.2)" }}>
-          <div className="flex flex-col md:flex-row items-center gap-5">
-            <div className="flex-1">
-              <p className="text-base font-semibold mb-1" style={{ fontFamily: "'Playfair Display', serif", color: "#EFE7DD" }}>Join the Inner Circle</p>
-              <p className="text-xs" style={{ color: "rgba(239,231,221,0.6)" }}>Early access, exclusive drops & styling tips straight to your inbox.</p>
-            </div>
-            <div className="flex gap-3 w-full md:w-auto">
-              <input type="email" placeholder="your@email.com" className="flex-1 md:w-56 px-4 py-2.5 rounded-full text-sm outline-none"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(207,161,141,0.3)", color: "#EFE7DD" }} />
-              <button onClick={() => toast.success("Welcome! ✦")} className="px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all hover:scale-105"
-                style={{ background: "#CFA18D", color: "#FCFBF8" }}>
-                Subscribe
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="border-t pt-6 flex flex-col items-center justify-center gap-3" style={{ borderColor: "rgba(203,184,169,0.15)" }}>
-          <p className="text-[11px]" style={{ color: "rgba(239,231,221,0.35)" }}>© 2026 Shri Vallabh Jewels. All rights reserved.</p>
+        
+
+
+
+
+        <div className="flex items-center justify-center pt-6 border-t" style={{ borderColor: "rgba(203,184,169,0.05)" }}>
+          <p className="text-[12px]" style={{ color: "rgba(239,231,221,0.35)" }}>© 2026 Shri Vallabh Jewels. All rights reserved.</p>
         </div>
       </div>
     </footer>
@@ -1330,7 +1464,6 @@ function HomePage() {
       {/* Marquee banner is now fixed above the navbar */}
       <HeroSection />
       <TrustBar />
-      <PostersSection />
       <section id="featured" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Handpicked for You" title="Featured Collections" subtitle="Our most-loved pieces, curated for timeless elegance." />
@@ -1372,30 +1505,37 @@ function HomePage() {
       <InstagramGallery />
       <section className="py-24 lg:py-28" style={{ background: "#EFE7DD" }}>
         <div className="max-w-3xl mx-auto px-5 lg:px-8">
-          <STitle eyebrow="Questions Answered" title="FAQs" subtitle="Everything you need to know before shopping with us." />
+          <STitle eyebrow="Questions Answered" title="Frequently Asked Questions" subtitle="Everything you need to know before shopping with us." />
           <div>{FAQS.map((faq, i) => <FAQItem key={i} faq={faq} />)}</div>
         </div>
       </section>
       <section id="contact" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            <Reveal>
-              <p className="text-[11px] uppercase tracking-[0.28em] mb-4 font-bold" style={{ color: "#CFA18D" }}>Get in Touch</p>
-              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>We'd Love to<br /><em>Hear From You</em></h2>
-              <p className="text-[15px] leading-relaxed mb-10" style={{ color: "#6B5A4E" }}>Questions, custom orders, or just want to say hello — we're always here.</p>
-              {[{ Icon: Phone, label: "WhatsApp", val: "+91 7801949426" }, { Icon: Mail, label: "Email", val: "shrivallabhjewels@gmail.com" }, { Icon: Instagram, label: "Instagram", val: "@shrivallabh_jewels" }].map(({ Icon, label, val }) => (
-                <div key={label} className="flex items-center gap-4 mb-4">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(207,161,141,0.12)" }}>
-                    <Icon size={15} style={{ color: "#CFA18D" }} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest" style={{ color: "#8C7B6B" }}>{label}</p>
-                    <p className="text-sm font-semibold" style={{ color: "#3D2B1F" }}>{val}</p>
-                  </div>
-                </div>
-              ))}
+        <div className="max-w-6xl mx-auto px-5 lg:px-8">
+          <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-center">
+            <Reveal className="flex-1 w-full text-center lg:text-left">
+              <h2 className="text-[32px] md:text-[40px] lg:text-[46px] mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", lineHeight: "1.15", letterSpacing: "-0.01em" }}>We'd Love to<br/><em>Hear From You</em></h2>
+              <p className="text-[14px] md:text-[15px] leading-loose mb-14 max-w-md mx-auto lg:mx-0" style={{ color: "#6B5A4E", opacity: 0.9 }}>
+                Questions, custom orders, or just want to say hello — we're always here.
+              </p>
+              <div className="space-y-8 max-w-sm mx-auto lg:mx-0 text-left">
+                {[
+                  { Icon: Phone, label: "WHATSAPP", val: "+91 7801949426", link: "https://wa.me/917801949426" }, 
+                  { Icon: Mail, label: "EMAIL", val: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }, 
+                  { Icon: Instagram, label: "INSTAGRAM", val: "@shrivallabh_jewels", link: "https://instagram.com/shrivallabh_jewels" }
+                ].map(({ Icon, label, val, link }) => (
+                  <a key={label} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 group transition-all">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: "rgba(207,161,141,0.15)" }}>
+                      <Icon size={18} className="transition-transform duration-500 group-hover:scale-110" style={{ color: "#CFA18D" }} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.2em] mb-1 font-bold" style={{ color: "#8C7B6B" }}>{label}</p>
+                      <p className="text-[14px] font-semibold group-hover:text-[#CFA18D] transition-colors" style={{ color: "#3D2B1F" }}>{val}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
             </Reveal>
-            <Reveal delay={0.15}>
+            <Reveal delay={0.15} className="flex-1 w-full">
               <ContactForm />
             </Reveal>
           </div>
@@ -1406,31 +1546,7 @@ function HomePage() {
   );
 }
 
-function ContactForm() {
-  const [f, setF] = useState({ name: "", email: "", message: "" });
-  return (
-    <form onSubmit={e => { e.preventDefault(); toast.success("Message sent! We'll reply within 24 hours."); setF({ name: "", email: "", message: "" }); }} className="flex flex-col gap-4">
-      {[["name", "Your Name", "text", "Priya Sharma"], ["email", "Email Address", "email", "priya@email.com"]].map(([k, l, t, p]) => (
-        <div key={k}>
-          <label className="block text-[10px] uppercase tracking-[0.2em] font-bold mb-1.5" style={{ color: "#8C7B6B" }}>{l}</label>
-          <input type={t} required value={f[k as "name" | "email"]} onChange={e => setF({ ...f, [k]: e.target.value })} placeholder={p}
-            className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 ring-[#CFA18D]"
-            style={{ border: "1px solid rgba(203,184,169,0.4)", background: "#FCFBF8", color: "#3D2B1F" }} />
-        </div>
-      ))}
-      <div>
-        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold mb-1.5" style={{ color: "#8C7B6B" }}>Message</label>
-        <textarea required rows={4} value={f.message} onChange={e => setF({ ...f, message: e.target.value })} placeholder="Tell us how we can help..."
-          className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all resize-none focus:ring-2 ring-[#CFA18D]"
-          style={{ border: "1px solid rgba(203,184,169,0.4)", background: "#FCFBF8", color: "#3D2B1F" }} />
-      </div>
-      <button type="submit" className="flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all hover:scale-[1.02]"
-        style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
-        Send Message <Send size={14} />
-      </button>
-    </form>
-  );
-}
+
 
 // ── Account / Order History Page ───────────────────────────────────────────
 function AccountPage() {
@@ -2033,8 +2149,31 @@ export default function App() {
           {page === "confirmation" && <OrderConfirmation />}
           {page === "account" && <AccountPage />}
           {page === "admin" && <AdminPage />}
+          {["shipping", "return", "privacy", "terms"].includes(page) && <PolicyPage type={page as any} />}
         </>
       )}
     </Ctx.Provider>
+  );
+}
+
+function ContactForm() {
+  return (
+    <form className="w-full space-y-6" onSubmit={(e) => { e.preventDefault(); toast.success("Message sent successfully! We'll get back to you soon."); }}>
+      <div>
+        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: "#8C7B6B" }}>Your Name</label>
+        <input type="text" placeholder="Priya Sharma" required className="w-full px-6 py-3.5 rounded-full outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
+      </div>
+      <div>
+        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: "#8C7B6B" }}>Email Address</label>
+        <input type="email" placeholder="priya@email.com" required className="w-full px-6 py-3.5 rounded-full outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
+      </div>
+      <div>
+        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: "#8C7B6B" }}>Message</label>
+        <textarea placeholder="Tell us how we can help..." required rows={4} className="w-full px-6 py-4 rounded-[1.5rem] outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50 resize-none" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
+      </div>
+      <button type="submit" className="w-full flex items-center justify-center gap-2 py-4 rounded-full text-[13px] font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-md" style={{ background: "#C8A08C", color: "#FFFFFF" }}>
+        Send Message <Send size={14} />
+      </button>
+    </form>
   );
 }
