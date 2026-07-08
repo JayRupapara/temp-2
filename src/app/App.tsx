@@ -25,6 +25,12 @@ import heroBannerImg3 from "../imports/hero-banner 3 (2).png";
 import heroBannerImg4 from "../imports/hero-banner 4 (2).png";
 import heroBannerImg5 from "../imports/hero-banner 5 (2).png";
 import promiseImg4 from "../imports/Untitled design (5).png";
+import mobileEleganceImg from "../imports/mobile elegance.png";
+import mobileHeroBanner1 from "../imports/mobile hero banner 1.png";
+import mobileHeroBanner2 from "../imports/mobile hero banner 2.png";
+import mobileHeroBanner3 from "../imports/mobile hero banner 3.png";
+import mobileHeroBanner4 from "../imports/mobile hero banner 4.png";
+import mobileHeroBanner5 from "../imports/mobile hero banner 5.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms";
@@ -56,9 +62,9 @@ type AppCtx = {
 
 // ── Data ───────────────────────────────────────────────────────────────────
 const PRODUCTS: Product[] = [
-  { id: 1, name: "Pearl Seashell Necklace", subtitle: "Rose gold oceanic pendant", description: "A delicate rose gold chain holding a shimmering seashell pendant with a lustrous freshwater pearl nestled inside. Crafted with premium rose gold plating and precision-set CZ accents. Perfect for the romantic soul who loves ocean-inspired elegance.", price: 349, originalPrice: 499, category: "Necklace", image: pearlImg, badge: "Bestseller", badgeColor: "#CFA18D", stock: 3, rating: 4.9, reviews: 128, care: "Avoid water and perfume. Wipe with a soft dry cloth after use. Store in the included gift box when not wearing." },
-  { id: 2, name: "Petite Heart Necklace", subtitle: "Minimalist rose gold charm", description: "A beautifully simple rose gold heart pendant on a dainty delicate chain. Timeless, minimal, and deeply meaningful — the perfect everyday piece or a heartfelt gift for someone you cherish.", price: 299, originalPrice: 399, category: "Necklace", image: heartImg, badge: "New Arrival", badgeColor: "#059669", stock: 8, rating: 4.8, reviews: 94, care: "Keep away from water, sweat, and perfume. Polish gently with a soft cloth. Store separately to avoid scratches." },
-  { id: 3, name: "Butterfly Bloom Necklace", subtitle: "Gold butterfly, crystal wings", description: "A graceful gold butterfly with sparkling crystal wings, paired with a tiny floral accent. This piece celebrates freedom and feminine beauty in every movement. Rose gold plated with anti-tarnish coating.", price: 309, originalPrice: 449, category: "Necklace", image: butterflyImg, badge: "Trending", badgeColor: "#7C3AED", stock: 5, rating: 4.9, reviews: 112, care: "Avoid contact with water, chemicals, and perfumes. Wipe clean with a dry cloth. Store in gift box provided." },
+  { id: 1, name: "Pearl Seashell Necklace", subtitle: "Rose gold oceanic pendant", description: "A delicate rose gold chain holding a shimmering seashell pendant with a lustrous freshwater pearl nestled inside. Crafted with premium rose gold plating and precision-set CZ accents. Perfect for the romantic soul who loves ocean-inspired elegance.", price: 349, originalPrice: 499, category: "Necklace", image: pearlImg, badge: "Bestseller", badgeColor: "#CFA18D", stock: 3, rating: 4.9, reviews: 128, care: "Avoid water and perfume. Wipe with a soft dry cloth after use. Store in the included gift box when not wearing.", isFeatured: true },
+  { id: 2, name: "Petite Heart Necklace", subtitle: "Minimalist rose gold charm", description: "A beautifully simple rose gold heart pendant on a dainty delicate chain. Timeless, minimal, and deeply meaningful — the perfect everyday piece or a heartfelt gift for someone you cherish.", price: 299, originalPrice: 399, category: "Necklace", image: heartImg, badge: "New Arrival", badgeColor: "#059669", stock: 8, rating: 4.8, reviews: 94, care: "Keep away from water, sweat, and perfume. Polish gently with a soft cloth. Store separately to avoid scratches.", isFeatured: true },
+  { id: 3, name: "Butterfly Bloom Necklace", subtitle: "Gold butterfly, crystal wings", description: "A graceful gold butterfly with sparkling crystal wings, paired with a tiny floral accent. This piece celebrates freedom and feminine beauty in every movement. Rose gold plated with anti-tarnish coating.", price: 309, originalPrice: 449, category: "Necklace", image: butterflyImg, badge: "Trending", badgeColor: "#7C3AED", stock: 5, rating: 4.9, reviews: 112, care: "Avoid contact with water, chemicals, and perfumes. Wipe clean with a dry cloth. Store in gift box provided.", isFeatured: true },
   { id: 4, name: "Infinity Spark Ring", subtitle: "Sterling silver with CZ stones", description: "An elegant infinity-shaped band set with brilliant cubic zirconia stones that catch the light beautifully. Symbolising endless love and infinite possibilities — a meaningful everyday ring that complements every look.", price: 160, originalPrice: 250, category: "Ring", image: ringImg, badge: "Staff Pick", badgeColor: "#0891B2", stock: 12, rating: 4.7, reviews: 76, care: "Remove before washing hands, swimming, or exercising. Clean with a soft cloth. Avoid harsh chemicals." },
 ];
 
@@ -499,11 +505,11 @@ function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const banners = [
-    { src: heroBannerImg1, title: "Diamond Bow Necklace", price: "299", pos: "top-[25%] right-0", imgOpacity: 0.7 },
-    { src: heroBannerImg2, title: "Golden Flutter Necklace", price: "399", pos: "top-[25%] right-0", imgOpacity: 1 },
-    { src: heroBannerImg3, title: "Amora Pearl Heart Bracelet", price: "249", pos: "top-[25%] right-0", imgOpacity: 1 },
-    { src: heroBannerImg4, title: "Pack of 5 Earrings", price: "299", pos: "top-[25%] right-0", imgOpacity: 1 },
-    { src: heroBannerImg5, title: "Infinity Ring", price: "149", pos: "bottom-10 right-0", imgOpacity: 1 },
+    { src: heroBannerImg1, mobileSrc: mobileHeroBanner1, title: "Diamond Bow Necklace", price: "299", pos: "top-[25%] right-0", imgOpacity: 0.7 },
+    { src: heroBannerImg2, mobileSrc: mobileHeroBanner2, title: "Golden Flutter Necklace", price: "399", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg3, mobileSrc: mobileHeroBanner3, title: "Amora Pearl Heart Bracelet", price: "249", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg4, mobileSrc: mobileHeroBanner4, title: "Pack of 5 Earrings", price: "299", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg5, mobileSrc: mobileHeroBanner5, title: "Infinity Ring", price: "149", pos: "bottom-10 right-0", imgOpacity: 1 },
   ];
 
   useEffect(() => {
@@ -514,7 +520,7 @@ function HeroSection() {
   }, [banners.length]);
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-24 bg-[#EFE7DD]">
+    <section className="relative h-[100vh] lg:min-h-screen flex items-center overflow-hidden pt-16 lg:pt-24 bg-[#EFE7DD]">
       {/* Animated Background Images */}
       <div className="absolute inset-0 z-0 bg-[#EFE7DD]">
         {banners.map((b, i) => (
@@ -523,23 +529,26 @@ function HeroSection() {
             className="absolute inset-0 transition-all duration-1000 ease-in-out"
             style={{ opacity: i === currentSlide ? b.imgOpacity : 0, transform: i === currentSlide ? 'scale(1)' : 'scale(1.05)' }}
           >
-            <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} className="w-full h-full object-cover object-[75%_top] lg:object-center" />
+            <div className="hidden lg:block w-full h-full">
+              <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} className="w-full h-full object-cover object-center" />
+            </div>
+            <div className="lg:hidden w-full h-full">
+              <ImageWithFallback src={b.mobileSrc} alt={`Shri Vallabh Jewels Collection ${i + 1}`} className="w-full h-full object-cover object-[80%_center]" />
+            </div>
           </div>
         ))}
-        {/* Gradient overlay focused only on the left text area to keep jewelry bright and visible */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#F8F6F2] via-[#F8F6F2]/70 to-transparent w-full lg:w-[55%] z-10 pointer-events-none"></div>
-        {/* Mobile overlay for readability when image stacks */}
-        <div className="absolute inset-0 bg-[#F8F6F2]/30 lg:hidden z-10 pointer-events-none"></div>
+        {/* Gradient overlay from left to right - softened by 20% to reveal more image */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F8F6F2]/80 via-[#F8F6F2]/60 to-transparent w-full md:w-[70%] lg:w-[55%] z-10 pointer-events-none"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center py-20">
-        <div className="max-w-xl">
+      <div className="relative z-10 h-full max-w-7xl mx-auto px-5 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="max-w-xl py-12 lg:py-20">
           <motion.h1 initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl sm:text-6xl lg:text-[72px] leading-[1.05] mb-6 tracking-tight drop-shadow-sm" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
+            className="text-[42px] leading-[1.05] lg:text-[72px] lg:leading-[1.05] mb-6 tracking-tight drop-shadow-sm" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
             <em>Jewels</em> That<br />Tell Your<br /><span className="font-semibold not-italic">Story</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-            className="text-[16px] md:text-[18px] leading-relaxed mb-8 drop-shadow-sm font-medium tracking-wide" style={{ color: "#5A4035" }}>
+            className="text-[16px] lg:text-[18px] leading-relaxed mb-8 drop-shadow-sm font-medium tracking-wide max-w-[90%] lg:max-w-none" style={{ color: "#5A4035" }}>
             Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.72 }}
@@ -556,14 +565,14 @@ function HeroSection() {
               </div>
             ))}
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.82 }} className="flex flex-col sm:flex-row flex-wrap gap-4 w-full sm:w-auto mt-2">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.82 }} className="absolute bottom-6 left-5 right-5 flex flex-col gap-3 z-30 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mt-2 lg:flex-row lg:w-auto">
             <button onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:scale-[1.02] hover:shadow-lg w-full sm:w-auto text-center"
+              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:scale-[1.02] hover:shadow-lg w-full lg:w-auto text-center"
               style={{ background: "#3D2B1F", color: "#F8F6F2", boxShadow: "0 8px 24px rgba(61,43,31,0.25)" }}>
               Shop Collection
             </button>
             <button onClick={() => document.getElementById("bestsellers")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-white/80 hover:shadow-md flex items-center justify-center gap-3 w-full sm:w-auto bg-white/40 backdrop-blur-sm"
+              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-white/80 hover:shadow-md flex items-center justify-center gap-3 w-full lg:w-auto bg-white/40 backdrop-blur-sm"
               style={{ border: "1px solid rgba(61,43,31,0.2)", color: "#3D2B1F" }}>
               View Best Sellers <ArrowRight size={14} />
             </button>
@@ -591,7 +600,7 @@ function HeroSection() {
         </div>
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-2 z-10">
         <p className="text-[9px] uppercase tracking-[0.25em]" style={{ color: "#8C7B6B" }}>Scroll</p>
         <div className="w-px h-8 overflow-hidden" style={{ background: "rgba(207,161,141,0.2)" }}>
           <div className="w-full animate-[scrollPulse_2s_ease-in-out_infinite]" style={{ height: "40%", background: "#CFA18D" }} />
@@ -692,19 +701,21 @@ function BrandStory() {
       {/* Editorial Split Hero Section (Single Banner) */}
       <section className="relative w-full min-h-[750px] lg:min-h-[90vh] flex flex-col lg:flex-row items-center bg-[#F3EBE1] overflow-hidden pt-20 lg:pt-0 pb-20 lg:pb-0">
         
-        {/* Right Side: Single Banner Image */}
+        {/* Background Image: Desktop */}
         <div className="absolute top-0 right-0 bottom-0 w-full lg:w-[60%] z-0 h-full hidden lg:block" style={{ maskImage: "linear-gradient(to right, transparent 0%, transparent 15%, black 60%)", WebkitMaskImage: "linear-gradient(to right, transparent 0%, transparent 15%, black 60%)" }}>
           <ImageWithFallback src={promiseImg4} alt="Timeless Elegance" className="w-full h-full object-cover object-center" />
         </div>
-        <div className="absolute top-0 right-0 bottom-0 w-full z-0 h-full lg:hidden">
-          <ImageWithFallback src={promiseImg4} alt="Timeless Elegance" className="w-full h-full object-cover object-[center_right]" />
-          <div className="absolute inset-0 bg-[#F3EBE1]/70"></div>
+
+        {/* Background Image: Mobile */}
+        <div className="absolute inset-0 w-full z-0 h-full lg:hidden">
+          <ImageWithFallback src={mobileEleganceImg} alt="Timeless Elegance" className="w-full h-full object-cover object-center" />
+          <div className="absolute inset-0 bg-[#F3EBE1]/40"></div>
         </div>
 
         {/* Left Side: Content Container */}
         <div className="relative z-10 w-full max-w-[1400px] mx-auto px-5 lg:px-8 flex h-full">
-          <div className="w-full lg:w-[45%] pt-24 lg:pt-36 pb-16 lg:pb-24 pr-0 lg:pr-12 flex flex-col justify-center h-full" ref={ref}>
-            <motion.div initial={{ opacity: 0, y: 30 }} animate={visible ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="w-full lg:w-[45%] pt-32 lg:pt-36 pb-8 lg:pb-24 pr-0 lg:pr-12 flex flex-col justify-end lg:justify-center items-center lg:items-start text-center lg:text-left h-full" ref={ref}>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={visible ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col items-center lg:items-start">
               <h2 className="text-5xl md:text-[56px] lg:text-[64px] mb-12 leading-[1.1]" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
                 Timeless Elegance,<br /><em>Everyday Luxury</em>
               </h2>
@@ -2140,7 +2151,6 @@ export default function App() {
           <Navbar />
           <CartDrawer />
           <FloatingWhatsApp />
-          <StickyMobileCTA page={page} />
 
           {page === "home" && <HomePage />}
           {page === "shop" && <ShopPage />}
