@@ -1330,7 +1330,7 @@ function HomePage() {
       <section id="featured" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Handpicked for You" title="Featured Collections" subtitle="Our most-loved pieces, curated for timeless elegance." />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-10">
             {products.filter(p => p.isFeatured).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
             {products.filter(p => p.isFeatured).length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center">No featured products selected.</p>}
           </div>
