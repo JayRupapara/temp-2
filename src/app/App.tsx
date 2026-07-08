@@ -226,7 +226,7 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
             </div>
             <button onClick={() => { addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
               className="mt-3 w-full py-2.5 rounded-full text-xs font-bold tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-95"
-              style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
+              style={{ background: "#5A4035", color: "#FCFBF8", boxShadow: "0 4px 14px rgba(90,64,53,0.3)" }}>
               Add to Bag
             </button>
           </div>
@@ -330,19 +330,26 @@ function CartDrawer() {
             </div>
 
             {cart.length > 0 && (
-              <div className="p-4 space-y-3" style={{ borderTop: "1px solid rgba(203,184,169,0.3)" }}>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm" style={{ color: "#8C7B6B" }}>Subtotal</span>
-                  <span className="text-base font-bold" style={{ color: "#3D2B1F" }}>₹{cartTotal}</span>
+              <div className="p-5 space-y-4 shadow-[0_-4px_24px_rgba(0,0,0,0.04)]" style={{ borderTop: "1px solid rgba(203,184,169,0.3)", background: "#FCFBF8" }}>
+                <div className="flex justify-between items-end mb-1">
+                  <div className="flex flex-col">
+                    <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: "#8C7B6B" }}>Subtotal</span>
+                    <span className="text-[10px] mt-0.5" style={{ color: "#A6988C" }}>Shipping & taxes calculated at checkout</span>
+                  </div>
+                  <span className="text-2xl font-bold" style={{ color: "#3D2B1F" }}>₹{cartTotal}</span>
                 </div>
-                <div className="text-[11px] py-1.5 px-3 rounded-lg text-center" style={{ background: "rgba(207,161,141,0.08)", color: "#8C7B6B" }}>
-                  Prepaid: <strong style={{ color: "#059669" }}>FREE delivery</strong> · COD: +₹49
-                </div>
+                
                 <button onClick={() => { setCartOpen(false); setPage("checkout"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                  className="w-full py-3.5 rounded-full font-bold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-95"
-                  style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 20px rgba(207,161,141,0.45)" }}>
-                  Proceed to Checkout →
+                  className="w-full py-4 rounded-full font-bold text-[13px] uppercase tracking-[0.15em] transition-all duration-200 hover:scale-[1.02] active:scale-95 flex justify-center items-center gap-2"
+                  style={{ background: "#3D2B1F", color: "#FCFBF8", boxShadow: "0 8px 24px rgba(61,43,31,0.25)" }}>
+                  Checkout Now <ArrowRight size={15} />
                 </button>
+
+                <div className="flex justify-center gap-5 pt-3 pb-1">
+                   <div className="flex flex-col items-center gap-1.5 text-[9px] uppercase tracking-wider text-center" style={{ color: "#8C7B6B" }}><Shield size={16} strokeWidth={1.5} style={{ color: "#CFA18D" }}/> Secure<br/>Checkout</div>
+                   <div className="flex flex-col items-center gap-1.5 text-[9px] uppercase tracking-wider text-center" style={{ color: "#8C7B6B" }}><Truck size={16} strokeWidth={1.5} style={{ color: "#CFA18D" }}/> Fast<br/>Delivery</div>
+                   <div className="flex flex-col items-center gap-1.5 text-[9px] uppercase tracking-wider text-center" style={{ color: "#8C7B6B" }}><CreditCard size={16} strokeWidth={1.5} style={{ color: "#CFA18D" }}/> COD<br/>Available</div>
+                </div>
               </div>
             )}
           </motion.div>
@@ -371,31 +378,28 @@ function Navbar() {
     { label: "Contact Us", action: () => scroll("contact") },
   ];
   const marqueeItems = [
-    "Free Shipping on Prepaid Orders",
-    "COD Currently Unavailable",
-    "Combo Offers Available",
-    "Fast Delivery in 5–8 Days",
-    "Save ₹49 — Choose Prepaid at Checkout",
-    "100% Quality Guaranteed",
-    "Easy 1-Day Returns",
+    "Free Delivery on Prepaid Orders",
+    "Secure Checkout",
+    "Premium Quality Jewellery",
+    "Trusted by 1000+ Customers",
   ];
   return (
     <>
       {/* Marquee Announcement Bar */}
-      <div className="fixed top-0 left-0 right-0 z-[60] overflow-hidden"
-        style={{ background: "linear-gradient(90deg, #3D2B1F, #5A4035, #3D2B1F)", height: "32px" }}>
+      <div className="fixed top-0 left-0 right-0 z-[60] overflow-hidden flex items-center"
+        style={{ background: "#2C1E16", height: "36px" }}>
         <div className="marquee-track flex items-center h-full whitespace-nowrap">
           {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((item, i) => (
-            <span key={i} className="inline-flex items-center text-[11px] font-semibold tracking-wide mx-6"
-              style={{ color: "#E8DCC8" }}>
+            <span key={i} className="inline-flex items-center text-[12px] sm:text-[13px] font-medium mx-6 sm:mx-10"
+              style={{ color: "#F8F6F2" }}>
               {item}
-              <span className="mx-6" style={{ color: "rgba(207,161,141,0.5)" }}>✦</span>
+              <span className="mx-6 sm:mx-10 text-[10px]" style={{ color: "rgba(207,161,141,0.6)" }}>◆</span>
             </span>
           ))}
         </div>
       </div>
       <motion.header initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.85 }}
-        className="fixed top-[32px] left-0 right-0 z-50 transition-all duration-500"
+        className="fixed top-[36px] left-0 right-0 z-50 transition-all duration-500"
         style={{ background: scrolled ? "rgba(248,246,242,0.96)" : "rgba(248,246,242,0.6)", backdropFilter: "blur(24px)", borderBottom: scrolled ? "1px solid rgba(203,184,169,0.3)" : "1px solid transparent", boxShadow: scrolled ? "0 4px 32px rgba(207,161,141,0.1)" : "none" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-20 flex items-center justify-between">
           <button onClick={() => { setPage("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex-shrink-0">
@@ -469,18 +473,16 @@ function StickyMobileCTA({ page }: { page: Page }) {
   }, []);
   if (!show || page !== "home") return null;
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden flex gap-3 p-3"
-      style={{ background: "rgba(248,246,242,0.97)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(203,184,169,0.3)" }}>
-      <button onClick={() => setCartOpen(true)} className="flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-        style={{ border: "1.5px solid #CFA18D", color: "#CFA18D" }}>
-        <ShoppingBag size={14} /> Bag {cart.length > 0 ? `(${cart.reduce((s, i) => s + i.qty, 0)})` : ""}
-      </button>
-      <button onClick={() => { setPage("checkout"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-        className="flex-1 py-3 rounded-xl text-sm font-bold transition-all hover:scale-[1.02]"
-        style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.5)" }}>
-        Buy Now
-      </button>
-    </div>
+    <AnimatePresence>
+      <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className="fixed bottom-7 left-5 z-[45] md:hidden flex pointer-events-none" style={{ right: "80px" }}>
+        <button onClick={() => { document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" }); }}
+          className="w-full py-4 rounded-full text-[13px] font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all active:scale-95 pointer-events-auto"
+          style={{ background: "#3D2B1F", color: "#FCFBF8", boxShadow: "0 8px 32px rgba(61,43,31,0.35)" }}>
+          🛍 Shop Collection
+        </button>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -492,17 +494,19 @@ function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden pt-24"
       style={{ background: "linear-gradient(135deg, #F8F6F2 0%, #EFE7DD 50%, #E8DCC8 100%)" }}>
+      {/* Subtle dark overlay for better text readability */}
+      <div className="absolute inset-0 bg-black/5 pointer-events-none mix-blend-multiply" />
       <div className="absolute top-1/3 right-0 w-96 h-96 rounded-full opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle, #CFA18D, transparent)", filter: "blur(80px)", transform: "translate(30%)" }} />
       <div className="absolute bottom-1/4 left-0 w-72 h-72 rounded-full opacity-15 pointer-events-none" style={{ background: "radial-gradient(circle, #E8DCC8, transparent)", filter: "blur(60px)", transform: "translate(-20%)" }} />
       <div className="max-w-7xl mx-auto px-5 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center py-20">
         <div>
 
           <motion.h1 initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl sm:text-6xl lg:text-[68px] leading-[1.08] mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
+            className="text-5xl sm:text-6xl lg:text-[72px] leading-[1.05] mb-6 tracking-tight drop-shadow-sm" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
             <em>Jewels</em> That<br />Tell Your<br /><span className="font-semibold not-italic">Story</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-            className="text-[15px] md:text-[17px] max-w-md leading-relaxed mb-6" style={{ color: "#6B5A4E" }}>
+            className="text-[16px] md:text-[18px] max-w-md leading-relaxed mb-8 drop-shadow-sm font-medium tracking-wide" style={{ color: "#5A4035" }}>
             Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.72 }}
@@ -519,22 +523,22 @@ function HeroSection() {
               </div>
             ))}
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.82 }} className="flex flex-wrap gap-4">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.82 }} className="flex flex-col sm:flex-row flex-wrap gap-4 w-full sm:w-auto mt-2">
             <button onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-3.5 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105"
-              style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 6px 24px rgba(207,161,141,0.5)" }}>
-              Shop Now
+              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:scale-[1.02] hover:shadow-lg w-full sm:w-auto text-center"
+              style={{ background: "#3D2B1F", color: "#F8F6F2", boxShadow: "0 8px 24px rgba(61,43,31,0.25)" }}>
+              Shop Collection
             </button>
-            <button onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:bg-secondary flex items-center gap-2"
-              style={{ border: "1.5px solid rgba(207,161,141,0.7)", color: "#CFA18D" }}>
-              View Collection <ArrowRight size={14} />
+            <button onClick={() => document.getElementById("bestsellers")?.scrollIntoView({ behavior: "smooth" })}
+              className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-white/40 hover:shadow-md flex items-center justify-center gap-3 w-full sm:w-auto"
+              style={{ border: "1px solid rgba(61,43,31,0.2)", color: "#3D2B1F", background: "transparent" }}>
+              View Best Sellers <ArrowRight size={14} />
             </button>
           </motion.div>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="flex flex-wrap gap-5 mt-8">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="flex flex-wrap items-center gap-x-6 gap-y-4 mt-10 p-4 rounded-2xl w-fit" style={{ background: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.4)", backdropFilter: "blur(10px)" }}>
             {[{ e: "🚚", t: "Free Prepaid Delivery" }, { e: "💳", t: "COD Available" }, { e: "↩️", t: "Easy 1-Day Returns" }, { e: "🛡️", t: "Quality Guaranteed" }].map(x => (
-              <div key={x.t} className="flex items-center gap-1.5 text-[11px]" style={{ color: "#8C7B6B" }}>
-                {x.e} {x.t}
+              <div key={x.t} className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-semibold" style={{ color: "#5A4035" }}>
+                <span className="text-xs opacity-80">{x.e}</span> {x.t}
               </div>
             ))}
           </motion.div>
@@ -951,7 +955,7 @@ function ProductDetailPage() {
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <button onClick={() => { addToCart(p, qty); setCartOpen(true); }}
                 className="flex-1 py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02]"
-                style={{ border: "1.5px solid #CFA18D", color: "#CFA18D" }}>
+                style={{ border: "1.5px solid #5A4035", color: "#5A4035" }}>
                 Add to Bag
               </button>
               <button onClick={() => { addToCart(p, qty); setPage("checkout"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -2001,7 +2005,7 @@ export default function App() {
     <Ctx.Provider value={ctx}>
       <style>{`
         @keyframes marquee-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }
-        .marquee-track { animation: marquee-scroll 15s linear infinite; }
+        .marquee-track { animation: marquee-scroll 35s linear infinite; }
         .marquee-track:hover { animation-play-state: paused; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
         @keyframes sparkle { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
