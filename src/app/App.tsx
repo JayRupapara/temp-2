@@ -2066,7 +2066,7 @@ function AdminPage() {
             const ctx = canvas.getContext("2d");
             if (!ctx) return reject(new Error("No ctx"));
             
-            const MAX_WIDTH = 900;
+            const MAX_WIDTH = 800;
             let width = img.width; let height = img.height;
             if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
             canvas.width = width; canvas.height = height;
@@ -2100,7 +2100,7 @@ function AdminPage() {
                 console.error("Firebase upload error:", err);
                 reject(err);
               }
-            }, "image/jpeg", 0.7);
+            }, "image/jpeg", 0.6);
           } catch (err) {
             reject(err);
           }
