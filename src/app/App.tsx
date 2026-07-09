@@ -1865,6 +1865,27 @@ function AccountPage() {
 
 
 // ── Admin Page ─────────────────────────────────────────────────────────────
+
+const CLOUDINARY_CLOUD_NAME = "b6vaot45";
+const CLOUDINARY_UPLOAD_PRESET = "shrivallabh_upload";
+
+const uploadToCloudinary = async (file: Blob | string): Promise<string> => {
+  if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME" || CLOUDINARY_UPLOAD_PRESET === "YOUR_UPLOAD_PRESET") {
+    throw new Error("Please configure your Cloudinary credentials at the top of App.tsx");
+  }
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+    method: "POST",
+    body: formData
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "Cloudinary upload failed");
+  return data.secure_url;
+};
+
 function AdminPage() {
   const { products, combos } = useApp();
   const [authed, setAuthed] = useState(false);
@@ -1988,17 +2009,8 @@ function AdminPage() {
               console.log(`[ProductUpload] Image ${i+1} compression completed. Blob size: ${blob.size} bytes.`);
               
               try {
-                const fileName = `products/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-                const storageRef = ref(storage, fileName);
-                
-                console.log(`[ProductUpload] Image ${i+1} upload started to path: ${fileName}`);
-                
-                const uploadTask = uploadBytes(storageRef, blob);
-                const timeoutTask = new Promise((_, rej) => setTimeout(() => rej(new Error("Firebase upload timed out after 30 seconds")), 30000));
-                await Promise.race([uploadTask, timeoutTask]);
-                
-                console.log(`[ProductUpload] Image ${i+1} upload success! Fetching download URL...`);
-                const downloadUrl = await getDownloadURL(storageRef);
+                console.log(`[ProductUpload] Image ${i+1} upload started to Cloudinary`);
+                const downloadUrl = await uploadToCloudinary(blob);
                 console.log(`[ProductUpload] Image ${i+1} download URL received: ${downloadUrl}`);
                 
                 console.log(`[ProductUpload] Image ${i+1} Firestore UI state update started.`);
@@ -2066,15 +2078,12 @@ function AdminPage() {
     try {
       const cleanData = { ...formData };
       
-      // Migrate any existing base64 images to Storage
+      // Migrate any existing base64 images to Cloudinary
       if (cleanData.images && cleanData.images.length > 0) {
         const uploadedImages = await Promise.all(
-          cleanData.images.map(async (imgStr, idx) => {
+          cleanData.images.map(async (imgStr) => {
             if (imgStr && imgStr.startsWith("data:image/")) {
-              const fileName = `products/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-              const storageRef = ref(storage, fileName);
-              await uploadString(storageRef, imgStr, "data_url");
-              return await getDownloadURL(storageRef);
+              return await uploadToCloudinary(imgStr);
             }
             return imgStr;
           })
@@ -2154,18 +2163,8 @@ function AdminPage() {
               console.log(`[ComboUpload] Image ${i+1} compression completed. Blob size: ${blob.size} bytes.`);
               
               try {
-                const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-                const storageRef = ref(storage, fileName);
-                
-                console.log(`[ComboUpload] Image ${i+1} upload started to path: ${fileName}`);
-                
-                // Add a timeout to uploadBytes just in case Firebase hangs
-                const uploadTask = uploadBytes(storageRef, blob);
-                const timeoutTask = new Promise((_, rej) => setTimeout(() => rej(new Error("Firebase upload timed out after 30 seconds")), 30000));
-                await Promise.race([uploadTask, timeoutTask]);
-                
-                console.log(`[ComboUpload] Image ${i+1} upload success! Fetching download URL...`);
-                const downloadUrl = await getDownloadURL(storageRef);
+                console.log(`[ComboUpload] Image ${i+1} upload started to Cloudinary`);
+                const downloadUrl = await uploadToCloudinary(blob);
                 console.log(`[ComboUpload] Image ${i+1} download URL received: ${downloadUrl}`);
                 
                 console.log(`[ComboUpload] Image ${i+1} Firestore UI state update started.`);
@@ -2242,15 +2241,12 @@ function AdminPage() {
     setLoading(true);
     try {
       const cleanData = { ...comboData };
-      // Migrate any existing base64 images to Storage
+      // Migrate any existing base64 images to Cloudinary
       if (cleanData.images && cleanData.images.length > 0) {
         const uploadedImages = await Promise.all(
-          cleanData.images.map(async (imgStr, idx) => {
+          cleanData.images.map(async (imgStr) => {
             if (imgStr && imgStr.startsWith("data:image/")) {
-              const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-              const storageRef = ref(storage, fileName);
-              await uploadString(storageRef, imgStr, "data_url");
-              return await getDownloadURL(storageRef);
+              return await uploadToCloudinary(imgStr);
             }
             return imgStr;
           })
