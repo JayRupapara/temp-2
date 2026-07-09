@@ -325,17 +325,17 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
 function LoadingScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => { const t = setTimeout(onDone, 2400); return () => clearTimeout(t); }, [onDone]);
   return (
-    <motion.div className="fixed inset-0 z-[100] flex flex-col items-center justify-center" style={{ background: "#F8F6F2" }}
+    <motion.div className="fixed inset-0 z-[100] flex flex-col items-center justify-center w-full h-full" style={{ background: "#F8F6F2" }}
       exit={{ opacity: 0 }} transition={{ duration: 0.9 }}>
-      <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7 }} className="flex flex-col items-center gap-5">
-        <div className="relative">
+      <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7 }} className="flex flex-col items-center justify-center gap-3.5 w-full text-center">
+        <div className="relative flex justify-center">
           <div className="absolute inset-0 rounded-full opacity-25" style={{ background: "radial-gradient(circle, #CFA18D, transparent)", transform: "scale(2)", filter: "blur(20px)" }} />
-          <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="w-36 h-auto object-contain relative" />
+          <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="w-40 h-auto object-contain relative mx-auto" />
         </div>
-        <motion.div initial={{ width: 0 }} animate={{ width: "160px" }} transition={{ duration: 1.6, delay: 0.3 }} className="h-px rounded-full"
-          style={{ background: "linear-gradient(90deg, transparent, #CFA18D, #E8DCC8)" }} />
+        <motion.div initial={{ width: 0 }} animate={{ width: "160px" }} transition={{ duration: 1.6, delay: 0.3 }} className="h-px rounded-full mx-auto"
+          style={{ background: "linear-gradient(90deg, transparent, #CFA18D, transparent)" }} />
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-          className="text-[11px] uppercase tracking-[0.35em]" style={{ color: "#8C7B6B" }}>
+          className="text-[11px] uppercase tracking-[0.35em] ml-[0.35em] text-center" style={{ color: "#8C7B6B" }}>
           Timeless Elegance
         </motion.p>
       </motion.div>
@@ -2245,6 +2245,60 @@ function AdminPage() {
   );
 }
 
+// ── Sales Pop ──────────────────────────────────────────────────────────────
+function SalesPop() {
+  const [show, setShow] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [order, setOrder] = useState<any>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > window.innerHeight * 0.6); // Show after 60% scroll (past hero)
+    };
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial check
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    let idx = Math.floor(Math.random() * RECENT_ORDERS.length);
+    const trigger = () => {
+      setOrder(RECENT_ORDERS[idx % RECENT_ORDERS.length]);
+      idx++;
+      setShow(true);
+      setTimeout(() => setShow(false), 3000);
+    };
+    const t1 = setTimeout(trigger, 12000);
+    const t2 = setInterval(trigger, 45000);
+    return () => { clearTimeout(t1); clearInterval(t2); };
+  }, []);
+
+  if (!order) return null;
+
+  return (
+    <AnimatePresence>
+      {show && scrolled && (
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed bottom-28 md:bottom-12 left-4 md:left-6 z-40 max-w-[260px] sm:max-w-[280px] w-[80vw]"
+        >
+          <div className="flex items-center gap-3 p-3 rounded-2xl shadow-xl"
+            style={{ background: "rgba(252,251,248,0.96)", backdropFilter: "blur(12px)", border: "1px solid rgba(203,184,169,0.35)" }}>
+            <div className="text-sm">🛍️</div>
+            <div>
+              <p className="text-[11px] font-bold leading-tight" style={{ color: "#3D2B1F" }}>{order.name} from {order.city} just ordered</p>
+              <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "#8C7B6B" }}>{order.product}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ── App ────────────────────────────────────────────────────────────────────
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -2323,19 +2377,6 @@ export default function App() {
   const clearCart = () => setCart([]);
   const toggleWishlist = (id: number) => setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  // Recent order notifications
-  useEffect(() => {
-    if (loading || page === "admin") return;
-    let idx = Math.floor(Math.random() * RECENT_ORDERS.length);
-    const show = () => {
-      const o = RECENT_ORDERS[idx % RECENT_ORDERS.length]; idx++;
-      toast(`🛍️ ${o.name} from ${o.city} just ordered`, { description: o.product, duration: 4000 });
-    };
-    const t1 = setTimeout(show, 8000);
-    const t2 = setInterval(show, 55000);
-    return () => { clearTimeout(t1); clearInterval(t2); };
-  }, [loading, page]);
-
   const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos };
 
   return (
@@ -2361,6 +2402,7 @@ export default function App() {
           <Navbar />
           <CartDrawer />
           <FloatingWhatsApp />
+          {page !== "admin" && <SalesPop />}
 
           {page === "home" && <HomePage />}
           {page === "shop" && <ShopPage />}
