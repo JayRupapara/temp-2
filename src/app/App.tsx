@@ -285,16 +285,11 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
             )}
 
             <div className={`absolute bottom-0 left-0 right-0 p-4 pb-5 flex flex-col gap-2.5 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] z-20 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}
-              style={{ background: "linear-gradient(to top, rgba(252,251,248,0.98) 0%, rgba(252,251,248,0.85) 60%, transparent 100%)" }}>
-              <button onClick={(e) => { e.stopPropagation(); addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
-                className="w-full py-3 rounded-full text-[11px] uppercase tracking-widest font-bold transition-all duration-300 hover:scale-[1.02] shadow-sm"
-                style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F" }}>
-                Add to Cart
-              </button>
+              style={{ background: "linear-gradient(to top, rgba(252,251,248,0.98) 0%, transparent 100%)" }}>
               <button onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                className="w-full text-[10px] uppercase tracking-[0.2em] font-bold transition-all hover:text-[#CFA18D] text-center"
-                style={{ color: "#8C7B6B" }}>
-                View Product
+                className="w-full py-3 rounded-full text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 hover:scale-[1.02] shadow-sm backdrop-blur-sm"
+                style={{ background: "rgba(252,251,248,0.9)", border: "1px solid rgba(203,184,169,0.5)", color: "#3D2B1F" }}>
+                Quick View
               </button>
             </div>
           </div>
@@ -307,12 +302,18 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
               <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200"} />)}</div>
             </div>
             <div className="mb-2"><StockIndicator stock={product.stock} /></div>
-            <div className="flex items-center justify-between mt-auto">
+            <div className="flex items-center justify-between mt-auto mb-3.5">
               <div className="flex items-baseline gap-1.5 sm:gap-2">
-                <span className="text-sm sm:text-base font-bold" style={{ color: "#CFA18D" }}>₹{product.price}</span>
+                <span className="text-sm sm:text-base font-bold" style={{ color: "#3D2B1F" }}>₹{product.price}</span>
                 <span className="text-[10px] sm:text-xs line-through" style={{ color: "#CBB8A9" }}>₹{product.originalPrice}</span>
               </div>
             </div>
+            
+            <button onClick={(e) => { e.stopPropagation(); addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
+              className="mt-auto w-full py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 12px rgba(207,161,141,0.25)" }}>
+              <ShoppingBag size={14} /> Add to Cart
+            </button>
           </div>
         </div>
       </motion.div>
@@ -916,8 +917,8 @@ function InstagramGallery() {
         </div>
         <div className="text-center mt-12 md:mt-16">
           <a href="https://www.instagram.com/shrivallabh_jewels" target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-3 px-8 py-4 rounded-full text-[12px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-95"
-            style={{ background: "linear-gradient(135deg, #D4AF37, #C5A028)", color: "#FFFFFF", boxShadow: "0 4px 20px rgba(212,175,55,0.25)" }}>
+            className="inline-flex items-center gap-3 px-8 py-4 rounded-full text-[12px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 active:scale-95"
+            style={{ background: "linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4)", color: "#FFFFFF", boxShadow: "0 8px 24px rgba(221,42,123,0.35)" }}>
             <Instagram size={16} /> Explore Our Instagram
           </a>
         </div>
