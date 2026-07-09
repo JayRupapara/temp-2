@@ -10,8 +10,9 @@ import {
   Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon, MessageCircle
 } from "lucide-react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { auth, googleProvider, db } from "./firebase";
+import { auth, googleProvider, db, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup, updateDoc } from "firebase/firestore";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 
 import logoImg from "../imports/IMG_5778.PNG";
 import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
@@ -2026,19 +2027,31 @@ function AdminPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) return toast.error("Valid image file required.");
+    toast.info("Compressing and uploading image...");
     const reader = new FileReader();
     reader.onload = (event) => {
       const originalDataUrl = event.target?.result as string;
       if (!originalDataUrl) return;
-      const saveImage = (dataUrl: string) => {
-        setComboData(prev => {
-          if (index !== undefined) {
-            const newImages = [...(prev.images || [])];
-            newImages[index] = dataUrl;
-            return { ...prev, images: newImages, image: newImages[0] || prev.image };
-          }
-          return { ...prev, image: dataUrl, images: [dataUrl] };
-        });
+      const saveToFirebase = async (dataUrl: string) => {
+        try {
+          const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+          const storageRef = ref(storage, fileName);
+          await uploadString(storageRef, dataUrl, "data_url");
+          const downloadUrl = await getDownloadURL(storageRef);
+          
+          setComboData(prev => {
+            if (index !== undefined) {
+              const newImages = [...(prev.images || [])];
+              newImages[index] = downloadUrl;
+              return { ...prev, images: newImages, image: newImages[0] || prev.image };
+            }
+            return { ...prev, image: downloadUrl, images: [downloadUrl] };
+          });
+          toast.success("Image uploaded!");
+        } catch (err: any) {
+          console.error("Upload error:", err);
+          toast.error("Image upload failed");
+        }
       };
       const img = new Image();
       img.onload = () => {
@@ -2046,7 +2059,7 @@ function AdminPage() {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
           if (!ctx) throw new Error("No ctx");
-          const MAX_WIDTH = 800;
+          const MAX_WIDTH = 1200;
           let width = img.width; let height = img.height;
           if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
           canvas.width = width; canvas.height = height;
@@ -2054,10 +2067,10 @@ function AdminPage() {
           ctx.drawImage(img, 0, 0, width, height);
           const compressed = canvas.toDataURL("image/jpeg", 0.8);
           if (!compressed || compressed.length < 100) throw new Error("Empty");
-          saveImage(compressed);
-        } catch (err) { saveImage(originalDataUrl); }
+          saveToFirebase(compressed);
+        } catch (err) { saveToFirebase(originalDataUrl); }
       };
-      img.onerror = () => saveImage(originalDataUrl);
+      img.onerror = () => saveToFirebase(originalDataUrl);
       img.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
@@ -2082,7 +2095,35 @@ function AdminPage() {
   const saveCombo = async () => {
     if (!comboData.name || !comboData.image) return toast.error("Name and Image required");
     setLoading(true);
-    try { await setDoc(doc(db, "combos", comboData.id!), comboData); toast.success("Combo saved!"); setEditingCombo(null); } 
+    try {
+      const cleanData = { ...comboData };
+      // Migrate any existing base64 images to Storage
+      if (cleanData.images && cleanData.images.length > 0) {
+        const uploadedImages = await Promise.all(
+          cleanData.images.map(async (imgStr, idx) => {
+            if (imgStr && imgStr.startsWith("data:image/")) {
+              const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+              const storageRef = ref(storage, fileName);
+              await uploadString(storageRef, imgStr, "data_url");
+              return await getDownloadURL(storageRef);
+            }
+            return imgStr;
+          })
+        );
+        cleanData.images = uploadedImages.filter(img => !!img);
+        if (cleanData.images.length > 0) {
+          cleanData.image = cleanData.images[0];
+        } else {
+          cleanData.image = "";
+        }
+      }
+      // Ensure no undefined fields
+      Object.keys(cleanData).forEach(key => cleanData[key as keyof Combo] === undefined && delete cleanData[key as keyof Combo]);
+
+      await setDoc(doc(db, "combos", cleanData.id!), cleanData); 
+      toast.success("Combo saved!"); 
+      setEditingCombo(null); 
+    } 
     catch(e: any) { toast.error(e.message); }
     setLoading(false);
   };
@@ -2255,9 +2296,9 @@ function AdminPage() {
                     <textarea placeholder="Description" rows={3} value={comboData.description} onChange={e => setComboData({ ...comboData, description: e.target.value })} className="border p-2 rounded w-full" />
                   </div>
                   <div className="col-span-1 md:col-span-2 border p-4 rounded bg-gray-50 flex flex-col gap-4">
-                    <label className="block text-sm font-bold">Combo Images (Upload up to 10 images. First image is the main image.)</label>
+                    <label className="block text-sm font-bold">Combo Images (Upload up to 20 images. First image is the main image.)</label>
                     <div className="flex flex-wrap gap-4">
-                      {Array.from({ length: 10 }).map((_, idx) => {
+                      {Array.from({ length: 20 }).map((_, idx) => {
                         const img = (comboData.images || [])[idx] || (idx === 0 ? comboData.image : "");
                         return (
                           <div key={idx} className="relative w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white overflow-hidden group">
