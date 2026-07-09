@@ -539,10 +539,25 @@ function Navbar() {
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}
             className="fixed top-16 left-0 right-0 z-40 lg:hidden px-5 py-5"
             style={{ background: "rgba(248,246,242,0.97)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(203,184,169,0.3)" }}>
-            <div className="flex flex-col gap-4">
-              {links.map(({ label, action }) => (
-                <button key={label} onClick={action} className="text-left text-base font-semibold" style={{ color: "#3D2B1F" }}>{label}</button>
-              ))}
+            <div className="flex flex-col gap-8">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style={{ color: "#8C7B6B" }}>Shop</p>
+                <div className="flex flex-col gap-3.5">
+                  <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>All Jewellery</button>
+                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Necklaces</button>
+                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Rings</button>
+                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Combo Sets</button>
+                  <button onClick={() => scroll("new-arrivals")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>New Arrivals</button>
+                  <button onClick={() => scroll("bestsellers")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Best Sellers</button>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style={{ color: "#8C7B6B" }}>Quick Links</p>
+                <div className="flex flex-col gap-3.5">
+                  <button onClick={() => scroll("contact")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>About Us</button>
+                  <button onClick={() => scroll("contact")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Contact Us</button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -1579,7 +1594,7 @@ function Footer() {
   return (
     <footer style={{ background: "#3D2B1F" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8 pt-20 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-10 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-10 mb-16">
           <div>
             <div className="mb-6 p-3 rounded-xl inline-block" style={{ background: "rgba(255,255,255,0.07)" }}>
               <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="h-14 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
@@ -1599,7 +1614,6 @@ function Footer() {
             </div>
           </div>
           {[
-            { title: "Shop", links: [["shop", "All Jewellery"], ["featured", "Necklaces"], ["featured", "Rings"], ["featured", "Combo Sets"], ["new-arrivals", "New Arrivals"]] },
             { title: "Quick Links", links: [["shop", "Shop"], ["new-arrivals", "New Arrivals"], ["bestsellers", "Best Sellers"], ["contact", "About Us"], ["contact", "Contact Us"]] },
             { title: "Policies", links: [["shipping", "Shipping Policy"], ["return", "Return Policy"], ["privacy", "Privacy Policy"], ["terms", "Terms of Service"]] },
           ].map(({ title, links }) => (
