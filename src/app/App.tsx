@@ -1825,6 +1825,10 @@ function AdminPage() {
     const cleanData = { ...formData };
     if (cleanData.images) {
       cleanData.images = cleanData.images.filter(img => !!img);
+      // Force sync the main image string with the first valid gallery image to ensure Shop/Cart thumbnails are perfectly updated
+      if (cleanData.images.length > 0) {
+        cleanData.image = cleanData.images[0];
+      }
     }
     // ensure no undefined fields
     Object.keys(cleanData).forEach(key => cleanData[key as keyof Product] === undefined && delete cleanData[key as keyof Product]);
@@ -1921,7 +1925,7 @@ function AdminPage() {
                             {img ? (
                               <>
                                 <img src={img} className="w-full h-full object-cover" />
-                                <button onClick={() => handleRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
+                                <button onClick={() => handleRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
                                 <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5">{idx === 0 ? "Main" : `Gallery ${idx}`}</div>
                               </>
                             ) : (
