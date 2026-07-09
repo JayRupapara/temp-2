@@ -2027,11 +2027,28 @@ function AdminPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) return toast.error("Valid image file required.");
-    toast.info("Compressing and uploading image...");
+    
+    // Show local preview instantly
+    const tempUrl = URL.createObjectURL(file);
+    setComboData(prev => {
+      const newImages = [...(prev.images || [])];
+      if (index !== undefined) {
+        newImages[index] = tempUrl;
+      } else {
+        newImages.push(tempUrl);
+      }
+      return { ...prev, images: newImages, image: newImages[0] || prev.image };
+    });
+
+    const toastId = toast.loading("Compressing and uploading image...");
+    
     const reader = new FileReader();
     reader.onload = (event) => {
       const originalDataUrl = event.target?.result as string;
-      if (!originalDataUrl) return;
+      if (!originalDataUrl) {
+        toast.error("Failed to read file", { id: toastId });
+        return;
+      }
       const saveToFirebase = async (dataUrl: string) => {
         try {
           const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
@@ -2040,17 +2057,25 @@ function AdminPage() {
           const downloadUrl = await getDownloadURL(storageRef);
           
           setComboData(prev => {
-            if (index !== undefined) {
-              const newImages = [...(prev.images || [])];
+            const newImages = [...(prev.images || [])];
+            // Find the tempUrl and replace it with downloadUrl
+            const currentIdx = newImages.indexOf(tempUrl);
+            if (currentIdx !== -1) {
+              newImages[currentIdx] = downloadUrl;
+            } else if (index !== undefined) {
               newImages[index] = downloadUrl;
-              return { ...prev, images: newImages, image: newImages[0] || prev.image };
             }
-            return { ...prev, image: downloadUrl, images: [downloadUrl] };
+            return { ...prev, images: newImages, image: newImages[0] || prev.image };
           });
-          toast.success("Image uploaded!");
+          toast.success("Image uploaded!", { id: toastId });
         } catch (err: any) {
           console.error("Upload error:", err);
-          toast.error("Image upload failed");
+          toast.error("Image upload failed: " + err.message, { id: toastId });
+          // Revert temp image
+          setComboData(prev => {
+            const newImages = [...(prev.images || [])].filter(img => img !== tempUrl);
+            return { ...prev, images: newImages, image: newImages[0] || "" };
+          });
         }
       };
       const img = new Image();
