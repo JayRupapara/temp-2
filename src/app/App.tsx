@@ -36,7 +36,7 @@ import mobileHeroBanner5 from "../imports/mobile hero banner 5.png";
 type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms";
 type Product = {
   id: number; name: string; subtitle: string; description: string;
-  price: number; originalPrice: number; category: string; image: string;
+  price: number; originalPrice: number; category: string; image: string; images?: string[];
   badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
   isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean;
 };
@@ -963,7 +963,7 @@ function ProductDetailPage() {
   const [activeImg, setActiveImg] = useState(0);
   if (!p) return null;
   const wished = wishlist.includes(p.id);
-  const allImgs = [pearlImg, heartImg, butterflyImg, ringImg];
+  const allImgs = (p.images && p.images.length > 0 ? p.images : [p.image]).filter(Boolean);
   return (
     <div className="min-h-screen pt-24" style={{ background: "#F8F6F2" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8 py-10">
@@ -974,16 +974,18 @@ function ProductDetailPage() {
           {/* Images */}
           <div>
             <div className="rounded-2xl overflow-hidden aspect-square mb-4" style={{ background: "#EFE7DD", boxShadow: "0 12px 40px rgba(207,161,141,0.2)" }}>
-              <ImageWithFallback src={allImgs[activeImg]} alt={p.name} className="w-full h-full object-cover" />
+              <ImageWithFallback src={allImgs[activeImg] || allImgs[0]} alt={p.name} className="w-full h-full object-cover" />
             </div>
-            <div className="flex gap-3">
-              {allImgs.map((img, i) => (
-                <button key={i} onClick={() => setActiveImg(i)} className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200"
-                  style={{ border: activeImg === i ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", opacity: activeImg === i ? 1 : 0.7 }}>
-                  <ImageWithFallback src={img} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            {allImgs.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 snap-x hide-scrollbar">
+                {allImgs.map((img, i) => (
+                  <button key={i} onClick={() => setActiveImg(i)} className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 snap-center"
+                    style={{ border: activeImg === i ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", opacity: activeImg === i ? 1 : 0.7 }}>
+                    <ImageWithFallback src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {/* Info */}
           <div>
@@ -1744,7 +1746,7 @@ function AdminPage() {
     try { await updateDoc(o.ref, { confirmed: !o.confirmed }); toast.success(o.confirmed ? "Order marked as unconfirmed" : "Order confirmed"); } 
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -1757,12 +1759,26 @@ function AdminPage() {
         let width = img.width; let height = img.height;
         if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
         canvas.width = width; canvas.height = height;
-        ctx?.drawImage(img, 0, 0, width, height);
-        setFormData(prev => ({ ...prev, image: canvas.toDataURL("image/jpeg", 0.7) }));
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        setFormData(prev => {
+          if (index !== undefined) {
+            const newImages = [...(prev.images || [])];
+            newImages[index] = compressedDataUrl;
+            return { ...prev, images: newImages, image: newImages[0] || prev.image };
+          }
+          return { ...prev, image: compressedDataUrl, images: [compressedDataUrl] };
+        });
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+  const handleRemoveImage = (index: number) => {
+    setFormData(prev => {
+      const newImages = [...(prev.images || [])];
+      newImages.splice(index, 1);
+      return { ...prev, images: newImages, image: newImages[0] || "" };
+    });
   };
   const saveProduct = async () => {
     if (!formData.name || !formData.image) return toast.error("Name and Image are required");
@@ -1848,11 +1864,31 @@ function AdminPage() {
                   <div className="col-span-1 md:col-span-2">
                     <textarea placeholder="Care Instructions" rows={2} value={formData.care} onChange={e => setFormData({ ...formData, care: e.target.value })} className="border p-2 rounded w-full" />
                   </div>
-                  <div className="col-span-1 md:col-span-2 border p-4 rounded bg-gray-50 flex gap-4 items-center">
-                    {formData.image && <img src={formData.image} className="w-20 h-20 object-cover rounded" />}
-                    <div>
-                      <label className="block text-sm font-bold mb-1">Upload Image (Will be compressed to fit Firestore limits)</label>
-                      <input type="file" accept="image/*" onChange={handleImageUpload} />
+                  <div className="col-span-1 md:col-span-2 border p-4 rounded bg-gray-50 flex flex-col gap-4">
+                    <label className="block text-sm font-bold">Product Images (Upload up to 5 images. First image is the main image.)</label>
+                    <div className="flex flex-wrap gap-4">
+                      {Array.from({ length: 5 }).map((_, idx) => {
+                        const img = (formData.images || [])[idx] || (idx === 0 ? formData.image : "");
+                        return (
+                          <div key={idx} className="relative w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white overflow-hidden group">
+                            {img ? (
+                              <>
+                                <img src={img} className="w-full h-full object-cover" />
+                                <button onClick={() => handleRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
+                                <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5">{idx === 0 ? "Main" : `Gallery ${idx}`}</div>
+                              </>
+                            ) : (
+                              <div className="text-center p-2">
+                                <label className="cursor-pointer flex flex-col items-center justify-center h-full w-full">
+                                  <Plus size={16} className="text-gray-400 mb-1" />
+                                  <span className="text-[9px] text-gray-500 font-medium leading-tight">{idx === 0 ? "Main Image" : "Add Image"}</span>
+                                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, idx)} />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
