@@ -33,7 +33,7 @@ import mobileHeroBanner4 from "../imports/mobile hero banner 4.png";
 import mobileHeroBanner5 from "../imports/mobile hero banner 5.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms";
+type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms" | "wishlist";
 type Product = {
   id: number; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string; images?: string[];
@@ -520,7 +520,7 @@ function Navbar() {
               <UserIcon size={16} />
               {user && <span className="absolute top-0 right-0 w-2 h-2 rounded-full" style={{ background: "#059669" }} />}
             </button>
-            <button className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-full transition-colors hover:bg-secondary" style={{ color: "#5A4035" }}>
+            <button onClick={() => { setPage("wishlist"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="relative flex w-9 h-9 items-center justify-center rounded-full transition-colors hover:bg-secondary" style={{ color: "#5A4035" }}>
               <Heart size={16} />
               {wishlist.length > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold text-white" style={{ background: "#CFA18D" }}>{wishlist.length}</span>}
             </button>
@@ -1086,11 +1086,16 @@ function ProductDetailPage() {
           {/* Images */}
           <div>
             <div 
-              className="rounded-2xl overflow-hidden aspect-square mb-4 touch-pan-y" 
+              className="rounded-2xl overflow-hidden aspect-square mb-4 touch-pan-y relative" 
               style={{ background: "#EFE7DD", boxShadow: "0 12px 40px rgba(207,161,141,0.2)" }}
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
+              <button onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); toast(wished ? "Removed from wishlist" : "Saved to wishlist ♡"); }}
+                className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-md"
+                style={{ background: "rgba(252,251,248,0.95)", border: "1px solid rgba(203,184,169,0.35)", backdropFilter: "blur(8px)" }}>
+                <Heart size={18} className={wished ? "fill-rose-400 text-rose-400" : "text-[#8C7B6B]"} />
+              </button>
               <ImageWithFallback src={allImgs[activeImg] || allImgs[0]} alt={p.name} className="w-full h-full object-cover transition-all duration-300" />
             </div>
             {allImgs.length > 1 && (
@@ -1531,6 +1536,37 @@ function PolicyPage({ type }: { type: "shipping" | "return" | "privacy" | "terms
         <h1 className="text-3xl font-bold mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{title}</h1>
         <div className="text-sm leading-relaxed" style={{ color: "#6B5A4E" }}>{text}</div>
         <p className="text-sm leading-relaxed mt-8 pt-6 border-t" style={{ color: "#6B5A4E", borderColor: "rgba(203,184,169,0.3)" }}>For any further queries, please reach out to our support team on WhatsApp or via Email at shrivallabhjewels@gmail.com.</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Wishlist Page ────────────────────────────────────────────────────────
+function WishlistPage() {
+  const { wishlist, products, setPage } = useApp();
+  const wishlistedProducts = products.filter(p => wishlist.includes(p.id));
+
+  return (
+    <div className="pt-32 pb-24 min-h-screen" style={{ background: "#F8F6F2" }}>
+      <div className="max-w-7xl mx-auto px-5 lg:px-8">
+        <STitle eyebrow="Your Favorites" title="Wishlist" subtitle="Beautiful pieces you've saved for later." />
+        
+        {wishlistedProducts.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-3xl border border-[rgba(203,184,169,0.2)] shadow-sm">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: "rgba(207,161,141,0.1)" }}>
+              <Heart size={28} style={{ color: "#CFA18D" }} />
+            </div>
+            <p className="text-xl font-bold mb-2" style={{ color: "#3D2B1F", fontFamily: "'Playfair Display', serif" }}>Your wishlist is empty</p>
+            <p className="text-sm mb-6" style={{ color: "#8C7B6B" }}>Save your favorite pieces here to easily find them later.</p>
+            <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-8 py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02]" style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
+              Explore Collection
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-16">
+            {wishlistedProducts.map((p, i) => <ProductCard key={`wish-${p.id}`} product={p} delay={i * 0.1} />)}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2453,6 +2489,7 @@ export default function App() {
           {page === "checkout" && <CheckoutPage />}
           {page === "confirmation" && <OrderConfirmation />}
           {page === "account" && <AccountPage />}
+          {page === "wishlist" && <WishlistPage />}
           {page === "admin" && <AdminPage />}
           {["shipping", "return", "privacy", "terms"].includes(page) && <PolicyPage type={page as any} />}
         </>
