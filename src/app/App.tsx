@@ -31,6 +31,12 @@ import mobileHeroBanner2 from "../imports/mobile hero banner 2.png";
 import mobileHeroBanner3 from "../imports/mobile hero banner 3.png";
 import mobileHeroBanner4 from "../imports/mobile hero banner 4.png";
 import mobileHeroBanner5 from "../imports/mobile hero banner 5.png";
+import insta1 from "../imports/insta 1.png";
+import insta2 from "../imports/insta 2.png";
+import insta3 from "../imports/insta 3.png";
+import insta4 from "../imports/insta 4.png";
+import insta5 from "../imports/insta 5.png";
+import insta6 from "../imports/insta 6.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms" | "wishlist";
@@ -908,7 +914,7 @@ function ComboSection() {
 
 // ── Instagram Gallery ──────────────────────────────────────────────────────
 function InstagramGallery() {
-  const imgs = [pearlImg, heartImg, butterflyImg, ringImg, pearlImg, heartImg];
+  const imgs = [insta1, insta2, insta3, insta4, insta5, insta6];
   return (
     <section className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
