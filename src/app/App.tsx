@@ -12,7 +12,7 @@ import {
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider, db, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup, updateDoc } from "firebase/firestore";
-import { ref, uploadString, getDownloadURL } from "firebase/storage";
+import { ref, uploadString, getDownloadURL, uploadBytes } from "firebase/storage";
 
 import logoImg from "../imports/IMG_5778.PNG";
 import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
@@ -1876,6 +1876,7 @@ function AdminPage() {
   
   const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
   const [comboData, setComboData] = useState<Partial<Combo>>({});
+  const [isUploadingCombo, setIsUploadingCombo] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [ordersList, setOrdersList] = useState<any[]>([]);
@@ -2023,103 +2024,105 @@ function AdminPage() {
     setLoading(false);
   };
 
-  const handleComboImageUpload = (e: React.ChangeEvent<HTMLInputElement>, startIndex?: number) => {
+  const handleComboImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, startIndex?: number) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     
-    if (files.length > 20) {
-      toast.error("You can only upload up to 20 images at a time");
-      return;
-    }
+    if (files.length > 20) return toast.error("You can only upload up to 20 images at a time");
 
     const validFiles = files.filter(f => f.type.startsWith('image/'));
     if (validFiles.length === 0) return toast.error("Valid image files required.");
     if (validFiles.length < files.length) toast.error(`Ignored ${files.length - validFiles.length} non-image files.`);
 
-    const toastId = toast.loading(`Compressing and uploading ${validFiles.length} image(s)...`);
+    setIsUploadingCombo(true);
     let completedCount = 0;
-    let failedCount = 0;
+    const toastId = toast.loading(`Uploading 0/${validFiles.length} images...`);
 
-    validFiles.forEach((file, i) => {
-      const targetIndex = startIndex !== undefined ? startIndex + i : undefined;
-      const tempUrl = URL.createObjectURL(file);
-      
-      setComboData(prev => {
-        const newImages = [...(prev.images || [])];
+    const tempUrls = validFiles.map(file => URL.createObjectURL(file));
+    
+    // Instantly show preview
+    setComboData(prev => {
+      const newImages = [...(prev.images || [])];
+      validFiles.forEach((_, i) => {
+        const targetIndex = startIndex !== undefined ? startIndex + i : undefined;
         if (targetIndex !== undefined && targetIndex < 20) {
-          newImages[targetIndex] = tempUrl;
+          newImages[targetIndex] = tempUrls[i];
         } else if (newImages.length < 20) {
-          newImages.push(tempUrl);
+          newImages.push(tempUrls[i]);
         }
-        return { ...prev, images: newImages, image: newImages[0] || prev.image };
       });
+      return { ...prev, images: newImages, image: newImages[0] || prev.image };
+    });
 
-      const finishFile = () => {
-        completedCount++;
-        if (completedCount === validFiles.length) {
-          if (failedCount === 0) toast.success("All images uploaded successfully!", { id: toastId });
-          else toast.error(`${completedCount - failedCount} uploaded, ${failedCount} failed.`, { id: toastId });
-        }
-      };
+    const uploadPromises = validFiles.map((file, i) => {
+      return new Promise<void>((resolve, reject) => {
+        const tempUrl = tempUrls[i];
+        const targetIndex = startIndex !== undefined ? startIndex + i : undefined;
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const originalDataUrl = event.target?.result as string;
-        if (!originalDataUrl) {
-          failedCount++;
-          finishFile();
-          return;
-        }
-        const saveToFirebase = async (dataUrl: string) => {
-          try {
-            const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-            const storageRef = ref(storage, fileName);
-            await uploadString(storageRef, dataUrl, "data_url");
-            const downloadUrl = await getDownloadURL(storageRef);
-            
-            setComboData(prev => {
-              const newImages = [...(prev.images || [])];
-              const currentIdx = newImages.indexOf(tempUrl);
-              if (currentIdx !== -1) {
-                newImages[currentIdx] = downloadUrl;
-              } else if (targetIndex !== undefined && targetIndex < 20) {
-                newImages[targetIndex] = downloadUrl;
-              }
-              return { ...prev, images: newImages, image: newImages[0] || prev.image };
-            });
-            finishFile();
-          } catch (err: any) {
-            console.error("Upload error:", err);
-            failedCount++;
-            setComboData(prev => {
-              const newImages = [...(prev.images || [])].filter(img => img !== tempUrl);
-              return { ...prev, images: newImages, image: newImages[0] || "" };
-            });
-            finishFile();
-          }
-        };
         const img = new Image();
         img.onload = () => {
           try {
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
-            if (!ctx) throw new Error("No ctx");
-            const MAX_WIDTH = 1200;
+            if (!ctx) return reject(new Error("No ctx"));
+            
+            const MAX_WIDTH = 900;
             let width = img.width; let height = img.height;
             if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
             canvas.width = width; canvas.height = height;
             ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, width, height);
             ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL("image/jpeg", 0.8);
-            if (!compressed || compressed.length < 100) throw new Error("Empty");
-            saveToFirebase(compressed);
-          } catch (err) { saveToFirebase(originalDataUrl); }
+            
+            canvas.toBlob(async (blob) => {
+              if (!blob) return reject(new Error("Empty blob"));
+              try {
+                const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+                const storageRef = ref(storage, fileName);
+                
+                await uploadBytes(storageRef, blob);
+                const downloadUrl = await getDownloadURL(storageRef);
+                
+                setComboData(prev => {
+                  const newImages = [...(prev.images || [])];
+                  const currentIdx = newImages.indexOf(tempUrl);
+                  if (currentIdx !== -1) {
+                    newImages[currentIdx] = downloadUrl;
+                  } else if (targetIndex !== undefined && targetIndex < 20) {
+                    newImages[targetIndex] = downloadUrl;
+                  }
+                  return { ...prev, images: newImages, image: newImages[0] || prev.image };
+                });
+                
+                completedCount++;
+                toast.loading(`Uploading ${completedCount}/${validFiles.length} images...`, { id: toastId });
+                resolve();
+              } catch (err) {
+                console.error("Firebase upload error:", err);
+                reject(err);
+              }
+            }, "image/jpeg", 0.7);
+          } catch (err) {
+            reject(err);
+          }
         };
-        img.onerror = () => saveToFirebase(originalDataUrl);
-        img.src = originalDataUrl;
-      };
-      reader.readAsDataURL(file);
+        img.onerror = () => reject(new Error("Image load failed"));
+        img.src = tempUrl;
+      }).catch(err => {
+        console.error("Failed to process image:", err);
+        setComboData(prev => {
+          const newImages = [...(prev.images || [])].filter(img => img !== tempUrls[i]);
+          return { ...prev, images: newImages, image: newImages[0] || "" };
+        });
+      });
     });
+
+    await Promise.all(uploadPromises);
+    setIsUploadingCombo(false);
+    if (completedCount === validFiles.length) {
+      toast.success(`Successfully uploaded ${completedCount} images!`, { id: toastId });
+    } else {
+      toast.error(`Uploaded ${completedCount}/${validFiles.length} images. Some failed.`, { id: toastId });
+    }
   };
 
   const handleComboRemoveImage = (index: number) => {
@@ -2378,7 +2381,9 @@ function AdminPage() {
                   </div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button onClick={saveCombo} disabled={loading} className="px-6 py-2 bg-black text-white rounded font-bold">{loading ? "Saving..." : "Save Combo"}</button>
+                  <button onClick={saveCombo} disabled={loading || isUploadingCombo} className={`px-6 py-2 text-white rounded font-bold ${(loading || isUploadingCombo) ? 'bg-gray-400' : 'bg-black'}`}>
+                    {loading ? "Saving..." : isUploadingCombo ? "Uploading Images..." : "Save Combo"}
+                  </button>
                   <button onClick={() => setEditingCombo(null)} className="px-6 py-2 bg-gray-200 text-black rounded font-bold">Cancel</button>
                 </div>
               </div>
