@@ -39,15 +39,18 @@ import insta5 from "../imports/insta 5.png";
 import insta6 from "../imports/insta 6.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms" | "wishlist";
+type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms" | "wishlist" | "contact";
 type Product = {
-  id: number; name: string; subtitle: string; description: string;
+  id: number | string; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string; images?: string[];
   badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
   isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean;
 };
 type Combo = {
-  id: string; name: string; desc: string; price: number; original: number; saving: number; imgs: string[];
+  id: string; name: string; subtitle: string; description: string;
+  price: number; originalPrice: number; category: string; image: string; images?: string[];
+  badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
+  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; saving?: number;
 };
 type CartItem = { product: Product; qty: number };
 type DeliveryForm = { name: string; phone: string; email: string; address: string; city: string; state: string; pincode: string };
@@ -55,7 +58,7 @@ type OrderData = { id: string; items: CartItem[]; delivery: DeliveryForm; paymen
 type AppCtx = {
   page: Page; setPage: (p: Page) => void;
   cart: CartItem[]; addToCart: (p: Product, qty?: number) => void;
-  removeFromCart: (id: number) => void; updateQty: (id: number, q: number) => void;
+  removeFromCart: (id: number | string) => void; updateQty: (id: number | string, q: number) => void;
   cartTotal: number; cartCount: number; clearCart: () => void;
   cartOpen: boolean; setCartOpen: (v: boolean) => void;
   selectedProduct: Product | null; setSelectedProduct: (p: Product | null) => void;
@@ -487,7 +490,8 @@ function Navbar() {
     { label: "Shop", action: () => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
     { label: "New Arrivals", action: () => scroll("new-arrivals") },
     { label: "Best Sellers", action: () => scroll("bestsellers") },
-    { label: "Contact Us", action: () => scroll("contact") },
+    { label: "About Us", action: () => scroll("about") },
+    { label: "Contact Us", action: () => { setPage("contact"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
   ];
   const marqueeItems = [
     "Free Delivery on Prepaid Orders",
@@ -564,8 +568,8 @@ function Navbar() {
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style={{ color: "#8C7B6B" }}>Quick Links</p>
                 <div className="flex flex-col gap-3.5">
-                  <button onClick={() => scroll("contact")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>About Us</button>
-                  <button onClick={() => scroll("contact")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Contact Us</button>
+                  <button onClick={() => scroll("about")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>About Us</button>
+                  <button onClick={() => { setPage("contact"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Contact Us</button>
                 </div>
               </div>
             </div>
@@ -808,7 +812,7 @@ function BrandStory() {
   return (
     <>
       {/* Editorial Split Hero Section (Single Banner) */}
-      <section className="relative w-full min-h-[750px] lg:min-h-[90vh] flex flex-col lg:flex-row items-center bg-[#F3EBE1] overflow-hidden pt-20 lg:pt-0 pb-20 lg:pb-0">
+      <section id="about" className="relative w-full min-h-[750px] lg:min-h-[90vh] flex flex-col lg:flex-row items-center bg-[#F3EBE1] overflow-hidden pt-20 lg:pt-0 pb-20 lg:pb-0">
         
         {/* Background Image: Desktop */}
         <div className="absolute top-0 right-0 bottom-0 w-full lg:w-[60%] z-0 h-full hidden lg:block" style={{ maskImage: "linear-gradient(to right, transparent 0%, transparent 15%, black 60%)", WebkitMaskImage: "linear-gradient(to right, transparent 0%, transparent 15%, black 60%)" }}>
@@ -831,10 +835,10 @@ function BrandStory() {
               
               <div className="space-y-8 max-w-md mb-12">
                 <p className="text-[16px] lg:text-[17px] leading-[1.8]" style={{ color: "#5C4B40" }}>
-                  At Shri Vallabh Jewels, we craft beautiful jewellery that blends elegance, quality, and affordability — designed for the modern Indian woman who shines every day.
+                  Shri Vallabh Jewels is a modern jewellery brand dedicated to bringing elegant, premium-looking jewellery at accessible prices.
                 </p>
                 <p className="text-[16px] lg:text-[17px] leading-[1.8]" style={{ color: "#5C4B40" }}>
-                  Every piece is thoughtfully designed with premium anti-tarnish coating, hypoallergenic materials, and attention to detail that makes you feel special.
+                  Our carefully curated collections are designed to help you celebrate everyday moments, special occasions, and personal style with confidence and grace. Every piece reflects our commitment to quality, beauty, and timeless elegance. ✨
                 </p>
               </div>
 
@@ -863,40 +867,9 @@ function ComboSection() {
     <section className="py-24 lg:py-28" style={{ background: "linear-gradient(135deg, #EFE7DD, #F8F6F2, #E8DCC8)" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
         <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-8 mb-10">
           {(showAll ? combos : combos.slice(0, 4)).map((c, i) => (
-            <Reveal key={c.id} delay={i * 0.15}>
-              <div className="rounded-3xl overflow-hidden group cursor-pointer" style={{ background: "#FCFBF8", boxShadow: "0 8px 40px rgba(207,161,141,0.15)", border: "1px solid rgba(203,184,169,0.2)" }}>
-                <div className={`grid ${c.imgs.length === 1 ? 'grid-cols-1' : (c.imgs.length % 3 === 0 || c.imgs.length === 5) ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                  {c.imgs.map((img, j) => (
-                    <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
-                      <div className="absolute inset-0">
-                        <ImageWithFallback src={img} alt={c.name} className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>Combo Set</span>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(5,150,105,0.1)", color: "#059669" }}>Save ₹{c.saving}</span>
-                  </div>
-                  <h3 className="text-xl mb-1" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{c.name}</h3>
-                  <p className="text-xs mb-4 leading-relaxed" style={{ color: "#6B5A4E" }}>{c.desc}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-bold" style={{ color: "#CFA18D" }}>₹{c.price}</span>
-                      <span className="text-sm line-through" style={{ color: "#CBB8A9" }}>₹{c.original}</span>
-                    </div>
-                    <button onClick={() => { addToCart({ ...c, originalPrice: c.original, image: c.imgs[0], description: c.desc } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
-                      className="px-5 py-2.5 rounded-full text-xs font-bold transition-all hover:scale-105"
-                      style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
-                      Add Combo
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
+            <ProductCard key={c.id} product={c as unknown as Product} delay={i * 0.15} />
           ))}
         </div>
         {combos.length > 4 && (
@@ -1624,14 +1597,14 @@ function Footer() {
             </div>
           </div>
           {[
-            { title: "Quick Links", links: [["shop", "Shop"], ["new-arrivals", "New Arrivals"], ["bestsellers", "Best Sellers"], ["contact", "About Us"], ["contact", "Contact Us"]] },
+            { title: "Quick Links", links: [["shop", "Shop"], ["new-arrivals", "New Arrivals"], ["bestsellers", "Best Sellers"], ["about", "About Us"], ["contact", "Contact Us"]] },
             { title: "Policies", links: [["shipping", "Shipping Policy"], ["return", "Return Policy"], ["privacy", "Privacy Policy"], ["terms", "Terms of Service"]] },
           ].map(({ title, links }) => (
             <div key={title}>
               <h4 className="text-[12px] uppercase tracking-[0.25em] font-bold mb-6" style={{ color: "#CFA18D" }}>{title}</h4>
               <ul className="space-y-3">
                 {links.map(([id, label]) => (
-                  <li key={label}><button onClick={() => { if(["shop", "shipping", "return", "privacy", "terms"].includes(id)) { setPage(id as any); window.scrollTo({ top: 0, behavior: "smooth" }); } else scroll(id); }} className="text-[14px] hover:text-[#CFA18D] transition-colors text-left" style={{ color: "rgba(239,231,221,0.6)" }}>{label}</button></li>
+                  <li key={label}><button onClick={() => { if(["shop", "shipping", "return", "privacy", "terms", "contact"].includes(id)) { setPage(id as any); window.scrollTo({ top: 0, behavior: "smooth" }); } else scroll(id); }} className="text-[14px] hover:text-[#CFA18D] transition-colors text-left" style={{ color: "rgba(239,231,221,0.6)" }}>{label}</button></li>
                 ))}
               </ul>
             </div>
@@ -1763,37 +1736,7 @@ function HomePage() {
           <div>{FAQS.map((faq, i) => <FAQItem key={i} faq={faq} />)}</div>
         </div>
       </section>
-      <section id="contact" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
-        <div className="max-w-6xl mx-auto px-5 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-center">
-            <Reveal className="flex-1 w-full text-center lg:text-left">
-              <h2 className="text-[32px] md:text-[40px] lg:text-[46px] mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", lineHeight: "1.15", letterSpacing: "-0.01em" }}>We'd Love to<br/><em>Hear From You</em></h2>
-              <p className="text-[14px] md:text-[15px] leading-loose mb-14 max-w-md mx-auto lg:mx-0" style={{ color: "#6B5A4E", opacity: 0.9 }}>
-                Questions, custom orders, or just want to say hello — we're always here.
-              </p>
-              <div className="space-y-8 max-w-sm mx-auto lg:mx-0 text-left">
-                {[
-                  { Icon: Phone, label: "WHATSAPP", val: "Chat on WhatsApp", link: "https://wa.me/917801949426" }, 
-                  { Icon: Mail, label: "EMAIL", val: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }
-                ].map(({ Icon, label, val, link }) => (
-                  <a key={label} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 group transition-all">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: "rgba(207,161,141,0.15)" }}>
-                      <Icon size={18} className="transition-transform duration-500 group-hover:scale-110" style={{ color: "#CFA18D" }} />
-                    </div>
-                    <div>
-                      <p className="text-[9px] uppercase tracking-[0.2em] mb-1 font-bold" style={{ color: "#8C7B6B" }}>{label}</p>
-                      <p className="text-[14px] font-semibold group-hover:text-[#CFA18D] transition-colors" style={{ color: "#3D2B1F" }}>{val}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </Reveal>
-            <Reveal delay={0.15} className="flex-1 w-full">
-              <ContactForm />
-            </Reveal>
-          </div>
-        </div>
-      </section>
+      {/* Contact section moved to ContactPage */}
       <Footer />
     </>
   );
@@ -2079,17 +2022,65 @@ function AdminPage() {
     setLoading(false);
   };
 
+  const handleComboImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return toast.error("Valid image file required.");
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const originalDataUrl = event.target?.result as string;
+      if (!originalDataUrl) return;
+      const saveImage = (dataUrl: string) => {
+        setComboData(prev => {
+          if (index !== undefined) {
+            const newImages = [...(prev.images || [])];
+            newImages[index] = dataUrl;
+            return { ...prev, images: newImages, image: newImages[0] || prev.image };
+          }
+          return { ...prev, image: dataUrl, images: [dataUrl] };
+        });
+      };
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw new Error("No ctx");
+          const MAX_WIDTH = 800;
+          let width = img.width; let height = img.height;
+          if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
+          canvas.width = width; canvas.height = height;
+          ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.8);
+          if (!compressed || compressed.length < 100) throw new Error("Empty");
+          saveImage(compressed);
+        } catch (err) { saveImage(originalDataUrl); }
+      };
+      img.onerror = () => saveImage(originalDataUrl);
+      img.src = originalDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+  const handleComboRemoveImage = (index: number) => {
+    setComboData(prev => {
+      const newImages = [...(prev.images || [])];
+      newImages.splice(index, 1);
+      return { ...prev, images: newImages, image: newImages[0] || "" };
+    });
+  };
+
   const handleEditCombo = (c: Combo) => { setEditingCombo(c); setComboData(c); };
   const handleAddCombo = () => {
-    setEditingCombo({ id: Date.now().toString(), name: "", desc: "", price: 0, original: 0, saving: 0, imgs: [] });
-    setComboData({ id: Date.now().toString(), name: "", desc: "", price: 0, original: 0, saving: 0, imgs: [] });
+    setEditingCombo({ id: Date.now().toString(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Combo", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", saving: 0, isFeatured: false, isBestseller: false, isNewArrival: false, images: [] });
+    setComboData({ id: Date.now().toString(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Combo", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", saving: 0, isFeatured: false, isBestseller: false, isNewArrival: false, images: [] });
   };
   const handleDeleteCombo = async (id: string) => {
     if (!confirm("Delete combo?")) return;
     await deleteDoc(doc(db, "combos", id));
   };
   const saveCombo = async () => {
-    if (!comboData.name || !comboData.imgs?.length) return toast.error("Name and Images required");
+    if (!comboData.name || !comboData.image) return toast.error("Name and Image required");
     setLoading(true);
     try { await setDoc(doc(db, "combos", comboData.id!), comboData); toast.success("Combo saved!"); setEditingCombo(null); } 
     catch(e: any) { toast.error(e.message); }
@@ -2156,9 +2147,9 @@ function AdminPage() {
                     <textarea placeholder="Care Instructions" rows={2} value={formData.care} onChange={e => setFormData({ ...formData, care: e.target.value })} className="border p-2 rounded w-full" />
                   </div>
                   <div className="col-span-1 md:col-span-2 border p-4 rounded bg-gray-50 flex flex-col gap-4">
-                    <label className="block text-sm font-bold">Product Images (Upload up to 5 images. First image is the main image.)</label>
+                    <label className="block text-sm font-bold">Product Images (Upload up to 10 images. First image is the main image.)</label>
                     <div className="flex flex-wrap gap-4">
-                      {Array.from({ length: 5 }).map((_, idx) => {
+                      {Array.from({ length: 10 }).map((_, idx) => {
                         const img = (formData.images || [])[idx] || (idx === 0 ? formData.image : "");
                         return (
                           <div key={idx} className="relative w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white overflow-hidden group">
@@ -2236,41 +2227,58 @@ function AdminPage() {
                 <h2 className="text-xl font-bold mb-4">Edit Combo</h2>
                 <div className="grid grid-cols-1 gap-4">
                   <input placeholder="Combo Name" value={comboData.name} onChange={e => setComboData({ ...comboData, name: e.target.value })} className="border p-2 rounded" />
-                  <textarea placeholder="Description" value={comboData.desc} onChange={e => setComboData({ ...comboData, desc: e.target.value })} className="border p-2 rounded" />
+                  <input placeholder="Subtitle" value={comboData.subtitle} onChange={e => setComboData({ ...comboData, subtitle: e.target.value })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Discounted Price" value={comboData.price || ''} onChange={e => { const p = Number(e.target.value); setComboData({ ...comboData, price: p, saving: (comboData.originalPrice || 0) - p }); }} className="border p-2 rounded" />
+                  <input type="number" placeholder="Original Price" value={comboData.originalPrice || ''} onChange={e => { const o = Number(e.target.value); setComboData({ ...comboData, originalPrice: o, saving: o - (comboData.price || 0) }); }} className="border p-2 rounded" />
+                  <input placeholder="Badge (e.g. Bestseller)" value={comboData.badge} onChange={e => setComboData({ ...comboData, badge: e.target.value })} className="border p-2 rounded" />
                   
-                  <div className="border p-4 rounded bg-gray-50">
-                    <p className="font-bold mb-2">Select Products for Combo</p>
-                    <div className="flex flex-wrap gap-2">
-                      {products.map(p => {
-                        const isSel = comboData.imgs?.includes(p.image);
-                        return (
-                          <div key={p.id} onClick={() => {
-                            let imgs = comboData.imgs || [];
-                            let original = comboData.original || 0;
-                            if (isSel) { imgs = imgs.filter(img => img !== p.image); original -= p.price; } 
-                            else { imgs = [...imgs, p.image]; original += p.price; }
-                            setComboData({ ...comboData, imgs, original });
-                          }} className={`flex items-center gap-2 p-2 border rounded cursor-pointer ${isSel ? 'border-black bg-black text-white' : 'bg-white'}`}>
-                            <img src={p.image} className="w-8 h-8 rounded object-cover" />
-                            <span className="text-xs font-bold">{p.name}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
+                  <div className="col-span-1 md:col-span-2 flex flex-wrap gap-4 py-2 border-y my-2">
+                    <label className="flex items-center gap-2 font-bold cursor-pointer">
+                      <input type="checkbox" checked={comboData.isFeatured || false} onChange={e => setComboData({ ...comboData, isFeatured: e.target.checked })} /> Show in Featured
+                    </label>
+                    <label className="flex items-center gap-2 font-bold cursor-pointer">
+                      <input type="checkbox" checked={comboData.isBestseller || false} onChange={e => setComboData({ ...comboData, isBestseller: e.target.checked })} /> Show in Best Sellers
+                    </label>
+                    <label className="flex items-center gap-2 font-bold cursor-pointer">
+                      <input type="checkbox" checked={comboData.isNewArrival || false} onChange={e => setComboData({ ...comboData, isNewArrival: e.target.checked })} /> Show in New Arrivals
+                    </label>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-xs font-bold block mb-1">Total Original (Auto)</label>
-                      <input type="number" readOnly value={comboData.original} className="border p-2 rounded w-full bg-gray-100" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold block mb-1">Combo Price</label>
-                      <input type="number" value={comboData.price} onChange={e => setComboData({ ...comboData, price: Number(e.target.value), saving: (comboData.original || 0) - Number(e.target.value) })} className="border p-2 rounded w-full" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold block mb-1">Savings (Auto)</label>
-                      <input type="number" readOnly value={comboData.saving} className="border p-2 rounded w-full bg-gray-100" />
+                  <div className="flex gap-2">
+                    <input placeholder="Badge Color (e.g. #CFA18D)" value={comboData.badgeColor} onChange={e => setComboData({ ...comboData, badgeColor: e.target.value })} className="border p-2 rounded flex-1" />
+                    <div className="w-10 h-10 rounded border" style={{ backgroundColor: comboData.badgeColor }} />
+                  </div>
+                  <input type="number" placeholder="Stock" value={comboData.stock || ''} onChange={e => setComboData({ ...comboData, stock: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Rating (e.g. 4.8)" step="0.1" value={comboData.rating || ''} onChange={e => setComboData({ ...comboData, rating: Number(e.target.value) })} className="border p-2 rounded" />
+                  <input type="number" placeholder="Total Reviews" value={comboData.reviews || ''} onChange={e => setComboData({ ...comboData, reviews: Number(e.target.value) })} className="border p-2 rounded" />
+                  <div className="col-span-1 md:col-span-2">
+                    <textarea placeholder="Description" rows={3} value={comboData.description} onChange={e => setComboData({ ...comboData, description: e.target.value })} className="border p-2 rounded w-full" />
+                  </div>
+                  <div className="col-span-1 md:col-span-2 border p-4 rounded bg-gray-50 flex flex-col gap-4">
+                    <label className="block text-sm font-bold">Combo Images (Upload up to 10 images. First image is the main image.)</label>
+                    <div className="flex flex-wrap gap-4">
+                      {Array.from({ length: 10 }).map((_, idx) => {
+                        const img = (comboData.images || [])[idx] || (idx === 0 ? comboData.image : "");
+                        return (
+                          <div key={idx} className="relative w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white overflow-hidden group">
+                            {img ? (
+                              <>
+                                <img src={img} className="w-full h-full object-cover" />
+                                <button onClick={() => handleComboRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
+                                <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5">{idx === 0 ? "Main" : `Gallery ${idx}`}</div>
+                              </>
+                            ) : (
+                              <div className="text-center p-2">
+                                <label className="cursor-pointer flex flex-col items-center justify-center h-full w-full">
+                                  <Plus size={16} className="text-gray-400 mb-1" />
+                                  <span className="text-[9px] text-gray-500 font-medium leading-tight">{idx === 0 ? "Main Image" : "Add Image"}</span>
+                                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleComboImageUpload(e, idx)} />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -2284,27 +2292,33 @@ function AdminPage() {
                 <table className="w-full text-left text-sm min-w-[700px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="p-4 font-bold">Images</th>
+                      <th className="p-4 font-bold">Image</th>
                       <th className="p-4 font-bold">Name</th>
                       <th className="p-4 font-bold">Price</th>
+                      <th className="p-4 font-bold">Placements</th>
                       <th className="p-4 font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[...combos].sort((a,b) => Number(b.id) - Number(a.id)).map(c => (
                       <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
-                        <td className="p-4 flex gap-1">
-                          {c.imgs.map((img, idx) => <img key={idx} src={img} className="w-8 h-8 rounded-full object-cover border" />)}
-                        </td>
+                        <td className="p-4"><img src={c.image} className="w-12 h-12 rounded object-cover" /></td>
                         <td className="p-4 font-semibold">{c.name}</td>
-                        <td className="p-4">₹{c.price} (Saved ₹{c.saving})</td>
+                        <td className="p-4">₹{c.price} <span className="text-xs text-gray-500 line-through">₹{c.originalPrice}</span></td>
+                        <td className="p-4">
+                          <div className="flex flex-wrap gap-1">
+                            {c.isFeatured && <span className="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Featured</span>}
+                            {c.isBestseller && <span className="text-[9px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Bestseller</span>}
+                            {c.isNewArrival && <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded">New Arrival</span>}
+                          </div>
+                        </td>
                         <td className="p-4 flex gap-3">
                           <button onClick={() => handleEditCombo(c)} className="text-blue-600 font-bold hover:underline">Edit</button>
                           <button onClick={() => handleDeleteCombo(c.id)} className="text-red-600 font-bold hover:underline">Delete</button>
                         </td>
                       </tr>
                     ))}
-                    {combos.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-gray-500">No combos created yet.</td></tr>}
+                    {combos.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-500">No combos created yet.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -2489,8 +2503,8 @@ export default function App() {
     const ex = prev.find(i => i.product.id === p.id);
     return ex ? prev.map(i => i.product.id === p.id ? { ...i, qty: i.qty + qty } : i) : [...prev, { product: p, qty }];
   });
-  const removeFromCart = (id: number) => setCart(prev => prev.filter(i => i.product.id !== id));
-  const updateQty = (id: number, qty: number) => qty <= 0 ? removeFromCart(id) : setCart(prev => prev.map(i => i.product.id === id ? { ...i, qty } : i));
+  const removeFromCart = (id: number | string) => setCart(prev => prev.filter(i => i.product.id !== id));
+  const updateQty = (id: number | string, qty: number) => qty <= 0 ? removeFromCart(id) : setCart(prev => prev.map(i => i.product.id === id ? { ...i, qty } : i));
   const clearCart = () => setCart([]);
   const toggleWishlist = (id: number) => setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
@@ -2531,10 +2545,76 @@ export default function App() {
           {page === "account" && <AccountPage />}
           {page === "wishlist" && <WishlistPage />}
           {page === "admin" && <AdminPage />}
+          {page === "contact" && <ContactPage />}
           {["shipping", "return", "privacy", "terms"].includes(page) && <PolicyPage type={page as any} />}
         </>
       )}
     </Ctx.Provider>
+  );
+}
+
+function ContactOptionsList() {
+  return (
+    <>
+      {[
+        { Icon: Phone, label: "WHATSAPP", val: "Chat on WhatsApp", link: "https://wa.me/917801949426" }, 
+        { Icon: Mail, label: "EMAIL", val: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }
+      ].map(({ Icon, label, val, link }) => (
+        <a key={label} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 group transition-all p-4 rounded-2xl hover:bg-[#F8F6F2] border border-transparent hover:border-[rgba(203,184,169,0.2)]">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: "rgba(207,161,141,0.15)" }}>
+            <Icon size={18} className="transition-transform duration-500 group-hover:scale-110" style={{ color: "#CFA18D" }} />
+          </div>
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.2em] mb-1 font-bold" style={{ color: "#8C7B6B" }}>{label}</p>
+            <p className="text-[14px] font-semibold group-hover:text-[#CFA18D] transition-colors" style={{ color: "#3D2B1F" }}>{val}</p>
+          </div>
+        </a>
+      ))}
+    </>
+  );
+}
+
+function ContactPage() {
+  const [showOptions, setShowOptions] = useState(false);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+  return (
+    <div className="min-h-screen pt-32 pb-24" style={{ background: "#F8F6F2" }}>
+      <div className="max-w-6xl mx-auto px-5 lg:px-8">
+        <STitle eyebrow="Get in Touch" title="Contact Us" subtitle="Questions, custom orders, or just want to say hello — we're always here." />
+        <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-start mt-12 bg-white p-8 lg:p-12 rounded-3xl shadow-sm border border-[rgba(203,184,169,0.2)]">
+          <div className="flex-1 w-full order-2 lg:order-1">
+            <h3 className="text-xl font-bold mb-6" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Send us a message</h3>
+            <ContactForm />
+          </div>
+          <div className="flex-1 w-full order-1 lg:order-2">
+            <h3 className="text-xl font-bold mb-6 hidden lg:block" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Direct Contact</h3>
+            <div className="lg:hidden w-full mb-2">
+              <button onClick={() => setShowOptions(!showOptions)} className="w-full py-4 rounded-full text-[13px] font-bold uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2" style={{ border: "1px solid #CFA18D", color: "#3D2B1F" }}>
+                {showOptions ? "Hide Contact Options" : "View Contact Options"} <ChevronDown size={14} className={`transition-transform ${showOptions ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+            
+            {/* Desktop View (Always visible) */}
+            <div className="hidden lg:block space-y-6 max-w-sm">
+              <ContactOptionsList />
+            </div>
+
+            {/* Mobile View (Animated collapse) */}
+            <div className="lg:hidden">
+              <AnimatePresence>
+                {showOptions && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className="pt-4 space-y-4">
+                      <ContactOptionsList />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
