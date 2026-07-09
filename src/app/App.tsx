@@ -182,42 +182,125 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
   const { ref: revealRef, visible } = useReveal();
   const cardRef = useRef<HTMLDivElement>(null);
   const wished = wishlist.includes(product.id);
+  const [imgIndex, setImgIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const allImages = product.images?.length ? product.images : [product.image];
+  const hasMultiple = allImages.length > 1;
+
+  useEffect(() => {
+    if (!isHovered || !hasMultiple) return;
+    const t = setInterval(() => {
+      setImgIndex(prev => (prev + 1) % allImages.length);
+    }, 2500);
+    return () => clearInterval(t);
+  }, [isHovered, hasMultiple, allImages.length]);
+
+  const touchStartX = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40 && hasMultiple) {
+      if (diff > 0) nextImage(e as any);
+      else prevImage(e as any);
+    }
+    touchStartX.current = null;
+  };
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImgIndex((prev) => (prev + 1) % allImages.length);
+  };
+  
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImgIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+  };
 
   const tilt = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = cardRef.current; if (!el) return;
     const r = el.getBoundingClientRect();
-    el.style.transform = `perspective(1200px) rotateX(${((e.clientY - r.top) / r.height - 0.5) * -8}deg) rotateY(${((e.clientX - r.left) / r.width - 0.5) * 8}deg) translateZ(10px)`;
-    el.style.boxShadow = "0 24px 60px rgba(207,161,141,0.28), 0 4px 16px rgba(61,43,31,0.08)";
+    el.style.transform = `perspective(1200px) rotateX(${((e.clientY - r.top) / r.height - 0.5) * -4}deg) rotateY(${((e.clientX - r.left) / r.width - 0.5) * 4}deg) translateZ(5px)`;
   };
   const reset = () => {
     const el = cardRef.current; if (!el) return;
     el.style.transform = "perspective(1200px) rotateX(0) rotateY(0) translateZ(0)";
-    el.style.boxShadow = "0 4px 20px rgba(207,161,141,0.1), 0 1px 4px rgba(61,43,31,0.04)";
   };
+
+  const handleInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+    if (window.matchMedia("(hover: hover)").matches || isHovered) {
+      setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      e.preventDefault();
+      setIsHovered(true);
+    }
+  };
+
+  useEffect(() => {
+    const handler = (e: TouchEvent) => {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) setIsHovered(false);
+    };
+    document.addEventListener("touchstart", handler);
+    return () => document.removeEventListener("touchstart", handler);
+  }, []);
 
   return (
     <div ref={revealRef} className="group h-full">
       <motion.div initial={{ opacity: 0, y: 48 }} animate={visible ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.75, delay, ease: [0.22, 1, 0.36, 1] }} className="h-full">
-        <div ref={cardRef} onMouseMove={tilt} onMouseLeave={reset} className="relative bg-card rounded-2xl overflow-hidden h-full flex flex-col"
-          style={{ boxShadow: "0 4px 20px rgba(207,161,141,0.1), 0 1px 4px rgba(61,43,31,0.04)", border: "1px solid rgba(203,184,169,0.22)", transition: "box-shadow 0.3s ease, transform 0.14s ease" }}>
-          <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full text-[10px] font-bold"
-            style={{ background: product.badgeColor, color: "#fff", backdropFilter: "blur(8px)" }}>
-            {product.badge}
-          </div>
+        <div ref={cardRef} onMouseMove={tilt} onMouseLeave={() => { reset(); setIsHovered(false); }} onMouseEnter={() => { if(window.matchMedia("(hover: hover)").matches) setIsHovered(true); }} className="relative bg-card rounded-2xl overflow-hidden h-full flex flex-col"
+          style={{ boxShadow: isHovered ? "0 16px 40px rgba(207,161,141,0.18)" : "0 4px 20px rgba(207,161,141,0.1), 0 1px 4px rgba(61,43,31,0.04)", border: "1px solid rgba(203,184,169,0.22)", transition: "box-shadow 0.5s ease, transform 0.14s ease" }}>
+          
+          {product.badge && (
+            <div className="absolute top-3 left-3 z-30 px-2.5 py-1 rounded-full text-[10px] font-bold"
+              style={{ background: product.badgeColor, color: "#fff", backdropFilter: "blur(8px)" }}>
+              {product.badge}
+            </div>
+          )}
           <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); toast(wished ? "Removed from wishlist" : "Saved to wishlist ♡"); }}
-            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+            className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
             style={{ background: "rgba(252,251,248,0.92)", border: "1px solid rgba(203,184,169,0.2)" }}>
             <Heart size={13} className={wished ? "fill-rose-400 text-rose-400" : "text-[#8C7B6B]"} />
           </button>
-          <button onClick={() => { setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-            className="relative overflow-hidden cursor-pointer" style={{ paddingTop: "100%", background: "#EFE7DD" }}>
-            <div className="absolute inset-0">
-              <ImageWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07]" />
+
+          <div className="relative overflow-hidden cursor-pointer" style={{ paddingTop: "115%", background: "#EFE7DD" }}
+            onClick={handleInteraction} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
+          >
+            {allImages.map((img, i) => (
+              <ImageWithFallback key={i} src={img} alt={product.name} 
+                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]" 
+                style={{ opacity: i === imgIndex ? 1 : 0, transform: (i === imgIndex && isHovered) ? 'scale(1.05)' : 'scale(1)', pointerEvents: i === imgIndex ? 'auto' : 'none' }} 
+              />
+            ))}
+            
+            {hasMultiple && isHovered && (
+              <>
+                <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 backdrop-blur flex items-center justify-center border border-[#CFA18D]/30 transition-all hover:bg-white z-20 shadow-sm opacity-0 group-hover:opacity-100 duration-300">
+                  <ChevronLeft size={14} style={{ color: "#3D2B1F" }} />
+                </button>
+                <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 backdrop-blur flex items-center justify-center border border-[#CFA18D]/30 transition-all hover:bg-white z-20 shadow-sm opacity-0 group-hover:opacity-100 duration-300">
+                  <ChevronLeft size={14} style={{ color: "#3D2B1F", transform: "rotate(180deg)" }} />
+                </button>
+              </>
+            )}
+
+            <div className={`absolute bottom-0 left-0 right-0 p-4 pb-5 flex flex-col gap-2.5 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] z-20 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}
+              style={{ background: "linear-gradient(to top, rgba(252,251,248,0.98) 0%, rgba(252,251,248,0.85) 60%, transparent 100%)" }}>
+              <button onClick={(e) => { e.stopPropagation(); addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
+                className="w-full py-3 rounded-full text-[11px] uppercase tracking-widest font-bold transition-all duration-300 hover:scale-[1.02] shadow-sm"
+                style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F" }}>
+                Add to Cart
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                className="w-full text-[10px] uppercase tracking-[0.2em] font-bold transition-all hover:text-[#CFA18D] text-center"
+                style={{ color: "#8C7B6B" }}>
+                View Product
+              </button>
             </div>
-          </button>
-          <div className="p-4 sm:p-5 flex flex-col flex-1">
-            <button onClick={() => { setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              className="text-left text-[14px] sm:text-[15px] leading-snug mb-1.5 hover:underline" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", fontWeight: 500 }}>
+          </div>
+
+          <div className="p-4 sm:p-5 flex flex-col flex-1 cursor-pointer" onClick={handleInteraction}>
+            <button className="text-left text-[14px] sm:text-[15px] leading-snug mb-1.5 hover:underline" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", fontWeight: 500 }}>
               {product.name}
             </button>
             <div className="flex items-center gap-1 mb-2">
@@ -230,11 +313,6 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
                 <span className="text-[10px] sm:text-xs line-through" style={{ color: "#CBB8A9" }}>₹{product.originalPrice}</span>
               </div>
             </div>
-            <button onClick={() => { addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
-              className="mt-3 w-full py-2.5 rounded-full text-[11px] sm:text-xs font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-              style={{ background: "#3D2B1F", color: "#FCFBF8", boxShadow: "0 4px 12px rgba(61,43,31,0.15)" }}>
-              Add to Bag
-            </button>
           </div>
         </div>
       </motion.div>
