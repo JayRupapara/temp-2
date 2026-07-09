@@ -1877,6 +1877,7 @@ function AdminPage() {
   const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
   const [comboData, setComboData] = useState<Partial<Combo>>({});
   const [isUploadingCombo, setIsUploadingCombo] = useState(false);
+  const [isUploadingProduct, setIsUploadingProduct] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [ordersList, setOrdersList] = useState<any[]>([]);
@@ -1931,70 +1932,105 @@ function AdminPage() {
     try { await updateDoc(o.ref, { confirmed: !o.confirmed }); toast.success(o.confirmed ? "Order marked as unconfirmed" : "Order confirmed"); } 
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, startIndex?: number) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select a valid image file.");
-      return;
-    }
+    if (files.length > 10) return toast.error("You can only upload up to 10 images at a time");
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const originalDataUrl = event.target?.result as string;
-      if (!originalDataUrl) return;
+    const validFiles = files.filter(f => f.type.startsWith('image/'));
+    if (validFiles.length === 0) return toast.error("Valid image files required.");
+    if (validFiles.length < files.length) toast.error(`Ignored ${files.length - validFiles.length} non-image files.`);
 
-      const saveImage = (dataUrl: string) => {
-        setFormData(prev => {
-          if (index !== undefined) {
-            const newImages = [...(prev.images || [])];
-            newImages[index] = dataUrl;
-            return { ...prev, images: newImages, image: newImages[0] || prev.image };
-          }
-          return { ...prev, image: dataUrl, images: [dataUrl] };
-        });
-      };
+    setIsUploadingProduct(true);
+    let completedCount = 0;
+    const toastId = toast.loading(`Uploading 0/${validFiles.length} images...`);
 
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("No canvas context");
-
-          const MAX_WIDTH = 800;
-          let width = img.width; let height = img.height;
-          if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
-          
-          canvas.width = width; canvas.height = height;
-          // Fill with white background before drawing to prevent transparent PNGs from turning black in JPEG
-          ctx.fillStyle = "#FFFFFF";
-          ctx.fillRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
-          
-          // Safeguard: if canvas fails to render properly
-          if (!compressedDataUrl || compressedDataUrl.length < 100) {
-            throw new Error("Compression resulted in empty image");
-          }
-
-          saveImage(compressedDataUrl);
-        } catch (err) {
-          console.error("Compression failed, falling back to original", err);
-          saveImage(originalDataUrl); // Fallback if compression fails
+    const tempUrls = validFiles.map(file => URL.createObjectURL(file));
+    
+    // Instantly show preview
+    setFormData(prev => {
+      const newImages = [...(prev.images || [])];
+      validFiles.forEach((_, i) => {
+        const targetIndex = startIndex !== undefined ? startIndex + i : undefined;
+        if (targetIndex !== undefined && targetIndex < 10) {
+          newImages[targetIndex] = tempUrls[i];
+        } else if (newImages.length < 10) {
+          newImages.push(tempUrls[i]);
         }
-      };
-      
-      img.onerror = () => {
-        console.error("Image load failed, using original file");
-        saveImage(originalDataUrl);
-      };
-      
-      img.src = originalDataUrl;
-    };
-    reader.readAsDataURL(file);
+      });
+      return { ...prev, images: newImages, image: newImages[0] || prev.image };
+    });
+
+    const uploadPromises = validFiles.map((file, i) => {
+      return new Promise<void>((resolve, reject) => {
+        const tempUrl = tempUrls[i];
+        const targetIndex = startIndex !== undefined ? startIndex + i : undefined;
+
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return reject(new Error("No ctx"));
+            
+            const MAX_WIDTH = 900;
+            let width = img.width; let height = img.height;
+            if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
+            canvas.width = width; canvas.height = height;
+            ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob(async (blob) => {
+              if (!blob) return reject(new Error("Empty blob"));
+              try {
+                const fileName = `products/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+                const storageRef = ref(storage, fileName);
+                
+                await uploadBytes(storageRef, blob);
+                const downloadUrl = await getDownloadURL(storageRef);
+                
+                setFormData(prev => {
+                  const newImages = [...(prev.images || [])];
+                  const currentIdx = newImages.indexOf(tempUrl);
+                  if (currentIdx !== -1) {
+                    newImages[currentIdx] = downloadUrl;
+                  } else if (targetIndex !== undefined && targetIndex < 10) {
+                    newImages[targetIndex] = downloadUrl;
+                  }
+                  return { ...prev, images: newImages, image: newImages[0] || prev.image };
+                });
+                
+                completedCount++;
+                toast.loading(`Uploading ${completedCount}/${validFiles.length} images...`, { id: toastId });
+                resolve();
+              } catch (err) {
+                console.error("Firebase upload error:", err);
+                reject(err);
+              }
+            }, "image/jpeg", 0.7);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => reject(new Error("Image load failed"));
+        img.src = tempUrl;
+      }).catch(err => {
+        console.error("Failed to process image:", err);
+        setFormData(prev => {
+          const newImages = [...(prev.images || [])].filter(img => img !== tempUrls[i]);
+          return { ...prev, images: newImages, image: newImages[0] || "" };
+        });
+      });
+    });
+
+    await Promise.all(uploadPromises);
+    setIsUploadingProduct(false);
+    if (completedCount === validFiles.length) {
+      toast.success(`Successfully uploaded ${completedCount} images!`, { id: toastId });
+    } else {
+      toast.error(`Uploaded ${completedCount}/${validFiles.length} images. Some failed.`, { id: toastId });
+    }
   };
   const handleRemoveImage = (index: number) => {
     setFormData(prev => {
@@ -2006,20 +2042,38 @@ function AdminPage() {
   const saveProduct = async () => {
     if (!formData.name || !formData.image) return toast.error("Name and Image are required");
     
-    // Firestore does not support undefined values. Filter out empty slots from sparse arrays.
-    const cleanData = { ...formData };
-    if (cleanData.images) {
-      cleanData.images = cleanData.images.filter(img => !!img);
-      // Force sync the main image string with the first valid gallery image to ensure Shop/Cart thumbnails are perfectly updated
-      if (cleanData.images.length > 0) {
-        cleanData.image = cleanData.images[0];
-      }
-    }
-    // ensure no undefined fields
-    Object.keys(cleanData).forEach(key => cleanData[key as keyof Product] === undefined && delete cleanData[key as keyof Product]);
-
     setLoading(true);
-    try { await setDoc(doc(db, "products", cleanData.id!.toString()), cleanData); toast.success("Product saved!"); setEditing(null); } 
+    try {
+      const cleanData = { ...formData };
+      
+      // Migrate any existing base64 images to Storage
+      if (cleanData.images && cleanData.images.length > 0) {
+        const uploadedImages = await Promise.all(
+          cleanData.images.map(async (imgStr, idx) => {
+            if (imgStr && imgStr.startsWith("data:image/")) {
+              const fileName = `products/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+              const storageRef = ref(storage, fileName);
+              await uploadString(storageRef, imgStr, "data_url");
+              return await getDownloadURL(storageRef);
+            }
+            return imgStr;
+          })
+        );
+        cleanData.images = uploadedImages.filter(img => !!img);
+        if (cleanData.images.length > 0) {
+          cleanData.image = cleanData.images[0];
+        } else {
+          cleanData.image = "";
+        }
+      }
+      
+      // ensure no undefined fields
+      Object.keys(cleanData).forEach(key => cleanData[key as keyof Product] === undefined && delete cleanData[key as keyof Product]);
+
+      await setDoc(doc(db, "products", cleanData.id!.toString()), cleanData); 
+      toast.success("Product saved!"); 
+      setEditing(null); 
+    } 
     catch (e: any) { toast.error("Save failed", { description: e.message }); }
     setLoading(false);
   };
@@ -2246,8 +2300,15 @@ function AdminPage() {
                           <div key={idx} className="relative w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white overflow-hidden group">
                             {img ? (
                               <>
-                                <img src={img} className="w-full h-full object-cover" />
-                                <button onClick={() => handleRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
+                                <img src={img} className={`w-full h-full object-cover ${img.startsWith('blob:') ? 'opacity-50 grayscale' : ''}`} />
+                                {img.startsWith('blob:') && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                    <RefreshCw className="w-6 h-6 text-white animate-spin" />
+                                  </div>
+                                )}
+                                {!img.startsWith('blob:') && (
+                                  <button onClick={() => handleRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
+                                )}
                                 <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5">{idx === 0 ? "Main" : `Gallery ${idx}`}</div>
                               </>
                             ) : (
@@ -2255,7 +2316,7 @@ function AdminPage() {
                                 <label className="cursor-pointer flex flex-col items-center justify-center h-full w-full">
                                   <Plus size={16} className="text-gray-400 mb-1" />
                                   <span className="text-[9px] text-gray-500 font-medium leading-tight">{idx === 0 ? "Main Image" : "Add Image"}</span>
-                                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, idx)} />
+                                  <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, idx)} />
                                 </label>
                               </div>
                             )}
@@ -2266,7 +2327,9 @@ function AdminPage() {
                   </div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button onClick={saveProduct} disabled={loading} className="px-6 py-2 bg-black text-white rounded font-bold">{loading ? "Saving..." : "Save Product"}</button>
+                  <button onClick={saveProduct} disabled={loading || isUploadingProduct} className={`px-6 py-2 text-white rounded font-bold ${(loading || isUploadingProduct) ? 'bg-gray-400' : 'bg-black'}`}>
+                    {loading ? "Saving..." : isUploadingProduct ? "Uploading Images..." : "Save Product"}
+                  </button>
                   <button onClick={() => setEditing(null)} className="px-6 py-2 bg-gray-200 text-black rounded font-bold">Cancel</button>
                 </div>
               </div>
