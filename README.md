@@ -1,5 +1,5 @@
 
-  # Luxury Jewellery eCommerce Website
+  # Luxury Jewellery eCommerce Website1
 
   This is a code bundle for Luxury Jewellery eCommerce Website. The original project is available at https://www.figma.com/design/8Ja1Vo7s196vrsYtWvj9FJ/Luxury-Jewellery-eCommerce-Website.
 
