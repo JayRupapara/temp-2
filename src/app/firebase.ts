@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBPD8SXMFl90JUvb_sS4SdkPMaHNeXTA6g",
   authDomain: "jewels-513a2.firebaseapp.com",
   projectId: "jewels-513a2",
-  storageBucket: "jewels-513a2.appspot.com",
+  storageBucket: "jewels-513a2.firebasestorage.app",
   messagingSenderId: "747340933020",
   appId: "1:747340933020:web:487dface63d951254aca59",
   measurementId: "G-XW7P5P1P31"
