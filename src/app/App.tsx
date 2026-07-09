@@ -1059,6 +1059,12 @@ function ProductDetailPage() {
   const [activeImg, setActiveImg] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    setActiveImg(0);
+    setQty(1);
+  }, [p?.id]);
+
   if (!p) return null;
   const wished = wishlist.includes(p.id);
   const allImgs = (p.images && p.images.length > 0 ? p.images : [p.image]).filter(Boolean);
