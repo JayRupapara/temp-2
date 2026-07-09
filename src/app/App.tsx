@@ -75,10 +75,14 @@ const PRODUCTS: Product[] = [
 ];
 
 const TESTIMONIALS = [
-  { id: 1, name: "Priya Sharma", city: "Mumbai", rating: 5, text: "Absolutely stunning! The Pearl Seashell Necklace arrived beautifully packaged and exceeded all my expectations. The quality feels genuinely luxurious for the price.", order: "Pearl Seashell Necklace", verified: true },
-  { id: 2, name: "Anjali Mehta", city: "Delhi", rating: 5, text: "I ordered the Butterfly Bloom Necklace for my anniversary — it was perfect. Fast delivery, beautiful packaging, and it looked even better in person!", order: "Butterfly Bloom Necklace", verified: true },
-  { id: 3, name: "Sneha Patel", city: "Ahmedabad", rating: 5, text: "My go-to for jewellery gifting. The Heart Necklace was delicate and premium. My sister absolutely loved it. Will definitely order again!", order: "Petite Heart Necklace", verified: true },
-  { id: 4, name: "Riya Desai", city: "Jaipur", rating: 5, text: "The Infinity Ring fits beautifully and catches so much light. I receive compliments every time I wear it. Shri Vallabh Jewels never disappoints!", order: "Infinity Spark Ring", verified: true },
+  { id: 1, name: "jiya patel", city: "Mumbai", rating: 5, text: "Absolutely stunning! The necklace looked even better in person and felt very premium.", order: "Pearl Seashell Necklace", verified: true },
+  { id: 2, name: "janvi jethwani", city: "Delhi", rating: 5, text: "Beautiful packaging and fast delivery. Perfect for gifting.", order: "Butterfly Bloom Necklace", verified: true },
+  { id: 3, name: "Riya jani", city: "Ahmedabad", rating: 4, text: "The design is very elegant. Quality is good for the price.", order: "Petite Heart Necklace", verified: true },
+  { id: 4, name: "Neha harpal", city: "Jaipur", rating: 5, text: "Loved the finishing and shine. It matched perfectly with my outfit.", order: "Infinity Spark Ring", verified: true },
+  { id: 5, name: "krish R.", city: "Pune", rating: 5, text: "Very classy jewellery. I received many compliments.", order: "Pearl Seashell Necklace", verified: true },
+  { id: 6, name: "Mansi Joshi", city: "Surat", rating: 4, text: "Nice product and good quality. Delivery could be a little faster.", order: "Butterfly Bloom Necklace", verified: true },
+  { id: 7, name: "aarya Desai", city: "Bangalore", rating: 3, text: "Design is pretty, but the chain felt slightly delicate.", order: "Petite Heart Necklace", verified: true },
+  { id: 8, name: "manav desai.", city: "Vadodara", rating: 5, text: "Amazing value and looks very premium.", order: "Infinity Spark Ring", verified: true },
 ];
 
 const FAQS = [
@@ -1652,6 +1656,7 @@ function HomePage() {
   const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [showAllBestsellers, setShowAllBestsellers] = useState(false);
   const [showAllNewArrivals, setShowAllNewArrivals] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   const featured = products.filter(p => p.isFeatured);
   const bestsellers = products.filter(p => p.isBestseller);
@@ -1729,10 +1734,26 @@ function HomePage() {
       <ComboSection />
       <section className="py-24 lg:py-32" style={{ background: "#EFE7DD" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
-          <STitle eyebrow="Customer Love" title="What Our Customers Say" subtitle="4.9★ average across 400+ genuine reviews." />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {TESTIMONIALS.map((t, i) => <TestiCard key={t.id} t={t} delay={i * 0.1} />)}
+          <STitle eyebrow="Customer Love" title="What Our Customers Say" subtitle="4.7★ average across 400+ genuine reviews." />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            {TESTIMONIALS.map((t, i) => (
+              <div key={t.id} className={!showAllReviews && i >= 2 ? "hidden md:block" : ""}>
+                <TestiCard t={t} delay={i * 0.1} />
+              </div>
+            ))}
           </div>
+          {TESTIMONIALS.length > 2 && (
+            <div className="text-center md:hidden">
+              <Reveal>
+                <button 
+                  onClick={() => setShowAllReviews(!showAllReviews)}
+                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
+                  style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
+                  {showAllReviews ? "Show Less" : "View More Reviews"}
+                </button>
+              </Reveal>
+            </div>
+          )}
         </div>
       </section>
       <InstagramGallery />
