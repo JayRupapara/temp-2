@@ -2023,83 +2023,105 @@ function AdminPage() {
     setLoading(false);
   };
 
-  const handleComboImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) return toast.error("Valid image file required.");
+  const handleComboImageUpload = (e: React.ChangeEvent<HTMLInputElement>, startIndex?: number) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     
-    // Show local preview instantly
-    const tempUrl = URL.createObjectURL(file);
-    setComboData(prev => {
-      const newImages = [...(prev.images || [])];
-      if (index !== undefined) {
-        newImages[index] = tempUrl;
-      } else {
-        newImages.push(tempUrl);
-      }
-      return { ...prev, images: newImages, image: newImages[0] || prev.image };
-    });
+    if (files.length > 20) {
+      toast.error("You can only upload up to 20 images at a time");
+      return;
+    }
 
-    const toastId = toast.loading("Compressing and uploading image...");
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const originalDataUrl = event.target?.result as string;
-      if (!originalDataUrl) {
-        toast.error("Failed to read file", { id: toastId });
-        return;
-      }
-      const saveToFirebase = async (dataUrl: string) => {
-        try {
-          const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-          const storageRef = ref(storage, fileName);
-          await uploadString(storageRef, dataUrl, "data_url");
-          const downloadUrl = await getDownloadURL(storageRef);
-          
-          setComboData(prev => {
-            const newImages = [...(prev.images || [])];
-            // Find the tempUrl and replace it with downloadUrl
-            const currentIdx = newImages.indexOf(tempUrl);
-            if (currentIdx !== -1) {
-              newImages[currentIdx] = downloadUrl;
-            } else if (index !== undefined) {
-              newImages[index] = downloadUrl;
-            }
-            return { ...prev, images: newImages, image: newImages[0] || prev.image };
-          });
-          toast.success("Image uploaded!", { id: toastId });
-        } catch (err: any) {
-          console.error("Upload error:", err);
-          toast.error("Image upload failed: " + err.message, { id: toastId });
-          // Revert temp image
-          setComboData(prev => {
-            const newImages = [...(prev.images || [])].filter(img => img !== tempUrl);
-            return { ...prev, images: newImages, image: newImages[0] || "" };
-          });
+    const validFiles = files.filter(f => f.type.startsWith('image/'));
+    if (validFiles.length === 0) return toast.error("Valid image files required.");
+    if (validFiles.length < files.length) toast.error(`Ignored ${files.length - validFiles.length} non-image files.`);
+
+    const toastId = toast.loading(`Compressing and uploading ${validFiles.length} image(s)...`);
+    let completedCount = 0;
+    let failedCount = 0;
+
+    validFiles.forEach((file, i) => {
+      const targetIndex = startIndex !== undefined ? startIndex + i : undefined;
+      const tempUrl = URL.createObjectURL(file);
+      
+      setComboData(prev => {
+        const newImages = [...(prev.images || [])];
+        if (targetIndex !== undefined && targetIndex < 20) {
+          newImages[targetIndex] = tempUrl;
+        } else if (newImages.length < 20) {
+          newImages.push(tempUrl);
+        }
+        return { ...prev, images: newImages, image: newImages[0] || prev.image };
+      });
+
+      const finishFile = () => {
+        completedCount++;
+        if (completedCount === validFiles.length) {
+          if (failedCount === 0) toast.success("All images uploaded successfully!", { id: toastId });
+          else toast.error(`${completedCount - failedCount} uploaded, ${failedCount} failed.`, { id: toastId });
         }
       };
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("No ctx");
-          const MAX_WIDTH = 1200;
-          let width = img.width; let height = img.height;
-          if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
-          canvas.width = width; canvas.height = height;
-          ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL("image/jpeg", 0.8);
-          if (!compressed || compressed.length < 100) throw new Error("Empty");
-          saveToFirebase(compressed);
-        } catch (err) { saveToFirebase(originalDataUrl); }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const originalDataUrl = event.target?.result as string;
+        if (!originalDataUrl) {
+          failedCount++;
+          finishFile();
+          return;
+        }
+        const saveToFirebase = async (dataUrl: string) => {
+          try {
+            const fileName = `combos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+            const storageRef = ref(storage, fileName);
+            await uploadString(storageRef, dataUrl, "data_url");
+            const downloadUrl = await getDownloadURL(storageRef);
+            
+            setComboData(prev => {
+              const newImages = [...(prev.images || [])];
+              const currentIdx = newImages.indexOf(tempUrl);
+              if (currentIdx !== -1) {
+                newImages[currentIdx] = downloadUrl;
+              } else if (targetIndex !== undefined && targetIndex < 20) {
+                newImages[targetIndex] = downloadUrl;
+              }
+              return { ...prev, images: newImages, image: newImages[0] || prev.image };
+            });
+            finishFile();
+          } catch (err: any) {
+            console.error("Upload error:", err);
+            failedCount++;
+            setComboData(prev => {
+              const newImages = [...(prev.images || [])].filter(img => img !== tempUrl);
+              return { ...prev, images: newImages, image: newImages[0] || "" };
+            });
+            finishFile();
+          }
+        };
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("No ctx");
+            const MAX_WIDTH = 1200;
+            let width = img.width; let height = img.height;
+            if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
+            canvas.width = width; canvas.height = height;
+            ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL("image/jpeg", 0.8);
+            if (!compressed || compressed.length < 100) throw new Error("Empty");
+            saveToFirebase(compressed);
+          } catch (err) { saveToFirebase(originalDataUrl); }
+        };
+        img.onerror = () => saveToFirebase(originalDataUrl);
+        img.src = originalDataUrl;
       };
-      img.onerror = () => saveToFirebase(originalDataUrl);
-      img.src = originalDataUrl;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
   };
+
   const handleComboRemoveImage = (index: number) => {
     setComboData(prev => {
       const newImages = [...(prev.images || [])];
@@ -2329,8 +2351,15 @@ function AdminPage() {
                           <div key={idx} className="relative w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white overflow-hidden group">
                             {img ? (
                               <>
-                                <img src={img} className="w-full h-full object-cover" />
-                                <button onClick={() => handleComboRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
+                                <img src={img} className={`w-full h-full object-cover ${img.startsWith('blob:') ? 'opacity-50 grayscale' : ''}`} />
+                                {img.startsWith('blob:') && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                    <RefreshCw className="w-6 h-6 text-white animate-spin" />
+                                  </div>
+                                )}
+                                {!img.startsWith('blob:') && (
+                                  <button onClick={() => handleComboRemoveImage(idx)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><X size={12} className="text-red-500" /></button>
+                                )}
                                 <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5">{idx === 0 ? "Main" : `Gallery ${idx}`}</div>
                               </>
                             ) : (
@@ -2338,7 +2367,7 @@ function AdminPage() {
                                 <label className="cursor-pointer flex flex-col items-center justify-center h-full w-full">
                                   <Plus size={16} className="text-gray-400 mb-1" />
                                   <span className="text-[9px] text-gray-500 font-medium leading-tight">{idx === 0 ? "Main Image" : "Add Image"}</span>
-                                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleComboImageUpload(e, idx)} />
+                                  <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleComboImageUpload(e, idx)} />
                                 </label>
                               </div>
                             )}
