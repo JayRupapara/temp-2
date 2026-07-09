@@ -215,31 +215,25 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
               <ImageWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07]" />
             </div>
           </button>
-          <div className="p-5 flex flex-col flex-1">
-            <p className="text-[10px] uppercase tracking-[0.22em] font-bold mb-1" style={{ color: "#CFA18D" }}>{product.category}</p>
+          <div className="p-4 sm:p-5 flex flex-col flex-1">
             <button onClick={() => { setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              className="text-left text-[15px] leading-snug mb-1.5 hover:underline" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", fontWeight: 500 }}>
+              className="text-left text-[14px] sm:text-[15px] leading-snug mb-1.5 hover:underline" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", fontWeight: 500 }}>
               {product.name}
             </button>
-            <div className="flex items-center gap-1.5 mb-2.5">
+            <div className="flex items-center gap-1 mb-2">
               <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200"} />)}</div>
-              <span className="text-[10px]" style={{ color: "#8C7B6B" }}>({product.reviews})</span>
             </div>
-            <div className="mb-3"><StockIndicator stock={product.stock} /></div>
+            <div className="mb-2"><StockIndicator stock={product.stock} /></div>
             <div className="flex items-center justify-between mt-auto">
-              <div className="flex items-baseline gap-2">
-                <span className="text-base font-bold" style={{ color: "#CFA18D" }}>₹{product.price}</span>
-                <span className="text-xs line-through" style={{ color: "#CBB8A9" }}>₹{product.originalPrice}</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: "rgba(207,161,141,0.12)", color: "#CFA18D" }}>
-                  {Math.round((1 - product.price / product.originalPrice) * 100)}% OFF
-                </span>
+              <div className="flex items-baseline gap-1.5 sm:gap-2">
+                <span className="text-sm sm:text-base font-bold" style={{ color: "#CFA18D" }}>₹{product.price}</span>
+                <span className="text-[10px] sm:text-xs line-through" style={{ color: "#CBB8A9" }}>₹{product.originalPrice}</span>
               </div>
             </div>
             <button onClick={() => { addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
-              className="group relative overflow-hidden mt-3 w-full py-2.5 rounded-full text-xs font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-              style={{ background: "linear-gradient(135deg, #3D2B1F, #5A4035)", color: "#FCFBF8", boxShadow: "0 6px 16px rgba(61,43,31,0.25)" }}>
-              <span className="relative z-10">Add to Bag</span>
-              <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.4)] to-transparent skew-x-12 group-hover:translate-x-[150%] transition-transform duration-1000 ease-out" />
+              className="mt-3 w-full py-2.5 rounded-full text-[11px] sm:text-xs font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
+              style={{ background: "#3D2B1F", color: "#FCFBF8", boxShadow: "0 4px 12px rgba(61,43,31,0.15)" }}>
+              Add to Bag
             </button>
           </div>
         </div>
@@ -399,21 +393,21 @@ function Navbar() {
     <>
       {/* Marquee Announcement Bar */}
       <div className="fixed top-0 left-0 right-0 z-[60] overflow-hidden flex items-center"
-        style={{ background: "#2C1E16", height: "36px" }}>
+        style={{ background: "#2C1E16", height: "28px" }}>
         <div className="marquee-track flex items-center h-full whitespace-nowrap">
           {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((item, i) => (
-            <span key={i} className="inline-flex items-center text-[12px] sm:text-[13px] font-medium mx-6 sm:mx-10"
+            <span key={i} className="inline-flex items-center text-[10px] sm:text-[11px] font-medium mx-6 sm:mx-10"
               style={{ color: "#F8F6F2" }}>
               {item}
-              <span className="mx-6 sm:mx-10 text-[10px]" style={{ color: "rgba(207,161,141,0.6)" }}>◆</span>
+              <span className="mx-6 sm:mx-10 text-[8px]" style={{ color: "rgba(207,161,141,0.6)" }}>◆</span>
             </span>
           ))}
         </div>
       </div>
       <motion.header initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.85 }}
-        className="fixed top-[36px] left-0 right-0 z-50 transition-all duration-500"
+        className="fixed top-[28px] left-0 right-0 z-50 transition-all duration-500"
         style={{ background: scrolled ? "rgba(248,246,242,0.96)" : "rgba(248,246,242,0.6)", backdropFilter: "blur(24px)", borderBottom: scrolled ? "1px solid rgba(203,184,169,0.3)" : "1px solid transparent", boxShadow: scrolled ? "0 4px 32px rgba(207,161,141,0.1)" : "none" }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           <button onClick={() => { setPage("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex-shrink-0">
             <ImageWithFallback src={logoImg} alt="Shri Vallabh Jewels" className="h-16 w-auto object-contain" />
           </button>
@@ -465,9 +459,9 @@ function Navbar() {
 function FloatingWhatsApp() {
   return (
     <a href="https://wa.me/917801949426?text=Hi!%20I'm%20interested%20in%20your%20jewellery." target="_blank" rel="noopener noreferrer"
-      className="fixed bottom-24 md:bottom-8 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-1"
+      className="fixed bottom-24 md:bottom-8 right-4 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-1"
       style={{ background: "#25D366", boxShadow: "0 4px 20px rgba(37,211,102,0.5)" }}>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
       </svg>
     </a>
@@ -527,7 +521,7 @@ function HeroSection() {
           <div 
             key={i} 
             className="absolute inset-0 transition-all duration-1000 ease-in-out"
-            style={{ opacity: i === currentSlide ? b.imgOpacity : 0, transform: i === currentSlide ? 'scale(1)' : 'scale(1.05)' }}
+            style={{ opacity: i === currentSlide ? b.imgOpacity : 0, transform: i === currentSlide ? 'scale(1.15)' : 'scale(1.2)' }}
           >
             <div className="hidden lg:block w-full h-full">
               <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} className="w-full h-full object-cover object-center" />
@@ -551,20 +545,6 @@ function HeroSection() {
             className="text-[16px] lg:text-[18px] leading-relaxed mb-8 drop-shadow-sm font-medium tracking-wide max-w-[90%] lg:max-w-none" style={{ color: "#5A4035" }}>
             Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
           </motion.p>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.72 }}
-            className="flex items-center gap-3 mb-8 p-3 rounded-2xl w-fit bg-[#FCFBF8]/80 backdrop-blur-md" style={{ border: "1px solid rgba(207,161,141,0.25)" }}>
-            <Clock size={14} style={{ color: "#CFA18D" }} />
-            <span className="text-xs font-bold" style={{ color: "#6B5A4E" }}>Sale ends in:</span>
-            {[{ v: countdown.h, l: "HRS" }, { v: countdown.m, l: "MIN" }, { v: countdown.s, l: "SEC" }].map(({ v, l }, i) => (
-              <div key={l} className="flex items-center gap-1">
-                {i > 0 && <span className="font-bold text-sm" style={{ color: "#CFA18D" }}>:</span>}
-                <div className="text-center">
-                  <div className="text-base font-bold w-8 text-center tabular-nums" style={{ color: "#3D2B1F" }}>{String(v).padStart(2, "0")}</div>
-                  <div className="text-[8px] uppercase tracking-widest" style={{ color: "#8C7B6B" }}>{l}</div>
-                </div>
-              </div>
-            ))}
-          </motion.div>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.82 }} className="absolute bottom-6 left-5 right-5 flex flex-col gap-3 z-30 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mt-2 lg:flex-row lg:w-auto">
             <button onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
               className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:scale-[1.02] hover:shadow-lg w-full lg:w-auto text-center"
@@ -612,30 +592,38 @@ function HeroSection() {
 
 // ── Trust Bar ──────────────────────────────────────────────────────────────
 function TrustBar() {
-  const { ref, visible } = useReveal();
-  const items = [
-    { Icon: Shield, label: "Secure Checkout", sub: "100% safe & encrypted" },
-    { Icon: Truck, label: "Free Prepaid Delivery", sub: "Save ₹49 with prepaid" },
-    { Icon: RefreshCw, label: "1-Day Easy Returns", sub: "Hassle-free returns" },
-    { Icon: Package, label: "Quality Guaranteed", sub: "Each piece inspected" },
+  const points = [
+    "Secure Payments",
+    "Premium Quality",
+    "Fast Shipping",
+    "Easy Returns",
+    "Trusted by Customers",
+    "Elegant Packaging"
   ];
   return (
-    <div ref={ref} style={{ background: "rgba(232,220,200,0.4)", borderTop: "1px solid rgba(203,184,169,0.2)", borderBottom: "1px solid rgba(203,184,169,0.2)" }}>
-      <div className="max-w-7xl mx-auto px-5 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={visible ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}
-          className="grid grid-cols-2 md:grid-cols-4">
-          {items.map(({ Icon, label, sub }, i) => (
-            <div key={i} className="flex items-center gap-3 py-3.5 px-4" style={{ borderRight: i < 3 ? "1px solid rgba(203,184,169,0.2)" : "none" }}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(207,161,141,0.12)" }}>
-                <Icon size={14} style={{ color: "#CFA18D" }} />
-              </div>
-              <div>
-                <p className="text-xs font-bold leading-tight" style={{ color: "#3D2B1F" }}>{label}</p>
-                <p className="text-[10px]" style={{ color: "#8C7B6B" }}>{sub}</p>
-              </div>
+    <div style={{ background: "#FCFBF8", borderBottom: "1px solid rgba(203,184,169,0.2)" }} className="overflow-hidden">
+      {/* Desktop View */}
+      <div className="max-w-[1200px] mx-auto hidden lg:flex items-center justify-center gap-10 xl:gap-14 py-5 px-8">
+        {points.map((pt, i) => (
+          <div key={`desktop-${i}`} className="flex items-center gap-2">
+            <Check size={13} style={{ color: "#CFA18D" }} strokeWidth={2.5} />
+            <span className="text-[11px] uppercase tracking-[0.15em] font-semibold" style={{ color: "#3D2B1F" }}>{pt}</span>
+          </div>
+        ))}
+      </div>
+      
+      {/* Mobile Auto-scrolling Marquee */}
+      <div className="lg:hidden flex items-center h-[55px] overflow-hidden" style={{ background: "#FCFBF8" }}>
+        <div className="marquee-track flex items-center h-full whitespace-nowrap">
+          {[...points, ...points, ...points].map((pt, i) => (
+            <div key={`mobile-${i}`} className="inline-flex items-center mx-5">
+              <Check size={12} style={{ color: "#CFA18D", marginRight: "8px" }} strokeWidth={2.5} />
+              <span className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: "#3D2B1F" }}>
+                {pt}
+              </span>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -745,7 +733,8 @@ function BrandStory() {
 
 // ── Combo Section ──────────────────────────────────────────────────────────
 function ComboSection() {
-  const { addToCart, combos, setCartOpen } = useApp();
+  const { combos, addToCart, setCartOpen } = useApp();
+  const [showAll, setShowAll] = useState(false);
   
   if (combos.length === 0) return null;
 
@@ -753,8 +742,8 @@ function ComboSection() {
     <section className="py-24 lg:py-28" style={{ background: "linear-gradient(135deg, #EFE7DD, #F8F6F2, #E8DCC8)" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
         <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {combos.slice(0, 4).map((c, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+          {(showAll ? combos : combos.slice(0, 4)).map((c, i) => (
             <Reveal key={c.id} delay={i * 0.15}>
               <div className="rounded-3xl overflow-hidden group cursor-pointer" style={{ background: "#FCFBF8", boxShadow: "0 8px 40px rgba(207,161,141,0.15)", border: "1px solid rgba(203,184,169,0.2)" }}>
                 <div className={`grid ${c.imgs.length === 1 ? 'grid-cols-1' : (c.imgs.length % 3 === 0 || c.imgs.length === 5) ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -789,6 +778,18 @@ function ComboSection() {
             </Reveal>
           ))}
         </div>
+        {combos.length > 4 && (
+          <div className="text-center">
+            <Reveal>
+              <button 
+                onClick={() => setShowAll(!showAll)} 
+                className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
+                style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
+                {showAll ? "View Less" : "View More"}
+              </button>
+            </Reveal>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1472,6 +1473,14 @@ function Footer() {
 // ── Home Page ──────────────────────────────────────────────────────────────
 function HomePage() {
   const { products, setPage } = useApp();
+  const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const [showAllBestsellers, setShowAllBestsellers] = useState(false);
+  const [showAllNewArrivals, setShowAllNewArrivals] = useState(false);
+
+  const featured = products.filter(p => p.isFeatured);
+  const bestsellers = products.filter(p => p.isBestseller);
+  const newArrivals = products.filter(p => p.isNewArrival);
+
   return (
     <>
       {/* Marquee banner is now fixed above the navbar */}
@@ -1481,29 +1490,64 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Handpicked for You" title="Featured Collections" subtitle="Our most-loved pieces, curated for timeless elegance." />
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-10">
-            {products.filter(p => p.isFeatured).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
-            {products.filter(p => p.isFeatured).length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center">No featured products selected.</p>}
+            {(showAllFeatured ? featured : featured.slice(0, 4)).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
+            {featured.length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center">No featured products selected.</p>}
           </div>
-          <div className="text-center"><Reveal><button onClick={() => { window.scrollTo(0, 0); setPage("shop"); }} className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" style={{ border: "1.5px solid #CFA18D", color: "#CFA18D" }}>Our Complete Collection</button></Reveal></div>
+          {featured.length > 4 && (
+            <div className="text-center">
+              <Reveal>
+                <button 
+                  onClick={() => setShowAllFeatured(!showAllFeatured)}
+                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
+                  style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
+                  {showAllFeatured ? "View Less" : "View More"}
+                </button>
+              </Reveal>
+            </div>
+          )}
         </div>
       </section>
       <BrandStory />
       <section id="bestsellers" className="py-24 lg:py-32" style={{ background: "#EFE7DD" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Most Loved" title="Best Sellers" subtitle="The pieces our customers keep coming back for." />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {products.filter(p => p.isBestseller).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.1} />)}
-            {products.filter(p => p.isBestseller).length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No bestsellers selected.</p>}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
+            {(showAllBestsellers ? bestsellers : bestsellers.slice(0, 4)).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.1} />)}
+            {bestsellers.length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No bestsellers selected.</p>}
           </div>
+          {bestsellers.length > 4 && (
+            <div className="text-center">
+              <Reveal>
+                <button 
+                  onClick={() => setShowAllBestsellers(!showAllBestsellers)}
+                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
+                  style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
+                  {showAllBestsellers ? "View Less" : "View More"}
+                </button>
+              </Reveal>
+            </div>
+          )}
         </div>
       </section>
       <section id="new-arrivals" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Fresh In" title="New Arrivals" subtitle="Just landed — discover what's new in our latest drop." />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {products.filter(p => p.isNewArrival).map((p, i) => <ProductCard key={p.id} product={{ ...p, badge: p.badge || "New In" }} delay={i * 0.1} />)}
-            {products.filter(p => p.isNewArrival).length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No new arrivals selected.</p>}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
+            {(showAllNewArrivals ? newArrivals : newArrivals.slice(0, 4)).map((p, i) => <ProductCard key={p.id} product={{ ...p, badge: p.badge || "New In" }} delay={i * 0.1} />)}
+            {newArrivals.length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No new arrivals selected.</p>}
           </div>
+          {newArrivals.length > 4 && (
+            <div className="text-center">
+              <Reveal>
+                <button 
+                  onClick={() => setShowAllNewArrivals(!showAllNewArrivals)}
+                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
+                  style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
+                  {showAllNewArrivals ? "View Less" : "View More"}
+                </button>
+              </Reveal>
+            </div>
+          )}
         </div>
       </section>
       <ComboSection />
