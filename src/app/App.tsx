@@ -1752,9 +1752,8 @@ function HomePage() {
               </p>
               <div className="space-y-8 max-w-sm mx-auto lg:mx-0 text-left">
                 {[
-                  { Icon: Phone, label: "WHATSAPP", val: "+91 7801949426", link: "https://wa.me/917801949426" }, 
-                  { Icon: Mail, label: "EMAIL", val: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }, 
-                  { Icon: Instagram, label: "INSTAGRAM", val: "@shrivallabh_jewels", link: "https://instagram.com/shrivallabh_jewels" }
+                  { Icon: Phone, label: "WHATSAPP", val: "Chat on WhatsApp", link: "https://wa.me/917801949426" }, 
+                  { Icon: Mail, label: "EMAIL", val: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }
                 ].map(({ Icon, label, val, link }) => (
                   <a key={label} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 group transition-all">
                     <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: "rgba(207,161,141,0.15)" }}>
