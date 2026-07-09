@@ -184,24 +184,32 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
   const wished = wishlist.includes(product.id);
   const [imgIndex, setImgIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const isSwiping = useRef(false);
   
   const allImages = product.images?.length ? product.images : [product.image];
   const hasMultiple = allImages.length > 1;
 
   useEffect(() => {
-    if (!isHovered || !hasMultiple) return;
+    if (!isHovered || !hasMultiple || userInteracted) return;
     const t = setInterval(() => {
       setImgIndex(prev => (prev + 1) % allImages.length);
     }, 2500);
     return () => clearInterval(t);
-  }, [isHovered, hasMultiple, allImages.length]);
+  }, [isHovered, hasMultiple, allImages.length, userInteracted]);
 
   const touchStartX = useRef<number | null>(null);
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchStart = (e: React.TouchEvent) => { 
+    touchStartX.current = e.touches[0].clientX; 
+    isSwiping.current = false;
+    setUserInteracted(true);
+  };
+  
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 40 && hasMultiple) {
+      isSwiping.current = true;
       if (diff > 0) nextImage(e as any);
       else prevImage(e as any);
     }
@@ -210,11 +218,13 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setUserInteracted(true);
     setImgIndex((prev) => (prev + 1) % allImages.length);
   };
   
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setUserInteracted(true);
     setImgIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
   };
 
@@ -229,11 +239,18 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
   };
 
   const handleInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isSwiping.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isSwiping.current = false;
+      return;
+    }
     if (window.matchMedia("(hover: hover)").matches || isHovered) {
       setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       e.preventDefault();
       setIsHovered(true);
+      setUserInteracted(true); // Disable auto-animation if they tapped to reveal
     }
   };
 
@@ -263,7 +280,7 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
             <Heart size={13} className={wished ? "fill-rose-400 text-rose-400" : "text-[#8C7B6B]"} />
           </button>
 
-          <div className="relative overflow-hidden cursor-pointer" style={{ paddingTop: "115%", background: "#EFE7DD" }}
+          <div className="relative overflow-hidden cursor-pointer touch-pan-y" style={{ paddingTop: "115%", background: "#EFE7DD" }}
             onClick={handleInteraction} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
           >
             {allImages.map((img, i) => (
@@ -1041,9 +1058,24 @@ function ProductDetailPage() {
   const { setPage, addToCart, selectedProduct: p, wishlist, toggleWishlist, products, setCartOpen } = useApp();
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+
   if (!p) return null;
   const wished = wishlist.includes(p.id);
   const allImgs = (p.images && p.images.length > 0 ? p.images : [p.image]).filter(Boolean);
+
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart || allImgs.length <= 1) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) setActiveImg(prev => (prev + 1) % allImgs.length);
+      else setActiveImg(prev => (prev - 1 + allImgs.length) % allImgs.length);
+    }
+    setTouchStart(null);
+  };
+
   return (
     <div className="min-h-screen pt-24" style={{ background: "#F8F6F2" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8 py-10">
@@ -1053,11 +1085,20 @@ function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
           {/* Images */}
           <div>
-            <div className="rounded-2xl overflow-hidden aspect-square mb-4" style={{ background: "#EFE7DD", boxShadow: "0 12px 40px rgba(207,161,141,0.2)" }}>
-              <ImageWithFallback src={allImgs[activeImg] || allImgs[0]} alt={p.name} className="w-full h-full object-cover" />
+            <div 
+              className="rounded-2xl overflow-hidden aspect-square mb-4 touch-pan-y" 
+              style={{ background: "#EFE7DD", boxShadow: "0 12px 40px rgba(207,161,141,0.2)" }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              <ImageWithFallback src={allImgs[activeImg] || allImgs[0]} alt={p.name} className="w-full h-full object-cover transition-all duration-300" />
             </div>
             {allImgs.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-2 snap-x hide-scrollbar">
+              <div 
+                className="flex gap-3 overflow-x-auto pb-2 snap-x hide-scrollbar touch-pan-y"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+              >
                 {allImgs.map((img, i) => (
                   <button key={i} onClick={() => setActiveImg(i)} className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 snap-center"
                     style={{ border: activeImg === i ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", opacity: activeImg === i ? 1 : 0.7 }}>
@@ -2390,6 +2431,8 @@ export default function App() {
         @keyframes scrollPulse { 0% { transform: translateY(-100%); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(250%); opacity: 0; } }
         * { font-family: 'DM Sans', sans-serif; }
         input::placeholder, textarea::placeholder { color: rgba(139,123,107,0.6); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
       <AnimatePresence>
