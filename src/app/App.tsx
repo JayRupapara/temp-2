@@ -1749,27 +1749,65 @@ function AdminPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select a valid image file.");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const MAX_WIDTH = 800;
-        let width = img.width; let height = img.height;
-        if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
-        canvas.width = width; canvas.height = height;
-        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      const originalDataUrl = event.target?.result as string;
+      if (!originalDataUrl) return;
+
+      const saveImage = (dataUrl: string) => {
         setFormData(prev => {
           if (index !== undefined) {
             const newImages = [...(prev.images || [])];
-            newImages[index] = compressedDataUrl;
+            newImages[index] = dataUrl;
             return { ...prev, images: newImages, image: newImages[0] || prev.image };
           }
-          return { ...prev, image: compressedDataUrl, images: [compressedDataUrl] };
+          return { ...prev, image: dataUrl, images: [dataUrl] };
         });
       };
-      img.src = event.target?.result as string;
+
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw new Error("No canvas context");
+
+          const MAX_WIDTH = 800;
+          let width = img.width; let height = img.height;
+          if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
+          
+          canvas.width = width; canvas.height = height;
+          // Fill with white background before drawing to prevent transparent PNGs from turning black in JPEG
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          
+          // Safeguard: if canvas fails to render properly
+          if (!compressedDataUrl || compressedDataUrl.length < 100) {
+            throw new Error("Compression resulted in empty image");
+          }
+
+          saveImage(compressedDataUrl);
+        } catch (err) {
+          console.error("Compression failed, falling back to original", err);
+          saveImage(originalDataUrl); // Fallback if compression fails
+        }
+      };
+      
+      img.onerror = () => {
+        console.error("Image load failed, using original file");
+        saveImage(originalDataUrl);
+      };
+      
+      img.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -1782,8 +1820,17 @@ function AdminPage() {
   };
   const saveProduct = async () => {
     if (!formData.name || !formData.image) return toast.error("Name and Image are required");
+    
+    // Firestore does not support undefined values. Filter out empty slots from sparse arrays.
+    const cleanData = { ...formData };
+    if (cleanData.images) {
+      cleanData.images = cleanData.images.filter(img => !!img);
+    }
+    // ensure no undefined fields
+    Object.keys(cleanData).forEach(key => cleanData[key as keyof Product] === undefined && delete cleanData[key as keyof Product]);
+
     setLoading(true);
-    try { await setDoc(doc(db, "products", formData.id!.toString()), formData); toast.success("Product saved!"); setEditing(null); } 
+    try { await setDoc(doc(db, "products", cleanData.id!.toString()), cleanData); toast.success("Product saved!"); setEditing(null); } 
     catch (e: any) { toast.error("Save failed", { description: e.message }); }
     setLoading(false);
   };
