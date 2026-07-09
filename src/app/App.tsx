@@ -1609,7 +1609,7 @@ function Footer() {
               Shri Vallabh Jewels offers elegant and affordable jewellery designed to elevate your everyday style and special occasions.
             </p>
             <div className="space-y-3">
-              {[{ Icon: Phone, t: "+91 78019 49426", link: "https://wa.me/917801949426" }, { Icon: Mail, t: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }, { Icon: Instagram, t: "@shrivallabh_jewels", link: "https://instagram.com/shrivallabh_jewels" }].map(({ Icon, t, link }) => (
+              {[{ Icon: Phone, t: "Chat on WhatsApp", link: "https://wa.me/917801949426" }, { Icon: Mail, t: "shrivallabhjewels@gmail.com", link: "mailto:shrivallabhjewels@gmail.com" }, { Icon: Instagram, t: "@shrivallabh_jewels", link: "https://instagram.com/shrivallabh_jewels" }].map(({ Icon, t, link }) => (
                 <div key={t} className="flex items-center gap-3 text-[14px]" style={{ color: "rgba(239,231,221,0.7)" }}>
                   <Icon size={14} style={{ color: "#CFA18D" }} />
                   <a href={link} target="_blank" rel="noopener noreferrer" className="hover:text-[#CFA18D] transition-colors">
@@ -2522,15 +2522,15 @@ function ContactForm() {
     <form className="w-full space-y-6" onSubmit={(e) => { e.preventDefault(); toast.success("Message sent successfully! We'll get back to you soon."); }}>
       <div>
         <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: "#8C7B6B" }}>Your Name</label>
-        <input type="text" placeholder="Priya Sharma" required className="w-full px-6 py-3.5 rounded-full outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
+        <input type="text" placeholder="Enter your name" required className="w-full px-6 py-3.5 rounded-full outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
       </div>
       <div>
         <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: "#8C7B6B" }}>Email Address</label>
-        <input type="email" placeholder="priya@email.com" required className="w-full px-6 py-3.5 rounded-full outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
+        <input type="email" placeholder="Enter your email address" required className="w-full px-6 py-3.5 rounded-full outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
       </div>
       <div>
         <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: "#8C7B6B" }}>Message</label>
-        <textarea placeholder="Tell us how we can help..." required rows={4} className="w-full px-6 py-4 rounded-[1.5rem] outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50 resize-none" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
+        <textarea placeholder="How can we help you?" required rows={4} className="w-full px-6 py-4 rounded-[1.5rem] outline-none transition-all focus:ring-2 focus:ring-[#CFA18D]/50 resize-none" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.25)", color: "#3D2B1F", fontSize: "14px" }} />
       </div>
       <button type="submit" className="w-full flex items-center justify-center gap-2 py-4 rounded-full text-[13px] font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-md" style={{ background: "#C8A08C", color: "#FFFFFF" }}>
         Send Message <Send size={14} />
