@@ -531,10 +531,11 @@ function Navbar() {
     { label: "Contact Us", action: () => { setPage("contact"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
   ];
   const marqueeItems = [
-    "Free Delivery on Prepaid Orders",
+    "Cash on Delivery Available",
     "Secure Checkout",
     "Premium Quality Jewellery",
     "Trusted by 1000+ Customers",
+    "Free Delivery on Prepaid Orders",
   ];
   return (
     <>
