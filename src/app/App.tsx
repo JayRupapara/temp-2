@@ -966,7 +966,7 @@ function PostersSection() {
 
 function ShopPage() {
   const { products, combos, setPage, setSelectedProduct, addToCart, setCartOpen } = useApp();
-  const [category, setCategory] = useState("Necklace");
+  const [category, setCategory] = useState("necklaces");
   const [productType, setProductType] = useState("All");
 
   useEffect(() => {
@@ -974,16 +974,38 @@ function ShopPage() {
   }, []);
 
   const categories = [
-    { id: "Necklace", label: "Necklaces" },
-    { id: "Bracelet", label: "Bracelets" },
-    { id: "Earrings", label: "Earrings" },
-    { id: "Ring", label: "Rings" }
+    { id: "necklaces", label: "Necklaces" },
+    { id: "bracelets", label: "Bracelets" },
+    { id: "earrings", label: "Earrings" },
+    { id: "rings", label: "Rings" }
   ];
 
   const productTypes = ["All", "Single Products", "Combo Packs"];
 
-  const filteredCombos = combos.filter(c => c.category === category);
-  const filteredProducts = products.filter(p => p.category === category);
+  const normalizeCategory = (cat: string) => {
+    if (!cat) return "";
+    const lower = cat.toLowerCase();
+    if (lower.includes("necklace")) return "necklaces";
+    if (lower.includes("bracelet")) return "bracelets";
+    if (lower.includes("earring")) return "earrings";
+    if (lower.includes("ring")) return "rings";
+    return lower;
+  };
+
+  const getComboCategory = (c: Combo) => {
+    if (c.category && c.category !== "Mixed" && c.category !== "Combo" && c.category !== "Others") {
+      return normalizeCategory(c.category);
+    }
+    const name = (c.name || "").toLowerCase();
+    if (name.includes("necklace")) return "necklaces";
+    if (name.includes("earring")) return "earrings";
+    if (name.includes("bracelet")) return "bracelets";
+    if (name.includes("ring")) return "rings";
+    return "mixed";
+  };
+
+  const filteredCombos = combos.filter(c => getComboCategory(c) === category);
+  const filteredProducts = products.filter(p => normalizeCategory(p.category) === category);
 
   const showCombos = productType === "All" || productType === "Combo Packs";
   const showProducts = productType === "All" || productType === "Single Products";
@@ -1189,7 +1211,14 @@ function ProductDetailPage() {
         <div className="mt-16">
           <STitle eyebrow="More to Love" title="You May Also Like" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {products.filter(pr => pr.id !== p.id).map((pr, i) => <ProductCard key={pr.id} product={pr} delay={i * 0.1} />)}
+            {(() => {
+              let suggested = products.filter(pr => pr.category === p.category && pr.id !== p.id);
+              if (suggested.length < 4) {
+                const bestsellers = products.filter(pr => pr.isBestseller && pr.id !== p.id && pr.category !== p.category);
+                suggested = [...suggested, ...bestsellers];
+              }
+              return suggested.slice(0, 4).map((pr, i) => <ProductCard key={pr.id} product={pr} delay={i * 0.1} />);
+            })()}
           </div>
         </div>
       </div>
