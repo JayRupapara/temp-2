@@ -645,7 +645,7 @@ function StickyMobileCTA({ page }: { page: Page }) {
 // ── Hero Section ───────────────────────────────────────────────────────────
 function HeroSection() {
   const countdown = useCountdown();
-  const { setPage } = useApp();
+  const { setPage, products, combos, setSelectedProduct } = useApp();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const banners = [
@@ -717,7 +717,18 @@ function HeroSection() {
             initial={{ opacity: 0, y: 15 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.5 }}
-            onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            onClick={() => { 
+              const currentBanner = banners[currentSlide];
+              const matchedProduct = products.find(p => p.name.toLowerCase() === currentBanner.title.toLowerCase()) || 
+                                     combos.find(c => c.name.toLowerCase() === currentBanner.title.toLowerCase());
+              if (matchedProduct) {
+                setSelectedProduct(matchedProduct as Product);
+                setPage("product");
+              } else {
+                setPage("shop"); 
+              }
+              window.scrollTo({ top: 0, behavior: "smooth" }); 
+            }}
             className={`absolute px-4 py-3 rounded-2xl animate-[float_7s_ease-in-out_infinite] cursor-pointer hover:scale-105 transition-transform ${banners[currentSlide].pos}`}
             style={{ background: "rgba(252,251,248,0.94)", backdropFilter: "blur(16px)", border: "1px solid rgba(203,184,169,0.35)", boxShadow: "0 10px 32px rgba(207,161,141,0.22)", zIndex: 20 }}>
             <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: "#CFA18D" }}>Just Launched</p>
