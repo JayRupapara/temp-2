@@ -578,7 +578,7 @@ function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}
-            className="fixed top-16 left-0 right-0 z-40 lg:hidden px-5 py-5"
+            className="fixed top-[92px] left-0 right-0 z-40 lg:hidden px-5 py-6 max-h-[calc(100vh-92px)] overflow-y-auto"
             style={{ background: "rgba(248,246,242,0.97)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(203,184,169,0.3)" }}>
             <div className="flex flex-col gap-8">
               <div>
