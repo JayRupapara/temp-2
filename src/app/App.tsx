@@ -2722,7 +2722,17 @@ export default function App() {
   const [page, setPageState] = useState<Page>("home");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
+    try {
+      const saved = localStorage.getItem("selected_product");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    if (selectedProduct) localStorage.setItem("selected_product", JSON.stringify(selectedProduct));
+  }, [selectedProduct]);
+
   const [order, setOrder] = useState<OrderData | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [user, setUser] = useState<User | null>(null);
