@@ -667,10 +667,28 @@ function HeroSection() {
   const handleHeroClick = () => {
     const currentBanner = banners[currentSlide];
     
-    // Fuzzy match by name
-    let matchedProduct = products.find(p => p.name.toLowerCase().includes(currentBanner.title.toLowerCase()) || currentBanner.title.toLowerCase().includes(p.name.toLowerCase())) || 
-                         combos.find(c => c.name.toLowerCase().includes(currentBanner.title.toLowerCase()) || currentBanner.title.toLowerCase().includes(c.name.toLowerCase()));
+    // Fuzzy match by scoring words
+    const searchWords = currentBanner.title.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ')
+      .filter(w => w.length > 2 && !['necklace', 'ring', 'earring', 'earrings', 'bracelet', 'pack', 'combo', 'set'].includes(w));
+      
+    let bestMatch = null;
+    let maxScore = 0;
+    
+    const allItems = [...products, ...combos];
+    allItems.forEach(item => {
+      let score = 0;
+      const itemName = item.name.toLowerCase();
+      searchWords.forEach(w => {
+        if (itemName.includes(w)) score++;
+      });
+      if (score > maxScore) {
+        maxScore = score;
+        bestMatch = item;
+      }
+    });
                          
+    let matchedProduct = maxScore > 0 ? bestMatch : null;
+
     // Fallback if not found
     if (!matchedProduct && products.length > 0) {
       matchedProduct = products.find(p => p.isFeatured) || products[0];
