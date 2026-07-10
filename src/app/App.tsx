@@ -63,6 +63,7 @@ type AppCtx = {
   cartTotal: number; cartCount: number; clearCart: () => void;
   cartOpen: boolean; setCartOpen: (v: boolean) => void;
   selectedProduct: Product | null; setSelectedProduct: (p: Product | null) => void;
+  navigateToProduct: (p: Product) => void;
   order: OrderData | null; setOrder: (o: OrderData) => void;
   wishlist: number[]; toggleWishlist: (id: number) => void;
   user: any; login: () => void; logout: () => void;
@@ -192,7 +193,7 @@ function OTPInput({ value, onChange }: { value: string[]; onChange: (v: string[]
 
 // ── ProductCard ────────────────────────────────────────────────────────────
 function ProductCard({ product, delay = 0 }: { product: Product; delay?: number }) {
-  const { addToCart, setSelectedProduct, setPage, wishlist, toggleWishlist } = useApp();
+  const { addToCart, navigateToProduct, wishlist, toggleWishlist } = useApp();
   const { ref: revealRef, visible } = useReveal();
   const cardRef = useRef<HTMLDivElement>(null);
   const wished = wishlist.includes(product.id);
@@ -260,7 +261,7 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
       return;
     }
     if (window.matchMedia("(hover: hover)").matches || isHovered) {
-      setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" });
+      navigateToProduct(product);
     } else {
       e.preventDefault();
       setIsHovered(true);
@@ -318,7 +319,7 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
 
             <div className={`absolute bottom-0 left-0 right-0 p-4 pb-5 flex flex-col gap-2.5 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] z-20 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}
               style={{ background: "linear-gradient(to top, rgba(252,251,248,0.98) 0%, transparent 100%)" }}>
-              <button onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              <button onClick={(e) => { e.stopPropagation(); navigateToProduct(product); }}
                 className="w-full py-3 rounded-full text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 hover:scale-[1.02] shadow-sm backdrop-blur-sm"
                 style={{ background: "rgba(252,251,248,0.9)", border: "1px solid rgba(203,184,169,0.5)", color: "#3D2B1F" }}>
                 Quick View
@@ -645,7 +646,7 @@ function StickyMobileCTA({ page }: { page: Page }) {
 // ── Hero Section ───────────────────────────────────────────────────────────
 function HeroSection() {
   const countdown = useCountdown();
-  const { setPage, products, combos, setSelectedProduct } = useApp();
+  const { setPage, products, combos, navigateToProduct } = useApp();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const banners = [
@@ -722,12 +723,11 @@ function HeroSection() {
               const matchedProduct = products.find(p => p.name.toLowerCase() === currentBanner.title.toLowerCase()) || 
                                      combos.find(c => c.name.toLowerCase() === currentBanner.title.toLowerCase());
               if (matchedProduct) {
-                setSelectedProduct(matchedProduct as Product);
-                setPage("product");
+                navigateToProduct(matchedProduct as Product);
               } else {
                 setPage("shop"); 
+                window.scrollTo({ top: 0, behavior: "smooth" }); 
               }
-              window.scrollTo({ top: 0, behavior: "smooth" }); 
             }}
             className={`absolute px-4 py-3 rounded-2xl animate-[float_7s_ease-in-out_infinite] cursor-pointer hover:scale-105 transition-transform ${banners[currentSlide].pos}`}
             style={{ background: "rgba(252,251,248,0.94)", backdropFilter: "blur(16px)", border: "1px solid rgba(203,184,169,0.35)", boxShadow: "0 10px 32px rgba(207,161,141,0.22)", zIndex: 20 }}>
@@ -2738,7 +2738,14 @@ export default function App() {
   useEffect(() => {
     const handleLocation = () => {
       const path = window.location.pathname;
-      if (path === "/admin") setPageState("admin");
+      const search = window.location.search;
+      const params = new URLSearchParams(search);
+      const productId = params.get("product");
+
+      if (productId) {
+         setPageState("product");
+         // The actual product selection happens when products/combos are loaded
+      } else if (path === "/admin") setPageState("admin");
       else if (path === "/") setPageState("home");
     };
     window.addEventListener("popstate", handleLocation);
@@ -2774,6 +2781,23 @@ export default function App() {
     return () => { unsub(); unsubCombo(); };
   }, []);
 
+  useEffect(() => {
+    // Wait until data is loaded to sync selected product from URL
+    if (dataLoaded) {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("product");
+      if (productId) {
+        const matched = products.find(p => p.id.toString() === productId) 
+                     || combos.find(c => c.id.toString() === productId)
+                     || products.find(p => p.name.toLowerCase() === productId.toLowerCase());
+        if (matched) {
+          setSelectedProduct(matched as Product);
+          setPageState("product");
+        }
+      }
+    }
+  }, [dataLoaded, products, combos, window.location.search]);
+
   const login = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
@@ -2793,6 +2817,14 @@ export default function App() {
     setPageState(p); 
     if (p === "admin" && window.location.pathname !== "/admin") window.history.pushState({}, "", "/admin");
     if (p === "home" && window.location.pathname === "/admin") window.history.pushState({}, "", "/");
+    if (p !== "product" && window.location.search.includes("product=")) window.history.pushState({}, "", window.location.pathname);
+  };
+
+  const navigateToProduct = (p: Product) => {
+    setSelectedProduct(p);
+    setPageState("product");
+    window.history.pushState({}, "", `/?product=${p.id}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
@@ -2806,7 +2838,7 @@ export default function App() {
   const clearCart = () => setCart([]);
   const toggleWishlist = (id: number) => setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos };
+  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, navigateToProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos };
 
   return (
     <Ctx.Provider value={ctx}>
