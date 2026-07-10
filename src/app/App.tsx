@@ -922,7 +922,7 @@ function BrandStory() {
 
 // ── Combo Section ──────────────────────────────────────────────────────────
 function ComboSection() {
-  const { combos, addToCart, setCartOpen } = useApp();
+  const { combos } = useApp();
   const [showAll, setShowAll] = useState(false);
   
   if (combos.length === 0) return null;
@@ -933,17 +933,35 @@ function ComboSection() {
         <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-8 mb-10">
           {(showAll ? combos : combos.slice(0, 4)).map((c, i) => (
-            <ProductCard key={c.id} product={{ ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D" } as unknown as Product} delay={i * 0.15} />
+            <div key={c.id} className={`h-full ${!showAll && i >= 2 ? 'hidden md:block' : ''}`}>
+              <ProductCard product={{ ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D" } as unknown as Product} delay={i * 0.15} />
+            </div>
           ))}
         </div>
+        
+        {/* Desktop Button */}
         {combos.length > 4 && (
-          <div className="text-center">
+          <div className="hidden md:block text-center">
             <Reveal>
               <button 
                 onClick={() => setShowAll(!showAll)} 
                 className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
                 style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
-                {showAll ? "View Less" : "View More"}
+                {showAll ? "Show Less" : "View More Combos"}
+              </button>
+            </Reveal>
+          </div>
+        )}
+
+        {/* Mobile Button */}
+        {combos.length > 2 && (
+          <div className="block md:hidden text-center">
+            <Reveal>
+              <button 
+                onClick={() => setShowAll(!showAll)} 
+                className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
+                style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
+                {showAll ? "Show Less" : "View More Combos"}
               </button>
             </Reveal>
           </div>
