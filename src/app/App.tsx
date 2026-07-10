@@ -870,7 +870,7 @@ function ComboSection() {
         <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-8 mb-10">
           {(showAll ? combos : combos.slice(0, 4)).map((c, i) => (
-            <ProductCard key={c.id} product={c as unknown as Product} delay={i * 0.15} />
+            <ProductCard key={c.id} product={{ ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D" } as unknown as Product} delay={i * 0.15} />
           ))}
         </div>
         {combos.length > 4 && (
@@ -1034,43 +1034,10 @@ function ShopPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-8 lg:gap-y-12 mb-16">
           
           {/* Render Combos matching category */}
-          {showCombos && filteredCombos.map((c, i) => {
-            const allImages = c.images && c.images.length > 0 ? c.images : [c.image];
-            return (
-              <div key={`combo-${c.id}`} className="col-span-2 md:col-span-4 mb-4">
-                <Reveal delay={0.1}>
-                  <div className="rounded-3xl overflow-hidden group cursor-pointer bg-[#FCFBF8] border shadow-sm flex flex-col md:flex-row border-gray-200">
-                    <div className={`grid ${allImages.length === 1 ? 'grid-cols-1' : (allImages.length % 3 === 0 || allImages.length === 5) ? 'grid-cols-3' : 'grid-cols-2'} md:w-2/5`}>
-                      {allImages.map((img, j) => (
-                        <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
-                          <img src={img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>Combo Set</span>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(5,150,105,0.1)", color: "#059669" }}>Save ₹{c.saving || (c.originalPrice - c.price)}</span>
-                      </div>
-                      <h3 className="text-2xl font-serif text-[#3D2B1F] mb-3">{c.name}</h3>
-                      <p className="text-sm text-gray-600 mb-6">{c.description}</p>
-                      <div className="flex items-center justify-between mt-auto">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
-                          <span className="text-sm line-through text-[#CBB8A9]">₹{c.originalPrice}</span>
-                        </div>
-                        <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.originalPrice, image: allImages[0], description: c.description } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
-                          className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
-                          style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
-                          Add Combo
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </Reveal>
-              </div>
-            );
-          })}
+          {/* Render Combos matching category */}
+          {showCombos && filteredCombos.map((c, i) => (
+            <ProductCard key={`combo-${c.id}`} product={{ ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D" } as unknown as Product} delay={0.1} />
+          ))}
 
           {/* Render Products matching category */}
           {showProducts && filteredProducts.map((p, i) => (
