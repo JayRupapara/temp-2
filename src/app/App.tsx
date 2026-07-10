@@ -561,7 +561,6 @@ function Navbar() {
                   <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>All Categories</button>
                   <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Necklaces</button>
                   <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Rings</button>
-                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Combo Sets</button>
                   <button onClick={() => scroll("new-arrivals")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>New Arrivals</button>
                   <button onClick={() => scroll("bestsellers")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Best Sellers</button>
                 </div>
