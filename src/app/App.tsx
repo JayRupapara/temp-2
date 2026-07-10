@@ -2075,8 +2075,11 @@ function AdminPage() {
     try { await deleteDoc(doc(db, "products", id.toString())); toast.success("Product deleted"); } 
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
-  const toggleOrderConfirmed = async (o: any) => {
-    try { await updateDoc(o.ref, { confirmed: !o.confirmed }); toast.success(o.confirmed ? "Order marked as unconfirmed" : "Order confirmed"); } 
+  const updateOrderStatus = async (o: any, status: string) => {
+    try { 
+      await updateDoc(o.ref, { status, confirmed: status === "CONFIRMED" }); 
+      toast.success(`Order marked as ${status}`); 
+    } 
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, startIndex?: number) => {
@@ -2673,36 +2676,48 @@ function AdminPage() {
                   <th className="p-4 font-bold">Customer Details</th>
                   <th className="p-4 font-bold">Items</th>
                   <th className="p-4 font-bold">Total Amount</th>
-                  <th className="p-4 font-bold text-center">Confirmed</th>
+                  <th className="p-4 font-bold text-center">Status & Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {ordersList.map(o => (
-                  <tr key={o.id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="p-4 font-mono text-xs text-gray-500">{o.id.slice(0,8)}</td>
-                    <td className="p-4">{o.placed?.toDate ? o.placed.toDate().toLocaleString() : "Just now"}</td>
-                    <td className="p-4">
-                      <div className="font-bold">{o.delivery?.name || o.customer?.name}</div>
-                      <div className="text-xs text-gray-500">{o.delivery?.email || o.customer?.email}</div>
-                      <div className="text-xs text-gray-500">{o.delivery?.phone || o.customer?.phone}</div>
-                      <div className="text-xs text-gray-500 mt-1">{o.delivery?.address || o.shipping?.address}, {o.delivery?.city || o.shipping?.city} {o.delivery?.pincode || o.shipping?.pincode}</div>
-                    </td>
-                    <td className="p-4">
-                      <ul className="list-disc pl-4 text-xs">
-                        {o.items?.map((item: any, idx: number) => (
-                          <li key={idx}>{item.qty}x {item.product?.name || "Combo"}</li>
-                        ))}
-                      </ul>
-                    </td>
-                    <td className="p-4 font-bold">₹{o.total}</td>
-                    <td className="p-4 text-center">
-                      <button onClick={() => toggleOrderConfirmed(o)} 
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${o.confirmed ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-50 text-red-600 hover:bg-green-50 hover:text-green-600"}`}>
-                        {o.confirmed ? "Yes" : "No"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {ordersList.map(o => {
+                  const status = o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER");
+                  const rowBg = status === "CONFIRMED" ? "bg-green-50" : status === "CANCELLED" ? "bg-red-50" : "bg-yellow-50";
+                  return (
+                    <tr key={o.id} className={`border-b last:border-0 hover:brightness-95 ${rowBg}`}>
+                      <td className="p-4 font-mono text-xs text-gray-500">{o.id.slice(0,8)}</td>
+                      <td className="p-4">{o.placed?.toDate ? o.placed.toDate().toLocaleString() : "Just now"}</td>
+                      <td className="p-4">
+                        <div className="font-bold">{o.delivery?.name || o.customer?.name}</div>
+                        <div className="text-xs text-gray-500">{o.delivery?.email || o.customer?.email}</div>
+                        <div className="text-xs text-gray-500">{o.delivery?.phone || o.customer?.phone}</div>
+                        <div className="text-xs text-gray-500 mt-1">{o.delivery?.address || o.shipping?.address}, {o.delivery?.city || o.shipping?.city} {o.delivery?.pincode || o.shipping?.pincode}</div>
+                      </td>
+                      <td className="p-4">
+                        <ul className="list-disc pl-4 text-xs">
+                          {o.items?.map((item: any, idx: number) => (
+                            <li key={idx}>{item.qty}x {item.product?.name || "Combo"}</li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className="p-4 font-bold">₹{o.total}</td>
+                      <td className="p-4 text-center">
+                        {status === "NEW ORDER" && <div className="text-[10px] font-bold bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full mx-auto w-max mb-2">NEW ORDER</div>}
+                        {status === "CONFIRMED" && <div className="text-[10px] font-bold bg-green-200 text-green-800 px-3 py-1 rounded-full mx-auto w-max mb-2">CONFIRMED</div>}
+                        {status === "CANCELLED" && <div className="text-[10px] font-bold bg-red-200 text-red-800 px-3 py-1 rounded-full mx-auto w-max mb-2">CANCELLED</div>}
+                        
+                        <div className="flex gap-2 justify-center flex-wrap">
+                          {status !== "CONFIRMED" && (
+                            <button onClick={() => updateOrderStatus(o, "CONFIRMED")} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors shadow-sm">Confirm</button>
+                          )}
+                          {status !== "CANCELLED" && (
+                            <button onClick={() => updateOrderStatus(o, "CANCELLED")} className="px-3 py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors shadow-sm">Cancel</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {ordersList.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-500">No orders found.</td></tr>}
               </tbody>
             </table>
