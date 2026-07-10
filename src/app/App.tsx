@@ -650,11 +650,11 @@ function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const banners = [
-    { src: heroBannerImg1, mobileSrc: mobileHeroBanner1, title: "Diamond Bow Necklace", price: "299", pos: "top-[25%] right-0", imgOpacity: 0.7 },
-    { src: heroBannerImg2, mobileSrc: mobileHeroBanner2, title: "Golden Flutter Necklace", price: "399", pos: "top-[25%] right-0", imgOpacity: 1 },
-    { src: heroBannerImg3, mobileSrc: mobileHeroBanner3, title: "Amora Pearl Heart Bracelet", price: "249", pos: "top-[25%] right-0", imgOpacity: 1 },
-    { src: heroBannerImg4, mobileSrc: mobileHeroBanner4, title: "Pack of 5 Earrings", price: "299", pos: "bottom-[20%] right-[10%]", imgOpacity: 1 },
-    { src: heroBannerImg5, mobileSrc: mobileHeroBanner5, title: "Infinity Ring", price: "149", pos: "bottom-10 right-0", imgOpacity: 1 },
+    { src: heroBannerImg1, mobileSrc: mobileHeroBanner1, title: "Diamond Bow Necklace", searchQuery: "diamond bow", price: "299", pos: "top-[25%] right-0", imgOpacity: 0.7 },
+    { src: heroBannerImg2, mobileSrc: mobileHeroBanner2, title: "Butterfly Bloom Necklace", searchQuery: "butterfly bloom", price: "309", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg3, mobileSrc: mobileHeroBanner3, title: "Amora Pearl Heart Bracelet", searchQuery: "amora pearl", price: "249", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg4, mobileSrc: mobileHeroBanner4, title: "Pack of 5 Earrings", searchQuery: "butterfly daisy", price: "299", pos: "bottom-[20%] right-[10%]", imgOpacity: 1 },
+    { src: heroBannerImg5, mobileSrc: mobileHeroBanner5, title: "Infinity Spark Ring", searchQuery: "infinity spark", price: "160", pos: "bottom-10 right-0", imgOpacity: 1 },
   ];
 
   useEffect(() => {
@@ -667,8 +667,8 @@ function HeroSection() {
   const handleHeroClick = () => {
     const currentBanner = banners[currentSlide];
     
-    // Fuzzy match by scoring words
-    const searchWords = currentBanner.title.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ')
+    // Fuzzy match by scoring words using the explicit searchQuery
+    const searchWords = (currentBanner.searchQuery || currentBanner.title).toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ')
       .filter(w => w.length > 2 && !['necklace', 'ring', 'earring', 'earrings', 'bracelet', 'pack', 'combo', 'set'].includes(w));
       
     let bestMatch = null;
