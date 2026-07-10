@@ -299,6 +299,7 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
           >
             {allImages.map((img, i) => (
               <ImageWithFallback key={i} src={img} alt={product.name} 
+                loading={delay === 0 && i === 0 ? "eager" : "lazy"}
                 className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]" 
                 style={{ opacity: i === imgIndex ? 1 : 0, transform: (i === imgIndex && isHovered) ? 'scale(1.05)' : 'scale(1)', pointerEvents: i === imgIndex ? 'auto' : 'none' }} 
               />
@@ -353,8 +354,15 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
 }
 
 // ── Loading Screen ─────────────────────────────────────────────────────────
-function LoadingScreen({ onDone }: { onDone: () => void }) {
-  useEffect(() => { const t = setTimeout(onDone, 2400); return () => clearTimeout(t); }, [onDone]);
+function LoadingScreen({ onDone, dataLoaded }: { onDone: () => void; dataLoaded?: boolean }) {
+  useEffect(() => {
+    if (dataLoaded) {
+      onDone();
+      return;
+    }
+    const t = setTimeout(onDone, 500); 
+    return () => clearTimeout(t); 
+  }, [onDone, dataLoaded]);
   return (
     <motion.div className="fixed inset-0 z-[100] flex flex-col items-center justify-center w-full h-full" style={{ background: "#F8F6F2" }}
       exit={{ opacity: 0 }} transition={{ duration: 0.9 }}>
@@ -649,10 +657,10 @@ function HeroSection() {
             style={{ opacity: i === currentSlide ? b.imgOpacity : 0, transform: i === currentSlide ? 'scale(1.15)' : 'scale(1.2)' }}
           >
             <div className="hidden lg:block w-full h-full">
-              <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} className="w-full h-full object-cover object-center" />
+              <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} loading={i === 0 ? "eager" : "lazy"} className="w-full h-full object-cover object-center" />
             </div>
             <div className="lg:hidden w-full h-full">
-              <ImageWithFallback src={b.mobileSrc} alt={`Shri Vallabh Jewels Collection ${i + 1}`} className="w-full h-full object-cover object-[80%_center]" />
+              <ImageWithFallback src={b.mobileSrc} alt={`Shri Vallabh Jewels Collection ${i + 1}`} loading={i === 0 ? "eager" : "lazy"} className="w-full h-full object-cover object-[80%_center]" />
             </div>
           </div>
         ))}
@@ -2697,6 +2705,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>(PRODUCTS); // fallback to hardcoded initially
   const [combos, setCombos] = useState<Combo[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     const handleLocation = () => {
@@ -2715,18 +2724,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let pLoaded = false;
+    let cLoaded = false;
+    const checkLoaded = () => { if (pLoaded && cLoaded) setDataLoaded(true); };
+
     const q = query(collection(db, "products"), orderBy("id", "asc"));
     const unsub = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
         const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.data().id }) as Product);
         setProducts(fetched);
       }
+      pLoaded = true; checkLoaded();
     });
     const comboQ = query(collection(db, "combos"));
     const unsubCombo = onSnapshot(comboQ, (snapshot) => {
       if (!snapshot.empty) {
         setCombos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Combo));
       }
+      cLoaded = true; checkLoaded();
     });
     return () => { unsub(); unsubCombo(); };
   }, []);
@@ -2781,7 +2796,7 @@ export default function App() {
       `}</style>
 
       <AnimatePresence>
-        {loading && <LoadingScreen key="loader" onDone={() => setLoading(false)} />}
+        {loading && <LoadingScreen key="loader" onDone={() => setLoading(false)} dataLoaded={dataLoaded} />}
       </AnimatePresence>
 
       {!loading && (
