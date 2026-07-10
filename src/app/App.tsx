@@ -436,10 +436,16 @@ function CartDrawer() {
               </button>
             </div>
 
-            <div className="mx-4 mt-3 px-3 py-2.5 rounded-xl flex items-center gap-2 text-xs font-bold"
-              style={{ background: "linear-gradient(135deg, rgba(207,161,141,0.15), rgba(232,220,200,0.2))", color: "#CFA18D", border: "1px solid rgba(207,161,141,0.2)" }}>
-              <Zap size={12} /> Save ₹49 — choose Prepaid at checkout for FREE delivery!
-            </div>
+            {cartTotal > 0 && (
+              <div className="mx-5 mt-4 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-bold mb-2 uppercase tracking-wide" style={{ color: cartTotal >= 499 ? "#059669" : "#3D2B1F" }}>
+                  <span>{cartTotal >= 499 ? "🎉 ₹49 OFF Applied!" : `Add ₹${499 - cartTotal} more to unlock ₹49 OFF`}</span>
+                </div>
+                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden" style={{ background: "rgba(203,184,169,0.3)" }}>
+                  <div className="h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${Math.min((cartTotal / 499) * 100, 100)}%`, background: cartTotal >= 499 ? "#059669" : "#CFA18D" }} />
+                </div>
+              </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {cart.length === 0 ? (
@@ -483,12 +489,22 @@ function CartDrawer() {
 
             {cart.length > 0 && (
               <div className="p-5 space-y-4 shadow-[0_-4px_24px_rgba(0,0,0,0.04)]" style={{ borderTop: "1px solid rgba(203,184,169,0.3)", background: "#FCFBF8" }}>
-                <div className="flex justify-between items-end mb-1">
-                  <div className="flex flex-col">
-                    <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: "#8C7B6B" }}>Subtotal</span>
-                    <span className="text-[10px] mt-0.5" style={{ color: "#A6988C" }}>Shipping & taxes calculated at checkout</span>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: "#8C7B6B" }}>Subtotal</span>
+                  <span className="text-sm font-bold" style={{ color: "#3D2B1F" }}>₹{cartTotal}</span>
+                </div>
+                {cartTotal >= 499 && (
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: "#059669" }}>Discount</span>
+                    <span className="text-sm font-bold" style={{ color: "#059669" }}>-₹49</span>
                   </div>
-                  <span className="text-2xl font-bold" style={{ color: "#3D2B1F" }}>₹{cartTotal}</span>
+                )}
+                <div className="flex justify-between items-end mt-3 pt-3" style={{ borderTop: "1px dashed rgba(203,184,169,0.4)" }}>
+                  <div className="flex flex-col">
+                    <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: "#3D2B1F" }}>Total</span>
+                    <span className="text-[10px] mt-0.5" style={{ color: "#A6988C" }}>Shipping calculated at checkout</span>
+                  </div>
+                  <span className="text-2xl font-bold" style={{ color: "#3D2B1F" }}>₹{cartTotal >= 499 ? cartTotal - 49 : cartTotal}</span>
                 </div>
                 
                 <button onClick={() => { setCartOpen(false); setPage("checkout"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -1351,7 +1367,8 @@ function CheckoutPage() {
   }, [user]);
   const [paying, setPaying] = useState(false);
   const delivery = 49;
-  const total = cartTotal + (payment === "cod" ? delivery : 0);
+  const discount = cartTotal >= 499 ? 49 : 0;
+  const total = cartTotal - discount + (payment === "cod" ? delivery : 0);
 
   const placeOrder = async () => {
     if (!user) return;
@@ -1528,6 +1545,11 @@ function CheckoutPage() {
               </div>
               <div className="border-t pt-3 space-y-2" style={{ borderColor: "rgba(203,184,169,0.3)" }}>
                 <div className="flex justify-between text-xs"><span style={{ color: "#8C7B6B" }}>Subtotal</span><span style={{ color: "#3D2B1F" }}>₹{cartTotal}</span></div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-xs font-bold" style={{ color: "#059669" }}>
+                    <span>Discount</span><span>-₹{discount}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs">
                   <span style={{ color: "#8C7B6B" }}>Delivery</span>
                   <span className="font-bold" style={{ color: payment === "prepaid" ? "#059669" : "#DC2626" }}>
