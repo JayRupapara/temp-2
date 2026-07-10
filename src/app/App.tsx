@@ -488,7 +488,7 @@ function Navbar() {
   const scroll = (id: string) => { setPage("home"); setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 120); setMobileOpen(false); };
   const links = [
     { label: "Home", action: () => { setPage("home"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
-    { label: "Shop", action: () => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
+    { label: "Categories", action: () => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
     { label: "New Arrivals", action: () => scroll("new-arrivals") },
     { label: "Best Sellers", action: () => scroll("bestsellers") },
     { label: "About Us", action: () => scroll("about") },
@@ -556,9 +556,9 @@ function Navbar() {
             style={{ background: "rgba(248,246,242,0.97)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(203,184,169,0.3)" }}>
             <div className="flex flex-col gap-8">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style={{ color: "#8C7B6B" }}>Shop</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style={{ color: "#8C7B6B" }}>Categories</p>
                 <div className="flex flex-col gap-3.5">
-                  <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>All Jewellery</button>
+                  <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>All Categories</button>
                   <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Necklaces</button>
                   <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Rings</button>
                   <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Combo Sets</button>
@@ -964,10 +964,10 @@ function PostersSection() {
   );
 }
 
-// ── Shop Page ───────────────────────────────────────────────────────────────
 function ShopPage() {
   const { products, combos, setPage, setSelectedProduct, addToCart, setCartOpen } = useApp();
   const [category, setCategory] = useState("Necklace");
+  const [productType, setProductType] = useState("All");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -976,9 +976,17 @@ function ShopPage() {
   const categories = [
     { id: "Necklace", label: "Necklaces" },
     { id: "Bracelet", label: "Bracelets" },
-    { id: "Ring", label: "Rings" },
-    { id: "Combo", label: "Combos" }
+    { id: "Earrings", label: "Earrings" },
+    { id: "Ring", label: "Rings" }
   ];
+
+  const productTypes = ["All", "Single Products", "Combo Packs"];
+
+  const filteredCombos = combos.filter(c => c.category === category);
+  const filteredProducts = products.filter(p => p.category === category);
+
+  const showCombos = productType === "All" || productType === "Combo Packs";
+  const showProducts = productType === "All" || productType === "Single Products";
 
   return (
     <div className="pt-32 pb-24 min-h-screen" style={{ background: "#F8F6F2" }}>
@@ -986,7 +994,7 @@ function ShopPage() {
         <STitle eyebrow="Discover" title="Our Complete Collection" subtitle="Explore our finely crafted pieces designed just for you." />
         
         {/* Category Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-12">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-6">
           {categories.map(cat => (
             <button
               key={cat.id}
@@ -1004,65 +1012,76 @@ function ShopPage() {
           ))}
         </div>
 
+        {/* Product Type Filters */}
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-12">
+          {productTypes.map(type => (
+            <button
+              key={type}
+              onClick={() => setProductType(type)}
+              className={`px-5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 ${productType === type ? 'shadow-sm' : 'hover:bg-white'}`}
+              style={{
+                background: productType === type ? '#3D2B1F' : 'transparent',
+                color: productType === type ? '#FCFBF8' : '#8C7B6B',
+                border: productType === type ? '1px solid #3D2B1F' : '1px solid rgba(203,184,169,0.4)'
+              }}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+
         {/* Unified Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-8 lg:gap-y-12 mb-16">
           
-          {/* Render Combos if "Combo" is selected */}
-          {category === "Combo" && (
-            combos.map((c, i) => {
-              const allImages = c.images && c.images.length > 0 ? c.images : [c.image];
-              return (
-                <div key={`combo-${c.id}`} className="col-span-2 md:col-span-4 mb-4">
-                  <Reveal delay={0.1}>
-                    <div className="rounded-3xl overflow-hidden group cursor-pointer bg-[#FCFBF8] border shadow-sm flex flex-col md:flex-row border-gray-200">
-                      <div className={`grid ${allImages.length === 1 ? 'grid-cols-1' : (allImages.length % 3 === 0 || allImages.length === 5) ? 'grid-cols-3' : 'grid-cols-2'} md:w-2/5`}>
-                        {allImages.map((img, j) => (
-                          <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
-                            <img src={img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700" />
-                          </div>
-                        ))}
+          {/* Render Combos matching category */}
+          {showCombos && filteredCombos.map((c, i) => {
+            const allImages = c.images && c.images.length > 0 ? c.images : [c.image];
+            return (
+              <div key={`combo-${c.id}`} className="col-span-2 md:col-span-4 mb-4">
+                <Reveal delay={0.1}>
+                  <div className="rounded-3xl overflow-hidden group cursor-pointer bg-[#FCFBF8] border shadow-sm flex flex-col md:flex-row border-gray-200">
+                    <div className={`grid ${allImages.length === 1 ? 'grid-cols-1' : (allImages.length % 3 === 0 || allImages.length === 5) ? 'grid-cols-3' : 'grid-cols-2'} md:w-2/5`}>
+                      {allImages.map((img, j) => (
+                        <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
+                          <img src={img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>Combo Set</span>
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(5,150,105,0.1)", color: "#059669" }}>Save ₹{c.saving || (c.originalPrice - c.price)}</span>
                       </div>
-                      <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>Combo Set</span>
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(5,150,105,0.1)", color: "#059669" }}>Save ₹{c.saving || (c.originalPrice - c.price)}</span>
+                      <h3 className="text-2xl font-serif text-[#3D2B1F] mb-3">{c.name}</h3>
+                      <p className="text-sm text-gray-600 mb-6">{c.description}</p>
+                      <div className="flex items-center justify-between mt-auto">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
+                          <span className="text-sm line-through text-[#CBB8A9]">₹{c.originalPrice}</span>
                         </div>
-                        <h3 className="text-2xl font-serif text-[#3D2B1F] mb-3">{c.name}</h3>
-                        <p className="text-sm text-gray-600 mb-6">{c.description}</p>
-                        <div className="flex items-center justify-between mt-auto">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
-                            <span className="text-sm line-through text-[#CBB8A9]">₹{c.originalPrice}</span>
-                          </div>
-                          <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.originalPrice, image: allImages[0], description: c.description } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
-                            className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
-                            style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
-                            Add Combo
-                          </button>
-                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.originalPrice, image: allImages[0], description: c.description } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
+                          className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
+                          style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
+                          Add Combo
+                        </button>
                       </div>
                     </div>
-                  </Reveal>
-                </div>
-              );
-            })
-          )}
+                  </div>
+                </Reveal>
+              </div>
+            );
+          })}
 
-          {/* Render Products */}
-          {category !== "Combo" && products.filter(p => p.category === category).map((p, i) => (
+          {/* Render Products matching category */}
+          {showProducts && filteredProducts.map((p, i) => (
             <ProductCard key={`prod-${p.id}`} product={p} delay={0.1} />
           ))}
 
         </div>
         
-        {category !== "Combo" && products.filter(p => p.category === category).length === 0 && (
+        {((!showProducts || filteredProducts.length === 0) && (!showCombos || filteredCombos.length === 0)) && (
           <div className="text-center py-20 text-gray-500 col-span-2 md:col-span-4">
-            No {categories.find(c => c.id === category)?.label.toLowerCase()} found.
-          </div>
-        )}
-        {category === "Combo" && combos.length === 0 && (
-          <div className="text-center py-20 text-gray-500 col-span-2 md:col-span-4">
-            No combo sets found.
+            No {productType === "All" ? "items" : productType.toLowerCase()} found in {categories.find(c => c.id === category)?.label.toLowerCase()}.
           </div>
         )}
       </div>
@@ -2320,8 +2339,9 @@ function AdminPage() {
                   <select value={formData.category || ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="border p-2 rounded bg-white">
                     <option value="" disabled>Select Category</option>
                     <option value="Necklace">Necklace</option>
-                    <option value="Ring">Ring</option>
                     <option value="Bracelet">Bracelet</option>
+                    <option value="Earrings">Earrings</option>
+                    <option value="Ring">Ring</option>
                     <option value="Combo">Combo</option>
                     <option value="Others">Others</option>
                   </select>
@@ -2445,6 +2465,14 @@ function AdminPage() {
                   <input placeholder="Subtitle" value={comboData.subtitle} onChange={e => setComboData({ ...comboData, subtitle: e.target.value })} className="border p-2 rounded" />
                   <input type="number" placeholder="Discounted Price" value={comboData.price || ''} onChange={e => { const p = Number(e.target.value); setComboData({ ...comboData, price: p, saving: (comboData.originalPrice || 0) - p }); }} className="border p-2 rounded" />
                   <input type="number" placeholder="Original Price" value={comboData.originalPrice || ''} onChange={e => { const o = Number(e.target.value); setComboData({ ...comboData, originalPrice: o, saving: o - (comboData.price || 0) }); }} className="border p-2 rounded" />
+                  <select value={comboData.category || ""} onChange={e => setComboData({ ...comboData, category: e.target.value })} className="border p-2 rounded bg-white">
+                    <option value="" disabled>Select Category</option>
+                    <option value="Necklace">Necklace</option>
+                    <option value="Bracelet">Bracelet</option>
+                    <option value="Earrings">Earrings</option>
+                    <option value="Ring">Ring</option>
+                    <option value="Mixed">Mixed</option>
+                  </select>
                   <input placeholder="Badge (e.g. Bestseller)" value={comboData.badge} onChange={e => setComboData({ ...comboData, badge: e.target.value })} className="border p-2 rounded" />
                   
                   <div className="col-span-1 md:col-span-2 flex flex-wrap gap-4 py-2 border-y my-2">
