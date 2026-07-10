@@ -664,10 +664,30 @@ function HeroSection() {
     return () => clearInterval(timer);
   }, [banners.length]);
 
+  const handleHeroClick = () => {
+    const currentBanner = banners[currentSlide];
+    
+    // Fuzzy match by name
+    let matchedProduct = products.find(p => p.name.toLowerCase().includes(currentBanner.title.toLowerCase()) || currentBanner.title.toLowerCase().includes(p.name.toLowerCase())) || 
+                         combos.find(c => c.name.toLowerCase().includes(currentBanner.title.toLowerCase()) || currentBanner.title.toLowerCase().includes(c.name.toLowerCase()));
+                         
+    // Fallback if not found
+    if (!matchedProduct && products.length > 0) {
+      matchedProduct = products.find(p => p.isFeatured) || products[0];
+    }
+    
+    if (matchedProduct) {
+      navigateToProduct(matchedProduct as unknown as Product);
+    } else {
+      setPage("shop");
+      window.scrollTo({ top: 0, behavior: "smooth" }); 
+    }
+  };
+
   return (
     <section className="relative h-[100vh] lg:min-h-screen flex items-center overflow-hidden pt-16 lg:pt-24 bg-[#EFE7DD]">
       {/* Animated Background Images */}
-      <div className="absolute inset-0 z-0 bg-[#EFE7DD]">
+      <div className="absolute inset-0 z-0 bg-[#EFE7DD] cursor-pointer" onClick={handleHeroClick}>
         {banners.map((b, i) => (
           <div 
             key={i} 
@@ -711,25 +731,15 @@ function HeroSection() {
         </div>
         
         {/* Empty right column allowing the beautiful image to shine through */}
-        <div className="hidden lg:block relative h-full min-h-[400px]">
+        <div className="hidden lg:block relative h-full min-h-[400px] cursor-pointer" onClick={handleHeroClick}>
           {/* Subtle floating product badge matching the active image */}
           <motion.div 
             key={currentSlide}
             initial={{ opacity: 0, y: 15 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.5 }}
-            onClick={() => { 
-              const currentBanner = banners[currentSlide];
-              const matchedProduct = products.find(p => p.name.toLowerCase() === currentBanner.title.toLowerCase()) || 
-                                     combos.find(c => c.name.toLowerCase() === currentBanner.title.toLowerCase());
-              if (matchedProduct) {
-                navigateToProduct(matchedProduct as Product);
-              } else {
-                setPage("shop"); 
-                window.scrollTo({ top: 0, behavior: "smooth" }); 
-              }
-            }}
-            className={`absolute px-4 py-3 rounded-2xl animate-[float_7s_ease-in-out_infinite] cursor-pointer hover:scale-105 transition-transform ${banners[currentSlide].pos}`}
+            onClick={(e) => { e.stopPropagation(); handleHeroClick(); }}
+            className={`absolute px-4 py-3 rounded-2xl animate-[float_7s_ease-in-out_infinite] hover:scale-105 transition-transform ${banners[currentSlide].pos}`}
             style={{ background: "rgba(252,251,248,0.94)", backdropFilter: "blur(16px)", border: "1px solid rgba(203,184,169,0.35)", boxShadow: "0 10px 32px rgba(207,161,141,0.22)", zIndex: 20 }}>
             <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: "#CFA18D" }}>Just Launched</p>
             <p className="text-[13px] font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{banners[currentSlide].title}</p>
