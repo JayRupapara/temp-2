@@ -2344,8 +2344,7 @@ function AdminPage() {
                     <option value="Bracelet">Bracelet</option>
                     <option value="Earrings">Earrings</option>
                     <option value="Ring">Ring</option>
-                    <option value="Combo">Combo</option>
-                    <option value="Others">Others</option>
+                    <option value="Mixed">Mixed</option>
                   </select>
                   <input placeholder="Badge (e.g. Bestseller)" value={formData.badge} onChange={e => setFormData({ ...formData, badge: e.target.value })} className="border p-2 rounded" />
                   
