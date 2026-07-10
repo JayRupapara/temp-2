@@ -356,12 +356,29 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
 // ── Loading Screen ─────────────────────────────────────────────────────────
 function LoadingScreen({ onDone, dataLoaded }: { onDone: () => void; dataLoaded?: boolean }) {
   useEffect(() => {
+    let t1: ReturnType<typeof setTimeout>;
+    let t2: ReturnType<typeof setTimeout>;
+    
+    // Always show for at least 600ms to prevent flickering
+    const minTime = Date.now() + 600;
+    
+    const checkDone = () => {
+      const remaining = minTime - Date.now();
+      if (remaining <= 0) {
+        onDone();
+      } else {
+        t1 = setTimeout(onDone, remaining);
+      }
+    };
+
     if (dataLoaded) {
-      onDone();
-      return;
+      checkDone();
+    } else {
+      // Max timeout of 1500ms to ensure it eventually loads
+      t2 = setTimeout(onDone, 1500); 
     }
-    const t = setTimeout(onDone, 500); 
-    return () => clearTimeout(t); 
+
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [onDone, dataLoaded]);
   return (
     <motion.div className="fixed inset-0 z-[100] flex flex-col items-center justify-center w-full h-full" style={{ background: "#F8F6F2" }}
