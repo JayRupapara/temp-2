@@ -193,11 +193,12 @@ function OTPInput({ value, onChange }: { value: string[]; onChange: (v: string[]
 
 // ── ProductCard ────────────────────────────────────────────────────────────
 function ProductCard({ product, delay = 0 }: { product: Product; delay?: number }) {
-  const { addToCart, navigateToProduct, wishlist, toggleWishlist } = useApp();
+  const { addToCart, navigateToProduct, wishlist, toggleWishlist, setCartOpen } = useApp();
   const { ref: revealRef, visible } = useReveal();
   const cardRef = useRef<HTMLDivElement>(null);
   const wished = wishlist.includes(product.id);
   const [imgIndex, setImgIndex] = useState(0);
+  const [isAdding, setIsAdding] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
   const isSwiping = useRef(false);
@@ -342,10 +343,19 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
               </div>
             </div>
             
-            <button onClick={(e) => { e.stopPropagation(); addToCart(product); toast.success("Added to bag ✦", { description: product.name }); }}
+            <button onClick={(e) => { 
+                e.stopPropagation(); 
+                if (isAdding) return;
+                setIsAdding(true);
+                setTimeout(() => {
+                  addToCart(product); 
+                  setIsAdding(false);
+                  setCartOpen(true);
+                }, 400); 
+              }}
               className="mt-auto w-full py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
               style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 12px rgba(207,161,141,0.25)" }}>
-              <ShoppingBag size={14} /> Add to Cart
+              <ShoppingBag size={14} /> {isAdding ? "Adding..." : "Add to Cart"}
             </button>
           </div>
         </div>
@@ -441,7 +451,7 @@ function CartDrawer() {
                     <p className="font-semibold mb-1" style={{ color: "#5A4035" }}>Your bag is empty</p>
                     <p className="text-xs" style={{ color: "#8C7B6B" }}>Add some beautiful pieces!</p>
                   </div>
-                  <button onClick={() => setCartOpen(false)} className="px-6 py-2.5 rounded-full text-sm font-bold"
+                  <button onClick={() => { setCartOpen(false); setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-6 py-2.5 rounded-full text-sm font-bold"
                     style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
                     Shop Now
                   </button>
@@ -1171,6 +1181,7 @@ function ProductDetailPage() {
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -1271,10 +1282,18 @@ function ProductDetailPage() {
               </button>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
-              <button onClick={() => { addToCart(p, qty); setCartOpen(true); }}
+              <button onClick={() => {
+                  if (isAdding) return;
+                  setIsAdding(true);
+                  setTimeout(() => {
+                    addToCart(p, qty);
+                    setIsAdding(false);
+                    setCartOpen(true);
+                  }, 400);
+                }}
                 className="group relative overflow-hidden flex-1 py-3.5 rounded-full font-bold text-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
                 style={{ background: "linear-gradient(135deg, #3D2B1F, #5A4035)", color: "#FCFBF8", boxShadow: "0 6px 20px rgba(61,43,31,0.25)" }}>
-                <span className="relative z-10">Add to Bag</span>
+                <span className="relative z-10">{isAdding ? "Adding..." : "Add to Bag"}</span>
                 <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.4)] to-transparent skew-x-12 group-hover:translate-x-[150%] transition-transform duration-1000 ease-out" />
               </button>
               <button onClick={() => { addToCart(p, qty); setPage("checkout"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -1462,18 +1481,19 @@ function CheckoutPage() {
                       <p className="text-xs font-bold" style={{ color: "#059669" }}>FREE</p>
                     </div>
                   </button>
-                  <div className="w-full p-4 rounded-xl flex items-center gap-3 text-left opacity-50 cursor-not-allowed"
-                    style={{ border: "2px solid rgba(203,184,169,0.2)", background: "rgba(203,184,169,0.05)" }}>
-                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: "rgba(203,184,169,0.4)" }}>
+                  <button onClick={() => setPayment("cod")} className="w-full p-4 rounded-xl flex items-center gap-3 text-left transition-all"
+                    style={{ border: payment === "cod" ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", background: payment === "cod" ? "rgba(207,161,141,0.06)" : "#fff" }}>
+                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: payment === "cod" ? "#CFA18D" : "rgba(203,184,169,0.4)" }}>
+                      {payment === "cod" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#CFA18D" }} />}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold" style={{ color: "#8C7B6B" }}>Cash on Delivery</p>
-                      <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>Currently Unavailable</p>
+                      <p className="text-sm font-bold" style={{ color: "#3D2B1F" }}>Cash on Delivery</p>
+                      <p className="text-xs font-semibold" style={{ color: "#8C7B6B" }}>Cash on Delivery includes ₹49 delivery charge.</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-bold" style={{ color: "#8C7B6B" }}>+₹49</p>
                     </div>
-                  </div>
+                  </button>
                 </div>
 
 
@@ -1481,7 +1501,7 @@ function CheckoutPage() {
                   disabled={paying}
                   className="w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02] disabled:opacity-70 mt-6"
                   style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
-                  {paying ? "Processing…" : `Pay ₹${total} Now →`}
+                  {paying ? "Processing…" : payment === "cod" ? "Place COD Order →" : `Pay ₹${total} Now →`}
                 </button>
               </div>
             )}
@@ -2028,9 +2048,10 @@ function AdminPage() {
   
   const [loading, setLoading] = useState(false);
   const [ordersList, setOrdersList] = useState<any[]>([]);
+  const newOrdersCount = ordersList.filter(o => (o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER")) === "NEW ORDER").length;
 
   useEffect(() => {
-    if (tab === "orders" && authed) {
+    if (authed) {
       const q = query(collectionGroup(db, "orders"));
       const unsub = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
@@ -2406,7 +2427,14 @@ function AdminPage() {
           <div className="flex gap-2 bg-white rounded-lg p-1 border">
             <button onClick={() => setTab("products")} className={`px-4 py-1.5 rounded-md text-sm font-bold ${tab === "products" ? "bg-black text-white" : "text-gray-500"}`}>Products</button>
             <button onClick={() => setTab("combos")} className={`px-4 py-1.5 rounded-md text-sm font-bold ${tab === "combos" ? "bg-black text-white" : "text-gray-500"}`}>Combos</button>
-            <button onClick={() => setTab("orders")} className={`px-4 py-1.5 rounded-md text-sm font-bold ${tab === "orders" ? "bg-black text-white" : "text-gray-500"}`}>Orders</button>
+            <button onClick={() => setTab("orders")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${tab === "orders" ? "bg-black text-white" : "text-gray-500 hover:bg-gray-50"}`}>
+              Orders
+              {newOrdersCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center animate-pulse shadow-sm">
+                  {newOrdersCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
