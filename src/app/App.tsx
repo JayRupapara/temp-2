@@ -993,8 +993,14 @@ function ShopPage() {
   };
 
   const getComboCategory = (c: Combo) => {
-    if (c.category && c.category !== "Mixed" && c.category !== "Combo" && c.category !== "Others") {
-      return normalizeCategory(c.category);
+    if (c.category) {
+      const lowerCat = c.category.toLowerCase();
+      if (!lowerCat.includes("combo") && !lowerCat.includes("mixed") && !lowerCat.includes("other")) {
+        const norm = normalizeCategory(c.category);
+        if (["necklaces", "bracelets", "earrings", "rings"].includes(norm)) {
+          return norm;
+        }
+      }
     }
     const name = (c.name || "").toLowerCase();
     if (name.includes("necklace")) return "necklaces";
