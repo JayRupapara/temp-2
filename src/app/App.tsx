@@ -967,14 +967,18 @@ function PostersSection() {
 // ── Shop Page ───────────────────────────────────────────────────────────────
 function ShopPage() {
   const { products, combos, setPage, setSelectedProduct, addToCart, setCartOpen } = useApp();
-  const [category, setCategory] = useState("All");
+  const [category, setCategory] = useState("Necklace");
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Ensure Combos is an option, and extract dynamic categories
-  const categories = ["All", "Combos", ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = [
+    { id: "Necklace", label: "Necklaces" },
+    { id: "Bracelet", label: "Bracelets" },
+    { id: "Ring", label: "Rings" },
+    { id: "Combo", label: "Combos" }
+  ];
 
   return (
     <div className="pt-32 pb-24 min-h-screen" style={{ background: "#F8F6F2" }}>
@@ -982,14 +986,20 @@ function ShopPage() {
         <STitle eyebrow="Discover" title="Our Complete Collection" subtitle="Explore our finely crafted pieces designed just for you." />
         
         {/* Category Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-12">
           {categories.map(cat => (
             <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-colors ${category === cat ? 'bg-[#CFA18D] text-white' : 'bg-white text-[#5A4035] border border-gray-200 hover:border-[#CFA18D]'}`}
+              key={cat.id}
+              onClick={() => setCategory(cat.id)}
+              className={`px-5 sm:px-8 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex-1 sm:flex-none whitespace-nowrap ${category === cat.id ? 'shadow-lg scale-105' : 'hover:scale-105 hover:bg-white'}`}
+              style={{
+                background: category === cat.id ? 'linear-gradient(135deg, #CFA18D, #A67B66)' : '#FCFBF8',
+                color: category === cat.id ? '#FFFFFF' : '#8C7B6B',
+                border: category === cat.id ? '1px solid #CFA18D' : '1px solid rgba(203,184,169,0.5)',
+                boxShadow: category === cat.id ? '0 8px 24px rgba(207,161,141,0.3)' : 'none'
+              }}
             >
-              {cat}
+              {cat.label}
             </button>
           ))}
         </div>
@@ -997,54 +1007,62 @@ function ShopPage() {
         {/* Unified Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-8 lg:gap-y-12 mb-16">
           
-          {/* Render Combos if "All" or "Combos" is selected */}
-          {(category === "All" || category === "Combos") && (
-            combos.map((c, i) => (
-              <div key={`combo-${c.id}`} className="col-span-2 md:col-span-4 mb-4">
-                <Reveal delay={0.1}>
-                  <div className="rounded-3xl overflow-hidden group cursor-pointer bg-[#FCFBF8] border shadow-sm flex flex-col md:flex-row border-gray-200">
-                    <div className={`grid ${c.imgs.length === 1 ? 'grid-cols-1' : (c.imgs.length % 3 === 0 || c.imgs.length === 5) ? 'grid-cols-3' : 'grid-cols-2'} md:w-2/5`}>
-                      {c.imgs.map((img, j) => (
-                        <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
-                          <img src={img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>Combo Set</span>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(5,150,105,0.1)", color: "#059669" }}>Save ₹{c.saving}</span>
+          {/* Render Combos if "Combo" is selected */}
+          {category === "Combo" && (
+            combos.map((c, i) => {
+              const allImages = c.images && c.images.length > 0 ? c.images : [c.image];
+              return (
+                <div key={`combo-${c.id}`} className="col-span-2 md:col-span-4 mb-4">
+                  <Reveal delay={0.1}>
+                    <div className="rounded-3xl overflow-hidden group cursor-pointer bg-[#FCFBF8] border shadow-sm flex flex-col md:flex-row border-gray-200">
+                      <div className={`grid ${allImages.length === 1 ? 'grid-cols-1' : (allImages.length % 3 === 0 || allImages.length === 5) ? 'grid-cols-3' : 'grid-cols-2'} md:w-2/5`}>
+                        {allImages.map((img, j) => (
+                          <div key={j} className="overflow-hidden relative" style={{ paddingTop: "80%" }}>
+                            <img src={img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700" />
+                          </div>
+                        ))}
                       </div>
-                      <h3 className="text-2xl font-serif text-[#3D2B1F] mb-3">{c.name}</h3>
-                      <p className="text-sm text-gray-600 mb-6">{c.desc}</p>
-                      <div className="flex items-center justify-between mt-auto">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
-                          <span className="text-sm line-through text-[#CBB8A9]">₹{c.original}</span>
+                      <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>Combo Set</span>
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(5,150,105,0.1)", color: "#059669" }}>Save ₹{c.saving || (c.originalPrice - c.price)}</span>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.original, image: c.imgs[0], description: c.desc } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
-                          className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
-                          style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
-                          Add Combo
-                        </button>
+                        <h3 className="text-2xl font-serif text-[#3D2B1F] mb-3">{c.name}</h3>
+                        <p className="text-sm text-gray-600 mb-6">{c.description}</p>
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-[#CFA18D]">₹{c.price}</span>
+                            <span className="text-sm line-through text-[#CBB8A9]">₹{c.originalPrice}</span>
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); addToCart({ ...c, originalPrice: c.originalPrice, image: allImages[0], description: c.description } as unknown as Product); setCartOpen(true); toast.success("Combo set added to bag! ✦"); }}
+                            className="px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105"
+                            style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 2px 10px rgba(207,161,141,0.4)" }}>
+                            Add Combo
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Reveal>
-              </div>
-            ))
+                  </Reveal>
+                </div>
+              );
+            })
           )}
 
           {/* Render Products */}
-          {products.filter(p => category === "All" || p.category === category).map((p, i) => (
+          {category !== "Combo" && products.filter(p => p.category === category).map((p, i) => (
             <ProductCard key={`prod-${p.id}`} product={p} delay={0.1} />
           ))}
 
         </div>
         
-        {category !== "All" && category !== "Combos" && products.filter(p => p.category === category).length === 0 && (
-          <div className="text-center py-20 text-gray-500">
-            No products found in this category.
+        {category !== "Combo" && products.filter(p => p.category === category).length === 0 && (
+          <div className="text-center py-20 text-gray-500 col-span-2 md:col-span-4">
+            No {categories.find(c => c.id === category)?.label.toLowerCase()} found.
+          </div>
+        )}
+        {category === "Combo" && combos.length === 0 && (
+          <div className="text-center py-20 text-gray-500 col-span-2 md:col-span-4">
+            No combo sets found.
           </div>
         )}
       </div>
