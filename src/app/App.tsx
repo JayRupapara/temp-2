@@ -965,42 +965,11 @@ function PostersSection() {
 
 function ShopPage() {
   const { products, combos, setPage, setSelectedProduct, addToCart, setCartOpen } = useApp();
-  
-  const getInitial = (key: string, def: string) => {
-    const params = new URLSearchParams(window.location.search);
-    const val = params.get(key);
-    if (val) return val;
-    return localStorage.getItem(`shop_${key}`) || def;
-  };
-  
-  const [category, setCategory] = useState(() => getInitial("category", "necklaces"));
-  const [productType, setProductType] = useState(() => getInitial("type", "All"));
+  const [category, setCategory] = useState("necklaces");
+  const [productType, setProductType] = useState("All");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    let changed = false;
-    if (params.get("category") !== category) { params.set("category", category); changed = true; }
-    if (params.get("type") !== productType) { params.set("type", productType); changed = true; }
-    
-    if (changed) {
-      window.history.replaceState({}, "", `?${params.toString()}`);
-    }
-    localStorage.setItem("shop_category", category);
-    localStorage.setItem("shop_type", productType);
-  }, [category, productType]);
-
-  useEffect(() => {
-    const storedScroll = localStorage.getItem("shop_scroll");
-    if (storedScroll) {
-      window.scrollTo(0, parseInt(storedScroll));
-      localStorage.removeItem("shop_scroll");
-    } else {
-      window.scrollTo(0, 0);
-    }
-    
-    const handleScroll = () => localStorage.setItem("shop_scroll", window.scrollY.toString());
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.scrollTo(0, 0);
   }, []);
 
   const categories = [
@@ -2722,17 +2691,7 @@ export default function App() {
   const [page, setPageState] = useState<Page>("home");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
-    try {
-      const saved = localStorage.getItem("selected_product");
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
-
-  useEffect(() => {
-    if (selectedProduct) localStorage.setItem("selected_product", JSON.stringify(selectedProduct));
-  }, [selectedProduct]);
-
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [order, setOrder] = useState<OrderData | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [user, setUser] = useState<User | null>(null);
@@ -2742,15 +2701,8 @@ export default function App() {
   useEffect(() => {
     const handleLocation = () => {
       const path = window.location.pathname;
-      const params = new URLSearchParams(window.location.search);
-      const section = params.get("section") as Page | null;
       if (path === "/admin") setPageState("admin");
-      else if (section) setPageState(section);
-      else {
-        const stored = localStorage.getItem("last_section") as Page;
-        if (stored && stored !== "admin") setPageState(stored);
-        else setPageState("home");
-      }
+      else if (path === "/") setPageState("home");
     };
     window.addEventListener("popstate", handleLocation);
     handleLocation();
@@ -2796,19 +2748,8 @@ export default function App() {
 
   const setPage = (p: Page) => { 
     setPageState(p); 
-    if (p !== "admin") localStorage.setItem("last_section", p);
-    
-    if (p === "admin") {
-      if (window.location.pathname !== "/admin") window.history.pushState({}, "", "/admin");
-      return;
-    }
-    
-    const params = new URLSearchParams(window.location.search);
-    if (p === "home") params.delete("section");
-    else params.set("section", p);
-    
-    const q = params.toString();
-    window.history.pushState({}, "", q ? `/?${q}` : "/");
+    if (p === "admin" && window.location.pathname !== "/admin") window.history.pushState({}, "", "/admin");
+    if (p === "home" && window.location.pathname === "/admin") window.history.pushState({}, "", "/");
   };
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
