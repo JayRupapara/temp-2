@@ -2173,7 +2173,7 @@ function AdminPage() {
       const q = query(collectionGroup(db, "orders"));
       const unsub = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
-          const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, ref: doc.ref }));
+          const fetched = snapshot.docs.map(doc => { const data = doc.data(); return { ...data, id: data.id || doc.id, ref: doc.ref }; });
           // Sort by placed date desc
           fetched.sort((a: any, b: any) => {
             const dateA = a.placed?.toMillis ? a.placed.toMillis() : 0;
