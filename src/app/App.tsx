@@ -2214,11 +2214,37 @@ function AdminPage() {
     try { await deleteDoc(doc(db, "products", id.toString())); toast.success("Product deleted"); } 
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1hEKEZboMD0Z49sOwnPNPMH02WqLlCyYSqCmAeCnPf9dgIQkQsLXoAsbr-cN5Nqqm/exec";
+
   const updateOrderStatus = async (o: any, status: string) => {
-    try { 
-      await updateDoc(o.ref, { status, confirmed: status === "CONFIRMED" }); 
-      toast.success(`Order marked as ${status}`); 
-    } 
+    try {
+      await updateDoc(o.ref, { status, confirmed: status === "CONFIRMED" });
+      toast.success(`Order marked as ${status}`);
+
+      // Send cancellation email when admin cancels an order
+      if (status === "CANCELLED" && o.delivery?.email) {
+        try {
+          await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+              type: "CANCELLED",
+              id: o.id,
+              payment: o.payment,
+              total: o.total,
+              delivery: o.delivery,
+              items: (o.items || []).map((i: any) => ({
+                qty: i.qty,
+                product: { name: i.product?.name || "Item", price: i.product?.price || 0 }
+              }))
+            })
+          });
+        } catch (err) {
+          console.warn("Cancellation email failed:", err);
+        }
+      }
+    }
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, startIndex?: number) => {
