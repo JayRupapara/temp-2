@@ -1372,6 +1372,8 @@ function CheckoutPage() {
 
   const RAZORPAY_KEY = "rzp_live_TCI9b5gwYoVrxX";
 
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1hEKEZboMD0Z49sOwnPNPMH02WqLlCyYSqCmAeCnPf9dgIQkQsLXoAsbr-cN5Nqqm/exec";
+
   const saveOrderToFirestore = async (razorpayPaymentId?: string) => {
     if (!user) return;
     const orderId = "SVJ-" + Math.floor(100000 + Math.random() * 900000);
@@ -1381,6 +1383,28 @@ function CheckoutPage() {
       placed: Timestamp.fromDate(ord.placed),
       ...(razorpayPaymentId ? { razorpayPaymentId } : {})
     });
+
+    // Send confirmation email via Google Apps Script
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: ord.id,
+          payment: ord.payment,
+          total: ord.total,
+          delivery: ord.delivery,
+          items: ord.items.map(i => ({
+            qty: i.qty,
+            product: { name: i.product.name, price: i.product.price }
+          }))
+        })
+      });
+    } catch (err) {
+      console.warn("Email notification failed (non-critical):", err);
+    }
+
     setOrder(ord);
     clearCart();
     setPage("confirmation");
