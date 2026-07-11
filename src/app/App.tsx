@@ -2896,7 +2896,7 @@ function AdminPage() {
                             title="Copy customer details"
                             onClick={() => {
                               const d = o.delivery || o.customer || {};
-                              const text = `Name: ${d.name || ""}\nPhone: ${d.phone || ""}\nAddress: ${d.address || ""}, ${d.city || ""}, ${d.state || ""} - ${d.pincode || ""}`;
+                              const text = `${d.name || ""}\n${d.phone || ""}\n${d.address || ""}, ${d.city || ""}, ${d.state || ""} - ${d.pincode || ""}`;
                               navigator.clipboard.writeText(text).then(() => toast.success("Copied!"));
                             }}
                             className="flex-shrink-0 w-7 h-7 rounded-md bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors mt-0.5"
