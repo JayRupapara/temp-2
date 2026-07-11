@@ -65,7 +65,7 @@ type AppCtx = {
   selectedProduct: Product | null; setSelectedProduct: (p: Product | null) => void;
   navigateToProduct: (p: Product) => void;
   order: OrderData | null; setOrder: (o: OrderData) => void;
-  wishlist: number[]; toggleWishlist: (id: number) => void;
+  wishlist: (number | string)[]; toggleWishlist: (id: number | string) => void;
   user: any; login: () => void; logout: () => void;
   products: Product[];
   combos: Combo[];
@@ -718,7 +718,7 @@ function HeroSection() {
 
     // Fallback if not found
     if (!matchedProduct && products.length > 0) {
-      matchedProduct = products.find(p => p.isFeatured) || products[0];
+      matchedProduct = products.find(p => p.isFeatured) ?? products[0] ?? null;
     }
     
     if (matchedProduct) {
@@ -2052,7 +2052,7 @@ const CLOUDINARY_CLOUD_NAME = "b6vaot45";
 const CLOUDINARY_UPLOAD_PRESET = "shrivallabh_upload";
 
 const uploadToCloudinary = async (file: Blob | string): Promise<string> => {
-  if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME" || CLOUDINARY_UPLOAD_PRESET === "YOUR_UPLOAD_PRESET") {
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
     throw new Error("Please configure your Cloudinary credentials at the top of App.tsx");
   }
   const formData = new FormData();
@@ -2127,7 +2127,7 @@ function AdminPage() {
     setEditing({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false }); 
     setFormData({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false });
   };
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
     try { await deleteDoc(doc(db, "products", id.toString())); toast.success("Product deleted"); } 
     catch (e: any) { toast.error("Error", { description: e.message }); }
@@ -2576,7 +2576,7 @@ function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[...products].sort((a,b) => b.id - a.id).map(p => (
+                    {[...products].sort((a,b) => Number(b.id) - Number(a.id)).map(p => (
                       <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="p-4"><img src={p.image} className="w-12 h-12 rounded object-cover" /></td>
                         <td className="p-4 font-semibold">{p.name}</td>
@@ -2854,7 +2854,7 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [order, setOrder] = useState<OrderData | null>(null);
-  const [wishlist, setWishlist] = useState<number[]>([]);
+  const [wishlist, setWishlist] = useState<(number | string)[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>(PRODUCTS); // fallback to hardcoded initially
   const [combos, setCombos] = useState<Combo[]>([]);
