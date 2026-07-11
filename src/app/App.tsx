@@ -2155,6 +2155,8 @@ function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [pwd, setPwd] = useState("");
   const [tab, setTab] = useState<"products"|"combos"|"orders">("products");
+  const [ordersPage, setOrdersPage] = useState(1);
+  const ORDERS_PER_PAGE = 10;
 
   const [editing, setEditing] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({});
@@ -2842,21 +2844,28 @@ function AdminPage() {
           const confirmedOrders = ordersList.filter(o => (o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER")) === "CONFIRMED");
           const confirmedTotal = confirmedOrders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
           const newCount = ordersList.filter(o => (o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER")) === "NEW ORDER").length;
+          const totalPages = Math.max(1, Math.ceil(ordersList.length / ORDERS_PER_PAGE));
+          const pagedOrders = ordersList.slice((ordersPage - 1) * ORDERS_PER_PAGE, ordersPage * ORDERS_PER_PAGE);
           return (
           <>
           {/* Summary Cards */}
-          <div className="flex gap-4 mb-4 flex-wrap">
-            <div className="flex-1 min-w-[180px] bg-white rounded-xl border shadow-sm p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="bg-white rounded-xl border shadow-sm p-4">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Total Revenue</p>
               <p className="text-2xl font-bold text-green-700">₹{confirmedTotal.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-gray-400 mt-1">{confirmedOrders.length} confirmed order{confirmedOrders.length !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-gray-400 mt-1">From confirmed orders</p>
             </div>
-            <div className="flex-1 min-w-[180px] bg-white rounded-xl border shadow-sm p-4">
+            <div className="bg-white rounded-xl border shadow-sm p-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Confirmed Orders</p>
+              <p className="text-2xl font-bold text-green-600">{confirmedOrders.length}</p>
+              <p className="text-xs text-gray-400 mt-1">Successfully fulfilled</p>
+            </div>
+            <div className="bg-white rounded-xl border shadow-sm p-4">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Pending Orders</p>
               <p className="text-2xl font-bold text-yellow-600">{newCount}</p>
               <p className="text-xs text-gray-400 mt-1">Awaiting action</p>
             </div>
-            <div className="flex-1 min-w-[180px] bg-white rounded-xl border shadow-sm p-4">
+            <div className="bg-white rounded-xl border shadow-sm p-4">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Total Orders</p>
               <p className="text-2xl font-bold text-gray-700">{ordersList.length}</p>
               <p className="text-xs text-gray-400 mt-1">All time</p>
@@ -2876,7 +2885,7 @@ function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {ordersList.map(o => {
+                {pagedOrders.map(o => {
                   const status = o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER");
                   const rowBg = status === "CONFIRMED" ? "bg-green-50" : status === "CANCELLED" ? "bg-red-50" : "bg-yellow-50";
                   const isCOD = o.payment === "cod";
@@ -2938,10 +2947,34 @@ function AdminPage() {
                     </tr>
                   );
                 })}
-                {ordersList.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-gray-400">No orders found.</td></tr>}
+                {pagedOrders.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-gray-400">No orders found.</td></tr>}
               </tbody>
             </table>
           </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 px-1">
+              <p className="text-sm text-gray-500">Showing {(ordersPage - 1) * ORDERS_PER_PAGE + 1}–{Math.min(ordersPage * ORDERS_PER_PAGE, ordersList.length)} of {ordersList.length} orders</p>
+              <div className="flex gap-2">
+                <button onClick={() => setOrdersPage(p => Math.max(1, p - 1))} disabled={ordersPage === 1}
+                  className="px-4 py-1.5 text-sm font-semibold rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                  ← Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
+                  <button key={pg} onClick={() => setOrdersPage(pg)}
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-lg border transition ${
+                      pg === ordersPage ? "bg-gray-900 text-white border-gray-900" : "bg-white hover:bg-gray-50"
+                    }`}>
+                    {pg}
+                  </button>
+                ))}
+                <button onClick={() => setOrdersPage(p => Math.min(totalPages, p + 1))} disabled={ordersPage === totalPages}
+                  className="px-4 py-1.5 text-sm font-semibold rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
           </>
           );
         })()}
