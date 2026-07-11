@@ -1370,22 +1370,78 @@ function CheckoutPage() {
   const discount = cartTotal >= 500 ? 50 : 0;
   const total = cartTotal - discount + (payment === "cod" ? codCharge : 0);
 
-  const placeOrder = async () => {
+  const RAZORPAY_KEY = "rzp_test_TCHlhg05X8vPw0";
+
+  const saveOrderToFirestore = async (razorpayPaymentId?: string) => {
+    if (!user) return;
+    const orderId = "SVJ-" + Math.floor(100000 + Math.random() * 900000);
+    const ord: OrderData = { id: orderId, items: [...cart], delivery: { ...form }, payment, total, placed: new Date(), confirmed: false };
+    await addDoc(collection(db, "users", user.uid, "orders"), {
+      ...ord,
+      placed: Timestamp.fromDate(ord.placed),
+      ...(razorpayPaymentId ? { razorpayPaymentId } : {})
+    });
+    setOrder(ord);
+    clearCart();
+    setPage("confirmation");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handlePrepaidPay = () => {
+    if (!user) return;
+    setPaying(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => {
+      const options = {
+        key: RAZORPAY_KEY,
+        amount: total * 100, // paise
+        currency: "INR",
+        name: "Shri Vallabh Jewels",
+        description: cart.map(i => `${i.qty}x ${i.product.name}`).join(", "),
+        image: "https://res.cloudinary.com/b6vaot45/image/upload/v1/shrivallabh_upload/logo",
+        prefill: {
+          name: form.name,
+          email: form.email || "",
+          contact: form.phone
+        },
+        notes: {
+          address: `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`
+        },
+        theme: { color: "#CFA18D" },
+        handler: async (response: any) => {
+          try {
+            await saveOrderToFirestore(response.razorpay_payment_id);
+            toast.success("Payment successful! 🎉");
+          } catch (err) {
+            console.error("Order save error:", err);
+            toast.error("Payment done but order save failed. Please contact support.");
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPaying(false);
+            toast.error("Payment cancelled.");
+          }
+        }
+      };
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    };
+    script.onerror = () => {
+      setPaying(false);
+      toast.error("Could not load payment gateway. Check your internet connection.");
+    };
+    document.body.appendChild(script);
+  };
+
+  const placeCODOrder = async () => {
     if (!user) return;
     setPaying(true);
     try {
-      const orderId = "SVJ-" + Math.floor(100000 + Math.random() * 900000);
-      const ord: OrderData = { id: orderId, items: [...cart], delivery: { ...form }, payment, total, placed: new Date(), confirmed: false };
-      
-      await addDoc(collection(db, "users", user.uid, "orders"), {
-        ...ord,
-        placed: Timestamp.fromDate(ord.placed)
-      });
-      
-      setOrder(ord);
-      clearCart();
-      setPage("confirmation");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      await saveOrderToFirestore();
     } catch (err) {
       console.error("Order error:", err);
       toast.error("Failed to place order", { description: "Please try again." });
@@ -1527,11 +1583,12 @@ function CheckoutPage() {
                 </div>
 
 
-                <button onClick={placeOrder}
+                <button
+                  onClick={payment === "prepaid" ? handlePrepaidPay : placeCODOrder}
                   disabled={paying}
                   className="w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-[1.02] disabled:opacity-70 mt-6"
-                  style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
-                  {paying ? "Processing…" : payment === "cod" ? "Place COD Order →" : `Pay ₹${total} Now →`}
+                  style={{ background: payment === "prepaid" ? "#CFA18D" : "#5A4035", color: "#FCFBF8", boxShadow: "0 4px 16px rgba(207,161,141,0.4)" }}>
+                  {paying ? "Processing…" : payment === "cod" ? "Place COD Order →" : `🔒 Pay ₹${total} Securely →`}
                 </button>
               </div>
             )}
