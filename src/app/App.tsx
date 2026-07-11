@@ -1399,7 +1399,7 @@ function CheckoutPage() {
         currency: "INR",
         name: "Shri Vallabh Jewels",
         description: cart.map(i => `${i.qty}x ${i.product.name}`).join(", "),
-        image: "https://res.cloudinary.com/b6vaot45/image/upload/v1/shrivallabh_upload/logo",
+        
         prefill: {
           name: form.name,
           email: form.email || "",
