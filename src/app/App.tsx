@@ -1370,7 +1370,7 @@ function CheckoutPage() {
   const discount = cartTotal >= 500 ? 50 : 0;
   const total = cartTotal - discount + (payment === "cod" ? codCharge : 0);
 
-  const RAZORPAY_KEY = "rzp_test_TCHlhg05X8vPw0";
+  const RAZORPAY_KEY = "rzp_live_TCI9b5gwYoVrxX";
 
   const saveOrderToFirestore = async (razorpayPaymentId?: string) => {
     if (!user) return;
