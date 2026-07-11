@@ -1386,20 +1386,21 @@ function CheckoutPage() {
 
     // Send confirmation email via Google Apps Script
     try {
+      const emailPayload = JSON.stringify({
+        id: ord.id,
+        payment: ord.payment,
+        total: ord.total,
+        delivery: ord.delivery,
+        items: ord.items.map(i => ({
+          qty: i.qty,
+          product: { name: i.product.name, price: i.product.price }
+        }))
+      });
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: ord.id,
-          payment: ord.payment,
-          total: ord.total,
-          delivery: ord.delivery,
-          items: ord.items.map(i => ({
-            qty: i.qty,
-            product: { name: i.product.name, price: i.product.price }
-          }))
-        })
+        headers: { "Content-Type": "text/plain" },
+        body: emailPayload
       });
     } catch (err) {
       console.warn("Email notification failed (non-critical):", err);
