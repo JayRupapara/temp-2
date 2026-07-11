@@ -714,7 +714,7 @@ function HeroSection() {
       }
     });
                          
-    let matchedProduct = maxScore > 0 ? bestMatch : null;
+    let matchedProduct: Product | null = maxScore > 0 ? bestMatch : null;
 
     // Fallback if not found
     if (!matchedProduct && products.length > 0) {
