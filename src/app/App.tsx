@@ -1366,9 +1366,9 @@ function CheckoutPage() {
     }
   }, [user]);
   const [paying, setPaying] = useState(false);
-  const delivery = 49;
-  const discount = cartTotal >= 499 ? 49 : 0;
-  const total = cartTotal - discount + (payment === "cod" ? delivery : 0);
+  const codCharge = 50;
+  const discount = cartTotal >= 500 ? 50 : 0;
+  const total = cartTotal - discount + (payment === "cod" ? codCharge : 0);
 
   const placeOrder = async () => {
     if (!user) return;
@@ -1484,6 +1484,18 @@ function CheckoutPage() {
             {step === "payment" && (
               <div className="rounded-2xl p-6" style={{ background: "#FCFBF8", boxShadow: "0 4px 24px rgba(207,161,141,0.1)", border: "1px solid rgba(203,184,169,0.2)" }}>
                 <h2 className="text-xl font-bold mb-5" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Payment Method</h2>
+                {cartTotal >= 500 && (
+                   <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-2" style={{ background: "rgba(5,150,105,0.08)", border: "1px solid rgba(5,150,105,0.2)" }}>
+                     <span className="text-lg">🎉</span>
+                     <p className="text-xs font-bold" style={{ color: "#059669" }}>₹50 discount applied! Your order qualifies for the ₹500+ offer.</p>
+                   </div>
+                 )}
+                 {cartTotal < 500 && (
+                   <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-2" style={{ background: "rgba(207,161,141,0.08)", border: "1px solid rgba(207,161,141,0.2)" }}>
+                     <span className="text-lg">💡</span>
+                     <p className="text-xs font-semibold" style={{ color: "#8C7B6B" }}>Add ₹{500 - cartTotal} more to get ₹50 off your order!</p>
+                   </div>
+                 )}
                 <div className="space-y-3 mb-5">
                   <button onClick={() => setPayment("prepaid")} className="w-full p-4 rounded-xl flex items-center gap-3 text-left transition-all"
                     style={{ border: payment === "prepaid" ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", background: payment === "prepaid" ? "rgba(207,161,141,0.06)" : "#fff" }}>
@@ -1492,10 +1504,10 @@ function CheckoutPage() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold" style={{ color: "#3D2B1F" }}>Prepaid (UPI / Card / Net Banking)</p>
-                      <p className="text-xs font-bold" style={{ color: "#059669" }}>🎉 FREE Delivery — Save ₹49!</p>
+                      <p className="text-xs font-bold" style={{ color: "#059669" }}>✨ FREE Delivery on Prepaid!</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs line-through" style={{ color: "#CBB8A9" }}>₹49</p>
+                      <p className="text-xs line-through" style={{ color: "#CBB8A9" }}>₹50</p>
                       <p className="text-xs font-bold" style={{ color: "#059669" }}>FREE</p>
                     </div>
                   </button>
@@ -1506,10 +1518,10 @@ function CheckoutPage() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold" style={{ color: "#3D2B1F" }}>Cash on Delivery</p>
-                      <p className="text-xs font-semibold" style={{ color: "#8C7B6B" }}>Cash on Delivery includes ₹49 delivery charge.</p>
+                      <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>+₹{codCharge} COD charges will be added</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold" style={{ color: "#8C7B6B" }}>+₹49</p>
+                      <p className="text-xs font-bold" style={{ color: "#DC2626" }}>+₹{codCharge}</p>
                     </div>
                   </button>
                 </div>
@@ -1553,10 +1565,11 @@ function CheckoutPage() {
                 <div className="flex justify-between text-xs">
                   <span style={{ color: "#8C7B6B" }}>Delivery</span>
                   <span className="font-bold" style={{ color: payment === "prepaid" ? "#059669" : "#DC2626" }}>
-                    {payment === "prepaid" ? "FREE" : `₹${delivery}`}
+                    {payment === "prepaid" ? "FREE" : `+₹${codCharge}`}
                   </span>
                 </div>
-                {payment === "prepaid" && <div className="text-[10px] text-center py-1 rounded" style={{ background: "rgba(5,150,105,0.08)", color: "#059669" }}>🎉 You saved ₹49 with prepaid!</div>}
+                {payment === "prepaid" && <div className="text-[10px] text-center py-1 rounded" style={{ background: "rgba(5,150,105,0.08)", color: "#059669" }}>✨ Free delivery on prepaid!</div>}
+                 {payment === "cod" && <div className="text-[10px] text-center py-1 rounded" style={{ background: "rgba(220,38,38,0.05)", color: "#DC2626" }}>Switch to Prepaid to save ₹50 on delivery!</div>}
                 <div className="flex justify-between text-sm font-bold pt-1 border-t" style={{ borderColor: "rgba(203,184,169,0.3)", color: "#3D2B1F" }}>
                   <span>Total</span><span style={{ color: "#CFA18D" }}>₹{total}</span>
                 </div>
