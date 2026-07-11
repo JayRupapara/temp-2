@@ -2840,14 +2840,15 @@ function AdminPage() {
 
         {tab === "orders" && (
           <div className="bg-white rounded-2xl shadow-sm border overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[700px]">
+            <table className="w-full text-left text-sm min-w-[950px]">
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="p-4 font-bold">Order ID</th>
                   <th className="p-4 font-bold">Date</th>
                   <th className="p-4 font-bold">Customer Details</th>
                   <th className="p-4 font-bold">Items</th>
-                  <th className="p-4 font-bold">Total Amount</th>
+                  <th className="p-4 font-bold">Payment</th>
+                  <th className="p-4 font-bold">Total</th>
                   <th className="p-4 font-bold text-center">Status & Actions</th>
                 </tr>
               </thead>
@@ -2855,42 +2856,51 @@ function AdminPage() {
                 {ordersList.map(o => {
                   const status = o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER");
                   const rowBg = status === "CONFIRMED" ? "bg-green-50" : status === "CANCELLED" ? "bg-red-50" : "bg-yellow-50";
+                  const isCOD = o.payment === "cod";
                   return (
-                    <tr key={o.id} className={`border-b last:border-0 hover:brightness-95 ${rowBg}`}>
-                      <td className="p-4 font-mono text-xs text-gray-500">{o.id.slice(0,8)}</td>
-                      <td className="p-4">{o.placed?.toDate ? o.placed.toDate().toLocaleString() : "Just now"}</td>
+                    <tr key={o.id} className={`border-b last:border-0 ${rowBg}`}>
+                      <td className="p-4 font-mono text-xs font-bold text-gray-700">{o.id}</td>
+                      <td className="p-4 text-xs text-gray-600 whitespace-nowrap">{o.placed?.toDate ? o.placed.toDate().toLocaleString("en-IN") : "Just now"}</td>
                       <td className="p-4">
-                        <div className="font-bold">{o.delivery?.name || o.customer?.name}</div>
+                        <div className="font-bold text-gray-800">{o.delivery?.name || o.customer?.name}</div>
                         <div className="text-xs text-gray-500">{o.delivery?.email || o.customer?.email}</div>
                         <div className="text-xs text-gray-500">{o.delivery?.phone || o.customer?.phone}</div>
-                        <div className="text-xs text-gray-500 mt-1">{o.delivery?.address || o.shipping?.address}, {o.delivery?.city || o.shipping?.city} {o.delivery?.pincode || o.shipping?.pincode}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{o.delivery?.address}, {o.delivery?.city}, {o.delivery?.state} - {o.delivery?.pincode}</div>
                       </td>
                       <td className="p-4">
-                        <ul className="list-disc pl-4 text-xs">
+                        <ul className="space-y-0.5 text-xs text-gray-700">
                           {o.items?.map((item: any, idx: number) => (
-                            <li key={idx}>{item.qty}x {item.product?.name || "Combo"}</li>
+                            <li key={idx}><span className="font-bold">{item.qty}x</span> {item.product?.name || "Item"}</li>
                           ))}
                         </ul>
                       </td>
-                      <td className="p-4 font-bold">₹{o.total}</td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ${isCOD ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                          {isCOD ? "COD" : "Prepaid"}
+                        </span>
+                      </td>
+                      <td className="p-4 font-bold text-gray-800">₹{o.total}</td>
                       <td className="p-4 text-center">
-                        {status === "NEW ORDER" && <div className="text-[10px] font-bold bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full mx-auto w-max mb-2">NEW ORDER</div>}
-                        {status === "CONFIRMED" && <div className="text-[10px] font-bold bg-green-200 text-green-800 px-3 py-1 rounded-full mx-auto w-max mb-2">CONFIRMED</div>}
-                        {status === "CANCELLED" && <div className="text-[10px] font-bold bg-red-200 text-red-800 px-3 py-1 rounded-full mx-auto w-max mb-2">CANCELLED</div>}
-                        
-                        <div className="flex gap-2 justify-center flex-wrap">
-                          {status !== "CONFIRMED" && (
-                            <button onClick={() => updateOrderStatus(o, "CONFIRMED")} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors shadow-sm">Confirm</button>
-                          )}
-                          {status !== "CANCELLED" && (
-                            <button onClick={() => updateOrderStatus(o, "CANCELLED")} className="px-3 py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors shadow-sm">Cancel</button>
-                          )}
-                        </div>
+                        {status === "NEW ORDER" && (
+                          <>
+                            <div className="text-[10px] font-bold bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full mx-auto w-max mb-2">NEW ORDER</div>
+                            <div className="flex gap-2 justify-center">
+                              <button onClick={() => updateOrderStatus(o, "CONFIRMED")} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors">Confirm</button>
+                              <button onClick={() => updateOrderStatus(o, "CANCELLED")} className="px-3 py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors">Cancel</button>
+                            </div>
+                          </>
+                        )}
+                        {status === "CONFIRMED" && (
+                          <div className="text-xs font-bold bg-green-200 text-green-800 px-4 py-2 rounded-lg mx-auto w-max">✓ Confirmed</div>
+                        )}
+                        {status === "CANCELLED" && (
+                          <div className="text-xs font-bold bg-red-200 text-red-800 px-4 py-2 rounded-lg mx-auto w-max">✕ Cancelled</div>
+                        )}
                       </td>
                     </tr>
                   );
                 })}
-                {ordersList.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-500">No orders found.</td></tr>}
+                {ordersList.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-gray-400">No orders found.</td></tr>}
               </tbody>
             </table>
           </div>
