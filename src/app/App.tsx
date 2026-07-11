@@ -2838,7 +2838,30 @@ function AdminPage() {
           </>
         )}
 
-        {tab === "orders" && (
+        {tab === "orders" && (() => {
+          const confirmedOrders = ordersList.filter(o => (o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER")) === "CONFIRMED");
+          const confirmedTotal = confirmedOrders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
+          const newCount = ordersList.filter(o => (o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER")) === "NEW ORDER").length;
+          return (
+          <>
+          {/* Summary Cards */}
+          <div className="flex gap-4 mb-4 flex-wrap">
+            <div className="flex-1 min-w-[180px] bg-white rounded-xl border shadow-sm p-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Total Revenue</p>
+              <p className="text-2xl font-bold text-green-700">₹{confirmedTotal.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-gray-400 mt-1">{confirmedOrders.length} confirmed order{confirmedOrders.length !== 1 ? "s" : ""}</p>
+            </div>
+            <div className="flex-1 min-w-[180px] bg-white rounded-xl border shadow-sm p-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Pending Orders</p>
+              <p className="text-2xl font-bold text-yellow-600">{newCount}</p>
+              <p className="text-xs text-gray-400 mt-1">Awaiting action</p>
+            </div>
+            <div className="flex-1 min-w-[180px] bg-white rounded-xl border shadow-sm p-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Total Orders</p>
+              <p className="text-2xl font-bold text-gray-700">{ordersList.length}</p>
+              <p className="text-xs text-gray-400 mt-1">All time</p>
+            </div>
+          </div>
           <div className="bg-white rounded-2xl shadow-sm border overflow-x-auto">
             <table className="w-full text-left text-sm min-w-[950px]">
               <thead className="bg-gray-50 border-b">
@@ -2862,10 +2885,25 @@ function AdminPage() {
                       <td className="p-4 font-mono text-xs font-bold text-gray-700">{o.id}</td>
                       <td className="p-4 text-xs text-gray-600 whitespace-nowrap">{o.placed?.toDate ? o.placed.toDate().toLocaleString("en-IN") : "Just now"}</td>
                       <td className="p-4">
-                        <div className="font-bold text-gray-800">{o.delivery?.name || o.customer?.name}</div>
-                        <div className="text-xs text-gray-500">{o.delivery?.email || o.customer?.email}</div>
-                        <div className="text-xs text-gray-500">{o.delivery?.phone || o.customer?.phone}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{o.delivery?.address}, {o.delivery?.city}, {o.delivery?.state} - {o.delivery?.pincode}</div>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <div className="font-bold text-gray-800">{o.delivery?.name || o.customer?.name}</div>
+                            <div className="text-xs text-gray-500">{o.delivery?.email || o.customer?.email}</div>
+                            <div className="text-xs text-gray-500">{o.delivery?.phone || o.customer?.phone}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{o.delivery?.address}, {o.delivery?.city}, {o.delivery?.state} - {o.delivery?.pincode}</div>
+                          </div>
+                          <button
+                            title="Copy customer details"
+                            onClick={() => {
+                              const d = o.delivery || o.customer || {};
+                              const text = `Name: ${d.name || ""}\nPhone: ${d.phone || ""}\nAddress: ${d.address || ""}, ${d.city || ""}, ${d.state || ""} - ${d.pincode || ""}`;
+                              navigator.clipboard.writeText(text).then(() => toast.success("Copied!"));
+                            }}
+                            className="flex-shrink-0 w-7 h-7 rounded-md bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors mt-0.5"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                          </button>
+                        </div>
                       </td>
                       <td className="p-4">
                         <ul className="space-y-0.5 text-xs text-gray-700">
@@ -2904,7 +2942,9 @@ function AdminPage() {
               </tbody>
             </table>
           </div>
-        )}
+          </>
+          );
+        })()}
       </div>
     </div>
   );
