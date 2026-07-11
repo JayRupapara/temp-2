@@ -698,7 +698,7 @@ function HeroSection() {
     const searchWords = (currentBanner.searchQuery || currentBanner.title).toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ')
       .filter(w => w.length > 2 && !['necklace', 'ring', 'earring', 'earrings', 'bracelet', 'pack', 'combo', 'set'].includes(w));
       
-    let bestMatch = null;
+    let bestMatch: Product | null = null;
     let maxScore = 0;
     
     const allItems = [...products, ...combos];
@@ -3018,7 +3018,7 @@ export default function App() {
   const removeFromCart = (id: number | string) => setCart(prev => prev.filter(i => i.product.id !== id));
   const updateQty = (id: number | string, qty: number) => qty <= 0 ? removeFromCart(id) : setCart(prev => prev.map(i => i.product.id === id ? { ...i, qty } : i));
   const clearCart = () => setCart([]);
-  const toggleWishlist = (id: number) => setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleWishlist = (id: number | string) => setWishlist(prev => prev.includes(id as number) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, navigateToProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos };
 
