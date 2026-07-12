@@ -1384,9 +1384,10 @@ function CheckoutPage() {
       ...(razorpayPaymentId ? { razorpayPaymentId } : {})
     });
 
-    // Send confirmation email via Google Apps Script
+    // Send "Order Placed" email via Google Apps Script
     try {
       const emailPayload = JSON.stringify({
+        type: "PLACED",
         id: ord.id,
         payment: ord.payment,
         total: ord.total,
@@ -2223,27 +2224,29 @@ function AdminPage() {
       await updateDoc(o.ref, { status, confirmed: status === "CONFIRMED" });
       toast.success(`Order marked as ${status}`);
 
-      // Send cancellation email when admin cancels an order
-      if (status === "CANCELLED" && o.delivery?.email) {
+      const emailPayload = {
+        type: status, // "CONFIRMED" or "CANCELLED"
+        id: o.id,
+        payment: o.payment,
+        total: o.total,
+        delivery: o.delivery,
+        items: (o.items || []).map((i: any) => ({
+          qty: i.qty,
+          product: { name: i.product?.name || "Item", price: i.product?.price || 0 }
+        }))
+      };
+
+      // Send email for both CONFIRMED and CANCELLED
+      if ((status === "CONFIRMED" || status === "CANCELLED") && o.delivery?.email) {
         try {
           await fetch(APPS_SCRIPT_URL, {
             method: "POST",
             mode: "no-cors",
             headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-              type: "CANCELLED",
-              id: o.id,
-              payment: o.payment,
-              total: o.total,
-              delivery: o.delivery,
-              items: (o.items || []).map((i: any) => ({
-                qty: i.qty,
-                product: { name: i.product?.name || "Item", price: i.product?.price || 0 }
-              }))
-            })
+            body: JSON.stringify(emailPayload)
           });
         } catch (err) {
-          console.warn("Cancellation email failed:", err);
+          console.warn("Status email failed:", err);
         }
       }
     }
