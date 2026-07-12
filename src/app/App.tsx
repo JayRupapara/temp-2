@@ -1680,10 +1680,18 @@ function OrderConfirmation() {
           <Check size={36} className="text-white" />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <p className="text-[11px] uppercase tracking-[0.3em] font-bold mb-2" style={{ color: "#CFA18D" }}>Order Placed & Confirmed!</p>
+          <p className="text-[11px] uppercase tracking-[0.3em] font-bold mb-2" style={{ color: "#CFA18D" }}>Order Placed Successfully!</p>
           <h1 className="text-3xl mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Thank You, {order.delivery.name.split(" ")[0]}! 🎉</h1>
-          <p className="text-sm font-semibold mb-2" style={{ color: "#5A4035" }}>Your order will be packed and shipped soon.</p>
-          <p className="text-sm mb-6" style={{ color: "#6B5A4E" }}>Delivery will be done in <strong style={{ color: "#CFA18D" }}>5-8 days</strong> and you will receive your parcel. For more details, contact us on WhatsApp.</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: "#5A4035" }}>Your order has been received and is under review.</p>
+          <p className="text-sm mb-4" style={{ color: "#6B5A4E" }}>Delivery will be done in <strong style={{ color: "#CFA18D" }}>5-8 days</strong> once confirmed. For more details, contact us on WhatsApp.</p>
+          {/* Email notification info */}
+          <div className="rounded-xl px-4 py-3 mb-4 flex items-start gap-3 text-left" style={{ background: "#F0F9FF", border: "1px solid #BAE0FD" }}>
+            <span className="text-xl mt-0.5">📧</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "#0369A1" }}>Confirmation email sent!</p>
+              <p className="text-xs mt-0.5" style={{ color: "#0284C7" }}>We've sent your order details to <strong>{order.delivery.email}</strong>. Please check your inbox (and spam folder).</p>
+            </div>
+          </div>
           <div className="rounded-2xl p-5 mb-6 text-left" style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)", boxShadow: "0 4px 20px rgba(207,161,141,0.1)" }}>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Order ID</p><p className="font-bold" style={{ color: "#3D2B1F" }}>{order.id}</p></div>
