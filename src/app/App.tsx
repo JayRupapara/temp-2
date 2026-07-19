@@ -15,29 +15,29 @@ import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, set
 import { ref, uploadString, getDownloadURL, uploadBytes } from "firebase/storage";
 
 import logoImg from "../imports/IMG_5778.PNG";
-import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.png";
-import heartImg from "../imports/ChatGPT_Image_Jun_10__2026__03_25_26_PM.png";
-import butterflyImg from "../imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.png";
-import ringImg from "../imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.png";
-import storyImg from "../imports/new pn.png.png";
-import heroBannerImg1 from "../imports/hero-banner 3 (2).png";
-import heroBannerImg2 from "../imports/hero-banner 2.png";
-import heroBannerImg3 from "../imports/hero-banner 1.jpg.png";
-import heroBannerImg4 from "../imports/hero-banner 4 (2).png";
-import heroBannerImg5 from "../imports/hero-banner 5 (2).png";
-import promiseImg4 from "../imports/Untitled design (5).png";
-import mobileEleganceImg from "../imports/mobile elegance.png";
-import mobileHeroBanner1 from "../imports/mobile hero banner 3.png";
-import mobileHeroBanner2 from "../imports/mobile hero banner 2.png";
-import mobileHeroBanner3 from "../imports/mobile hero banner 1.png";
-import mobileHeroBanner4 from "../imports/mobile hero banner 4.png";
-import mobileHeroBanner5 from "../imports/mobile hero banner 5.png";
-import insta1 from "../imports/insta 1.png";
-import insta2 from "../imports/insta 2.png";
-import insta3 from "../imports/insta 3.png";
-import insta4 from "../imports/insta 4.png";
-import insta5 from "../imports/insta 5.png";
-import insta6 from "../imports/insta 6.png";
+import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.webp";
+import heartImg from "../imports/ChatGPT_Image_Jun_10__2026__03_25_26_PM.webp";
+import butterflyImg from "../imports/ChatGPT_Image_Jun_8__2026__06_13_30_PM.webp";
+import ringImg from "../imports/ChatGPT_Image_Jun_10__2026__03_55_57_PM.webp";
+import storyImg from "../imports/new pn.png.webp";
+import heroBannerImg1 from "../imports/hero-banner 3 (2).webp";
+import heroBannerImg2 from "../imports/hero-banner 2.webp";
+import heroBannerImg3 from "../imports/hero-banner 1.webp";
+import heroBannerImg4 from "../imports/hero-banner 4 (2).webp";
+import heroBannerImg5 from "../imports/hero-banner 5 (2).webp";
+import promiseImg4 from "../imports/Untitled design (5).webp";
+import mobileEleganceImg from "../imports/mobile elegance.webp";
+import mobileHeroBanner1 from "../imports/mobile hero banner 3.webp";
+import mobileHeroBanner2 from "../imports/mobile hero banner 2.webp";
+import mobileHeroBanner3 from "../imports/mobile hero banner 1.webp";
+import mobileHeroBanner4 from "../imports/mobile hero banner 4.webp";
+import mobileHeroBanner5 from "../imports/mobile hero banner 5.webp";
+import insta1 from "../imports/insta 1.webp";
+import insta2 from "../imports/insta 2.webp";
+import insta3 from "../imports/insta 3.webp";
+import insta4 from "../imports/insta 4.webp";
+import insta5 from "../imports/insta 5.webp";
+import insta6 from "../imports/insta 6.webp";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms" | "wishlist" | "contact";
@@ -45,13 +45,13 @@ type Product = {
   id: number | string; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string; images?: string[];
   badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
-  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean;
+  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; festival?: string;
 };
 type Combo = {
   id: string; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string; images?: string[];
   badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
-  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; saving?: number;
+  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; saving?: number; festival?: string;
 };
 type CartItem = { product: Product; qty: number };
 type DeliveryForm = { name: string; phone: string; email: string; address: string; city: string; state: string; pincode: string };
@@ -301,7 +301,7 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
           >
             {allImages.map((img, i) => (
               <ImageWithFallback key={i} src={img} alt={product.name} 
-                loading={delay === 0 && i === 0 ? "eager" : "lazy"}
+                loading="eager"
                 className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]" 
                 style={{ opacity: i === imgIndex ? 1 : 0, transform: (i === imgIndex && isHovered) ? 'scale(1.05)' : 'scale(1)', pointerEvents: i === imgIndex ? 'auto' : 'none' }} 
               />
@@ -466,7 +466,7 @@ function CartDrawer() {
                 cart.map(item => (
                   <div key={item.product.id} className="flex gap-3 p-3 rounded-xl" style={{ background: "#F8F6F2", border: "1px solid rgba(203,184,169,0.2)" }}>
                     <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: "#EFE7DD" }}>
-                      <ImageWithFallback src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                      <ImageWithFallback src={item.product.image} alt={item.product.name} loading="eager" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold leading-snug truncate" style={{ color: "#3D2B1F", fontFamily: "'Playfair Display', serif" }}>{item.product.name}</p>
@@ -540,9 +540,9 @@ function Navbar() {
   const scroll = (id: string) => { setPage("home"); setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 120); setMobileOpen(false); };
   const links = [
     { label: "Home", action: () => { setPage("home"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
-    { label: "Categories", action: () => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
-    { label: "New Arrivals", action: () => scroll("new-arrivals") },
-    { label: "Best Sellers", action: () => scroll("bestsellers") },
+    { label: "Sale is Live ⚡", action: () => scroll("sale-section") },
+    { label: "Products", action: () => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
+    { label: "Featured", action: () => scroll("featured") },
     { label: "About Us", action: () => scroll("about") },
     { label: "Contact Us", action: () => { setPage("contact"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
   ];
@@ -611,11 +611,9 @@ function Navbar() {
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style={{ color: "#8C7B6B" }}>Categories</p>
                 <div className="flex flex-col gap-3.5">
-                  <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>All Categories</button>
-                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Necklaces</button>
-                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Rings</button>
-                  <button onClick={() => scroll("new-arrivals")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>New Arrivals</button>
-                  <button onClick={() => scroll("bestsellers")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Best Sellers</button>
+                  <button onClick={() => scroll("sale-section")} className="text-left text-[15px] font-semibold flex items-center gap-1" style={{ color: "#d9534f" }}>Sale is Live ⚡</button>
+                  <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Products</button>
+                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Featured Collections</button>
                 </div>
               </div>
               <div>
@@ -677,9 +675,9 @@ function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const banners = [
-    { src: heroBannerImg1, mobileSrc: mobileHeroBanner1, title: "Diamond Bow Necklace", searchQuery: "diamond bow", price: "299", pos: "top-[25%] right-0", imgOpacity: 0.7 },
+    { src: heroBannerImg1, mobileSrc: mobileHeroBanner1, title: "Amora Pearl Heart Bracelet", searchQuery: "amora pearl", price: "249", pos: "top-[25%] right-0", imgOpacity: 1 },
     { src: heroBannerImg2, mobileSrc: mobileHeroBanner2, title: "Butterfly Bloom Necklace", searchQuery: "butterfly bloom", price: "399", pos: "top-[25%] right-0", imgOpacity: 1 },
-    { src: heroBannerImg3, mobileSrc: mobileHeroBanner3, title: "Amora Pearl Heart Bracelet", searchQuery: "amora pearl", price: "249", pos: "top-[25%] right-0", imgOpacity: 1 },
+    { src: heroBannerImg3, mobileSrc: mobileHeroBanner3, title: "Diamond Bow Necklace", searchQuery: "diamond bow", price: "299", pos: "top-[25%] right-0", imgOpacity: 0.7 },
     { src: heroBannerImg4, mobileSrc: mobileHeroBanner4, title: "Pack of 5 Earrings", searchQuery: "butterfly daisy", price: "299", pos: "bottom-[20%] right-[10%]", imgOpacity: 1 },
     { src: heroBannerImg5, mobileSrc: mobileHeroBanner5, title: "Infinity Spark Ring", searchQuery: "infinity spark", price: "149", pos: "bottom-10 right-0", imgOpacity: 1 },
   ];
@@ -736,14 +734,17 @@ function HeroSection() {
         {banners.map((b, i) => (
           <div 
             key={i} 
-            className="absolute inset-0 transition-all duration-1000 ease-in-out"
-            style={{ opacity: i === currentSlide ? b.imgOpacity : 0, transform: i === currentSlide ? 'scale(1.15)' : 'scale(1.2)' }}
+            className={`absolute inset-0 ease-in-out ${i === currentSlide ? 'transition-all duration-1000' : 'transition-opacity duration-1000'}`}
+            style={{ 
+              opacity: i === currentSlide ? b.imgOpacity : 0, 
+              transform: i === currentSlide ? 'scale(1.15)' : 'scale(1.2)' 
+            }}
           >
             <div className="hidden lg:block w-full h-full">
-              <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} loading={i === 0 ? "eager" : "lazy"} className="w-full h-full object-cover object-center" />
+              <ImageWithFallback src={b.src} alt={`Shri Vallabh Jewels Collection ${i + 1}`} loading="eager" fetchPriority={i === 0 ? "high" : "auto"} className="w-full h-full object-cover object-center" />
             </div>
             <div className="lg:hidden w-full h-full">
-              <ImageWithFallback src={b.mobileSrc} alt={`Shri Vallabh Jewels Collection ${i + 1}`} loading={i === 0 ? "eager" : "lazy"} className="w-full h-full object-cover object-[80%_center]" />
+              <ImageWithFallback src={b.mobileSrc} alt={`Shri Vallabh Jewels Collection ${i + 1}`} loading="eager" fetchPriority={i === 0 ? "high" : "auto"} className="w-full h-full object-cover object-[80%_center]" />
             </div>
           </div>
         ))}
@@ -954,12 +955,18 @@ function ComboSection() {
   
   if (combos.length === 0) return null;
 
+  const displayedCombos = showAll ? combos : combos.slice(0, 4);
+  const comboGridCols = displayedCombos.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
+                        displayedCombos.length === 2 ? "md:grid-cols-2 md:max-w-3xl md:mx-auto" : 
+                        displayedCombos.length === 3 ? "md:grid-cols-3 md:max-w-5xl md:mx-auto" : 
+                        "md:grid-cols-3 lg:grid-cols-4";
+
   return (
     <section className="py-24 lg:py-28" style={{ background: "linear-gradient(135deg, #EFE7DD, #F8F6F2, #E8DCC8)" }}>
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
         <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-8 mb-10">
-          {(showAll ? combos : combos.slice(0, 4)).map((c, i) => (
+        <div className={`grid grid-cols-2 gap-4 lg:gap-8 mb-10 ${comboGridCols}`}>
+          {displayedCombos.map((c, i) => (
             <div key={c.id} className={`h-full ${!showAll && i >= 2 ? 'hidden md:block' : ''}`}>
               <ProductCard product={{ ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D" } as unknown as Product} delay={i * 0.15} />
             </div>
@@ -1628,7 +1635,7 @@ function CheckoutPage() {
                 {cart.map(item => (
                   <div key={item.product.id} className="flex gap-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ background: "#EFE7DD" }}>
-                      <ImageWithFallback src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                      <ImageWithFallback src={item.product.image} alt={item.product.name} loading="eager" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold leading-snug truncate" style={{ color: "#3D2B1F", fontFamily: "'Playfair Display', serif" }}>{item.product.name}</p>
@@ -1901,25 +1908,108 @@ function Footer() {
 function HomePage() {
   const { products, setPage } = useApp();
   const [showAllFeatured, setShowAllFeatured] = useState(false);
-  const [showAllBestsellers, setShowAllBestsellers] = useState(false);
-  const [showAllNewArrivals, setShowAllNewArrivals] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const activeFestivals = Array.from(new Set(products.filter(p => p.festival).map(p => p.festival as string)));
+  
+  const [activeSaleTab, setActiveSaleTab] = useState<number | string>(199);
+  const [showAllSale, setShowAllSale] = useState(false);
+
+  useEffect(() => {
+    if (activeFestivals.length > 0 && activeSaleTab === 199) {
+      setActiveSaleTab(activeFestivals[0]);
+    }
+  }, [products]);
 
   const featured = products.filter(p => p.isFeatured);
-  const bestsellers = products.filter(p => p.isBestseller);
-  const newArrivals = products.filter(p => p.isNewArrival);
+  
+  const sale199 = products.filter(p => p.price <= 199);
+  const sale299 = products.filter(p => p.price > 199 && p.price <= 299);
+  const sale499 = products.filter(p => p.price > 299 && p.price <= 499);
+  
+  const activeSaleProducts = typeof activeSaleTab === 'string' 
+    ? products.filter(p => p.festival === activeSaleTab) 
+    : activeSaleTab === 199 ? sale199 : activeSaleTab === 299 ? sale299 : sale499;
+
+  const saleTabs = [...activeFestivals, 199, 299, 499];
+
+  const displayedSale = showAllSale ? activeSaleProducts : activeSaleProducts.slice(0, 4);
+  const saleGridCols = displayedSale.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
+                       displayedSale.length === 2 ? "md:grid-cols-2 md:max-w-3xl md:mx-auto" : 
+                       displayedSale.length === 3 ? "md:grid-cols-3 md:max-w-5xl md:mx-auto" : 
+                       "md:grid-cols-4";
+
+  const displayedFeatured = showAllFeatured ? featured : featured.slice(0, 4);
+  const featuredGridCols = displayedFeatured.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
+                           displayedFeatured.length === 2 ? "md:grid-cols-2 md:max-w-3xl md:mx-auto" : 
+                           displayedFeatured.length === 3 ? "md:grid-cols-3 md:max-w-5xl md:mx-auto" : 
+                           "md:grid-cols-4";
 
   return (
     <>
       {/* Marquee banner is now fixed above the navbar */}
       <HeroSection />
       <TrustBar />
+
+      {/* Sale Section */}
+      <section id="sale-section" className="py-24 lg:py-32" style={{ background: "#FDF8F5" }}>
+        <div className="max-w-7xl mx-auto px-5 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-4xl lg:text-5xl mb-4 font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#d9534f" }}>Sale is Live ⚡</h2>
+            <p className="text-sm lg:text-base max-w-xl mx-auto" style={{ color: "#6B5A4E" }}>Grab your favorite premium jewellery at unbeatable prices.</p>
+          </div>
+          
+          <div className="flex justify-center gap-3 mb-10 overflow-x-auto pb-2 no-scrollbar">
+            {saleTabs.map(tier => (
+              <button 
+                key={tier}
+                onClick={() => { setActiveSaleTab(tier); setShowAllSale(false); }}
+                className="px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all"
+                style={{ 
+                  background: activeSaleTab === tier ? "#d9534f" : "#FCFBF8",
+                  color: activeSaleTab === tier ? "#FFF" : "#5A4035",
+                  border: `1.5px solid ${activeSaleTab === tier ? "#d9534f" : "#E8DCC8"}`,
+                  boxShadow: activeSaleTab === tier ? "0 4px 12px rgba(217,83,79,0.3)" : "none"
+                }}
+              >
+                {typeof tier === 'string' ? `${tier} Deals` : `Under ₹${tier}`}
+              </button>
+            ))}
+          </div>
+
+          <div className={`grid grid-cols-2 gap-5 mb-10 ${saleGridCols}`}>
+            {displayedSale.map((p, i) => (
+              <ProductCard key={p.id} product={{ ...p, badge: "Sale" }} delay={i * 0.1} />
+            ))}
+            {activeSaleProducts.length === 0 && (
+              <p className="text-gray-400 text-sm col-span-4 text-center py-10">More styles adding soon to this collection!</p>
+            )}
+          </div>
+
+          {activeSaleProducts.length > 4 && (
+            <div className="text-center">
+              <Reveal>
+                <button 
+                  onClick={() => setShowAllSale(!showAllSale)}
+                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
+                  style={{ background: "#FCFBF8", border: "1.5px solid #d9534f", color: "#d9534f" }}>
+                  {showAllSale ? "View Less" : (typeof activeSaleTab === 'string' ? `View All ${activeSaleTab} Deals` : `View All Under ₹${activeSaleTab}`)}
+                </button>
+              </Reveal>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <ComboSection />
+      
+      <BrandStory />
+
       <section id="featured" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Handpicked for You" title="Featured Collections" subtitle="Our most-loved pieces, curated for timeless elegance." />
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-10">
-            {(showAllFeatured ? featured : featured.slice(0, 4)).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
-            {featured.length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center">No featured products selected.</p>}
+          <div className={`grid grid-cols-2 gap-4 sm:gap-6 mb-10 ${featuredGridCols}`}>
+            {displayedFeatured.map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
+            {featured.length === 0 && <p className="text-gray-400 text-sm col-span-2 md:col-span-3 text-center">No featured products selected.</p>}
           </div>
           {featured.length > 4 && (
             <div className="text-center">
@@ -1935,50 +2025,7 @@ function HomePage() {
           )}
         </div>
       </section>
-      <BrandStory />
-      <section id="bestsellers" className="py-24 lg:py-32" style={{ background: "#EFE7DD" }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8">
-          <STitle eyebrow="Most Loved" title="Best Sellers" subtitle="The pieces our customers keep coming back for." />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
-            {(showAllBestsellers ? bestsellers : bestsellers.slice(0, 4)).map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.1} />)}
-            {bestsellers.length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No bestsellers selected.</p>}
-          </div>
-          {bestsellers.length > 4 && (
-            <div className="text-center">
-              <Reveal>
-                <button 
-                  onClick={() => setShowAllBestsellers(!showAllBestsellers)}
-                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
-                  style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
-                  {showAllBestsellers ? "View Less" : "View More"}
-                </button>
-              </Reveal>
-            </div>
-          )}
-        </div>
-      </section>
-      <section id="new-arrivals" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8">
-          <STitle eyebrow="Fresh In" title="New Arrivals" subtitle="Just landed — discover what's new in our latest drop." />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
-            {(showAllNewArrivals ? newArrivals : newArrivals.slice(0, 4)).map((p, i) => <ProductCard key={p.id} product={{ ...p, badge: p.badge || "New In" }} delay={i * 0.1} />)}
-            {newArrivals.length === 0 && <p className="text-gray-400 text-sm col-span-4 text-center">No new arrivals selected.</p>}
-          </div>
-          {newArrivals.length > 4 && (
-            <div className="text-center">
-              <Reveal>
-                <button 
-                  onClick={() => setShowAllNewArrivals(!showAllNewArrivals)}
-                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
-                  style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
-                  {showAllNewArrivals ? "View Less" : "View More"}
-                </button>
-              </Reveal>
-            </div>
-          )}
-        </div>
-      </section>
-      <ComboSection />
+
       <section className="py-24 lg:py-32" style={{ background: "#EFE7DD" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Customer Love" title="What Our Customers Say" subtitle="4.7★ average across 400+ genuine reviews." />
@@ -2003,13 +2050,16 @@ function HomePage() {
           )}
         </div>
       </section>
+
       <InstagramGallery />
+      
       <section className="py-24 lg:py-28" style={{ background: "#EFE7DD" }}>
         <div className="max-w-3xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Questions Answered" title="Frequently Asked Questions" subtitle="Everything you need to know before shopping with us." />
           <div>{FAQS.map((faq, i) => <FAQItem key={i} faq={faq} />)}</div>
         </div>
       </section>
+
       {/* Contact section moved to ContactPage */}
       <Footer />
     </>
@@ -2617,7 +2667,7 @@ function AdminPage() {
                   </select>
                   <input placeholder="Badge (e.g. Bestseller)" value={formData.badge} onChange={e => setFormData({ ...formData, badge: e.target.value })} className="border p-2 rounded" />
                   
-                  <div className="col-span-1 md:col-span-2 flex flex-wrap gap-4 py-2 border-y my-2">
+                  <div className="col-span-1 md:col-span-2 flex flex-wrap gap-4 py-2 border-y my-2 items-center">
                     <label className="flex items-center gap-2 font-bold cursor-pointer">
                       <input type="checkbox" checked={formData.isFeatured || false} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} /> Show in Featured
                     </label>
@@ -2627,6 +2677,21 @@ function AdminPage() {
                     <label className="flex items-center gap-2 font-bold cursor-pointer">
                       <input type="checkbox" checked={formData.isNewArrival || false} onChange={e => setFormData({ ...formData, isNewArrival: e.target.checked })} /> Show in New Arrivals
                     </label>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <span className="font-bold text-sm text-[#d9534f]">Festival Deal:</span>
+                      <select value={formData.festival || ""} onChange={e => setFormData({ ...formData, festival: e.target.value })} className="border border-[#d9534f] p-1.5 text-sm rounded bg-white">
+                        <option value="">No Festival</option>
+                        <option value="Rakshabandhan">Rakshabandhan</option>
+                        <option value="Ganesh Chaturthi">Ganesh Chaturthi</option>
+                        <option value="Janmashtami">Janmashtami</option>
+                        <option value="Diwali">Diwali</option>
+                        <option value="Dhanteras">Dhanteras</option>
+                        <option value="Navratri">Navratri</option>
+                        <option value="Makar Sankranti">Makar Sankranti</option>
+                        <option value="Holi">Holi</option>
+                        <option value="Christmas">Christmas</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="flex gap-2">
