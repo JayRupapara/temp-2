@@ -7,7 +7,7 @@ import {
   Menu, X, ShoppingBag, Heart, Star, ArrowRight,
   Phone, Mail, MapPin, ChevronDown, Package, Truck, CreditCard,
   Shield, CheckCircle, Plus, Minus, Trash2, Clock, Instagram,
-  Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon, MessageCircle
+  Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon, MessageCircle, Eye, EyeOff
 } from "lucide-react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider, db, storage } from "./firebase";
@@ -45,7 +45,7 @@ type Product = {
   id: number | string; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string; images?: string[];
   badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
-  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; festival?: string;
+  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; festival?: string; isHidden?: boolean;
 };
 type Combo = {
   id: string; name: string; subtitle: string; description: string;
@@ -953,9 +953,10 @@ function ComboSection() {
   const { combos } = useApp();
   const [showAll, setShowAll] = useState(false);
   
-  if (combos.length === 0) return null;
+  const visibleCombos = combos.filter(c => !c.isHidden);
+  if (visibleCombos.length === 0) return null;
 
-  const displayedCombos = showAll ? combos : combos.slice(0, 4);
+  const displayedCombos = showAll ? visibleCombos : visibleCombos.slice(0, 4);
   const comboGridCols = displayedCombos.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
                         displayedCombos.length === 2 ? "md:grid-cols-2 md:max-w-3xl md:mx-auto" : 
                         displayedCombos.length === 3 ? "md:grid-cols-3 md:max-w-5xl md:mx-auto" : 
@@ -1125,8 +1126,8 @@ function ShopPage() {
     return "mixed";
   };
 
-  const filteredCombos = combos.filter(c => getComboCategory(c) === category);
-  const filteredProducts = products.filter(p => normalizeCategory(p.category) === category);
+  const filteredCombos = combos.filter(c => !c.isHidden && getComboCategory(c) === category);
+  const filteredProducts = products.filter(p => !p.isHidden && normalizeCategory(p.category) === category);
 
   const showCombos = productType === "All" || productType === "Combo Packs";
   const showProducts = productType === "All" || productType === "Single Products";
@@ -1823,7 +1824,7 @@ function PolicyPage({ type }: { type: "shipping" | "return" | "privacy" | "terms
 // ── Wishlist Page ────────────────────────────────────────────────────────
 function WishlistPage() {
   const { wishlist, products, setPage } = useApp();
-  const wishlistedProducts = products.filter(p => wishlist.includes(p.id));
+  const wishlistedProducts = products.filter(p => !p.isHidden && wishlist.includes(p.id));
 
   return (
     <div className="pt-32 pb-24 min-h-screen" style={{ background: "#F8F6F2" }}>
@@ -1909,7 +1910,8 @@ function HomePage() {
   const { products, setPage } = useApp();
   const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
-  const activeFestivals = Array.from(new Set(products.filter(p => p.festival).map(p => p.festival as string)));
+  const visibleProducts = products.filter(p => !p.isHidden);
+  const activeFestivals = Array.from(new Set(visibleProducts.filter(p => p.festival).map(p => p.festival as string)));
   
   const [activeSaleTab, setActiveSaleTab] = useState<number | string>(199);
   const [showAllSale, setShowAllSale] = useState(false);
@@ -1920,14 +1922,14 @@ function HomePage() {
     }
   }, [products]);
 
-  const featured = products.filter(p => p.isFeatured);
+  const featured = visibleProducts.filter(p => p.isFeatured);
   
-  const sale199 = products.filter(p => p.price <= 199);
-  const sale299 = products.filter(p => p.price > 199 && p.price <= 299);
-  const sale499 = products.filter(p => p.price > 299 && p.price <= 499);
+  const sale199 = visibleProducts.filter(p => p.price <= 199);
+  const sale299 = visibleProducts.filter(p => p.price > 199 && p.price <= 299);
+  const sale499 = visibleProducts.filter(p => p.price > 299 && p.price <= 499);
   
   const activeSaleProducts = typeof activeSaleTab === 'string' 
-    ? products.filter(p => p.festival === activeSaleTab) 
+    ? visibleProducts.filter(p => p.festival === activeSaleTab) 
     : activeSaleTab === 199 ? sale199 : activeSaleTab === 299 ? sale299 : sale499;
 
   const saleTabs = [...activeFestivals, 199, 299, 499];
@@ -2222,6 +2224,7 @@ function AdminPage() {
   
   const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
   const [comboData, setComboData] = useState<Partial<Combo>>({});
+  const [confirmingOrder, setConfirmingOrder] = useState<any | null>(null);
   const [isUploadingCombo, setIsUploadingCombo] = useState(false);
   const [isUploadingProduct, setIsUploadingProduct] = useState(false);
   
@@ -2267,8 +2270,28 @@ function AdminPage() {
 
   const handleEdit = (p: Product) => { setEditing(p); setFormData(p); };
   const handleAddNew = () => { 
-    setEditing({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false }); 
-    setFormData({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false });
+    setEditing({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false, isHidden: false }); 
+    setFormData({ id: Date.now(), name: "", subtitle: "", description: "", price: 0, originalPrice: 0, category: "Necklace", image: "", badge: "", badgeColor: "#CFA18D", stock: 10, rating: 5, reviews: 0, care: "", isFeatured: false, isBestseller: false, isNewArrival: false, isHidden: false });
+  };
+  const toggleHide = async (p: Product) => {
+    try {
+      const nextState = !p.isHidden;
+      const targetDocId = (p as any).docId || p.id.toString();
+      await setDoc(doc(db, "products", targetDocId), { isHidden: nextState }, { merge: true });
+      toast.success(nextState ? `"${p.name}" is now hidden from site` : `"${p.name}" is now visible on site`);
+    } catch (e: any) {
+      toast.error("Failed to update status", { description: e.message });
+    }
+  };
+  const toggleHideCombo = async (c: Combo) => {
+    try {
+      const nextState = !c.isHidden;
+      const targetDocId = (c as any).docId || c.id.toString();
+      await setDoc(doc(db, "combos", targetDocId), { isHidden: nextState }, { merge: true });
+      toast.success(nextState ? `"${c.name}" is now hidden from site` : `"${c.name}" is now visible on site`);
+    } catch (e: any) {
+      toast.error("Failed to update status", { description: e.message });
+    }
   };
   const handleDelete = async (id: number | string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
@@ -2277,10 +2300,12 @@ function AdminPage() {
   };
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1hEKEZboMD0Z49sOwnPNPMH02WqLlCyYSqCmAeCnPf9dgIQkQsLXoAsbr-cN5Nqqm/exec";
 
-  const updateOrderStatus = async (o: any, status: string) => {
+  const updateOrderStatus = async (o: any, status: string, confirmedBy?: string) => {
     try {
-      await updateDoc(o.ref, { status, confirmed: status === "CONFIRMED" });
-      toast.success(`Order marked as ${status}`);
+      const updateData: any = { status, confirmed: status === "CONFIRMED" };
+      if (confirmedBy) updateData.confirmedBy = confirmedBy;
+      await updateDoc(o.ref, updateData);
+      toast.success(`Order marked as ${status}${confirmedBy ? ` by ${confirmedBy}` : ''}`);
 
       const emailPayload = {
         type: status, // "CONFIRMED" or "CANCELLED"
@@ -2677,6 +2702,9 @@ function AdminPage() {
                     <label className="flex items-center gap-2 font-bold cursor-pointer">
                       <input type="checkbox" checked={formData.isNewArrival || false} onChange={e => setFormData({ ...formData, isNewArrival: e.target.checked })} /> Show in New Arrivals
                     </label>
+                    <label className="flex items-center gap-2 font-bold cursor-pointer text-amber-700">
+                      <input type="checkbox" checked={formData.isHidden || false} onChange={e => setFormData({ ...formData, isHidden: e.target.checked })} /> Hide from Website
+                    </label>
                     <div className="flex items-center gap-2 ml-auto">
                       <span className="font-bold text-sm text-[#d9534f]">Festival Deal:</span>
                       <select value={formData.festival || ""} onChange={e => setFormData({ ...formData, festival: e.target.value })} className="border border-[#d9534f] p-1.5 text-sm rounded bg-white">
@@ -2758,12 +2786,13 @@ function AdminPage() {
                       <th className="p-4 font-bold">Name</th>
                       <th className="p-4 font-bold">Price</th>
                       <th className="p-4 font-bold">Placements</th>
+                      <th className="p-4 font-bold">Status</th>
                       <th className="p-4 font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[...products].sort((a,b) => Number(b.id) - Number(a.id)).map(p => (
-                      <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <tr key={p.id} className={`border-b last:border-0 hover:bg-gray-50 ${p.isHidden ? 'bg-amber-50/30' : ''}`}>
                         <td className="p-4"><img src={p.image} className="w-12 h-12 rounded object-cover" /></td>
                         <td className="p-4 font-semibold">{p.name}</td>
                         <td className="p-4">₹{p.price}</td>
@@ -2774,9 +2803,32 @@ function AdminPage() {
                             {p.isNewArrival && <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded">New Arrival</span>}
                           </div>
                         </td>
-                        <td className="p-4 flex gap-3">
-                          <button onClick={() => handleEdit(p)} className="text-blue-600 font-bold hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(p.id)} className="text-red-600 font-bold hover:underline">Delete</button>
+                        <td className="p-4">
+                          {p.isHidden ? (
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full flex items-center gap-1 w-fit">
+                              <EyeOff size={11} /> Hidden
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full flex items-center gap-1 w-fit">
+                              <Eye size={11} /> Visible
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-4 flex items-center gap-3">
+                          <button 
+                            onClick={() => toggleHide(p)} 
+                            title={p.isHidden ? "Click to Show Product on Store" : "Click to Hide Product from Store"}
+                            className={`font-bold flex items-center gap-1 text-xs px-2.5 py-1 rounded transition-all ${
+                              p.isHidden 
+                                ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" 
+                                : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                            }`}
+                          >
+                            {p.isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
+                            {p.isHidden ? "Unhide" : "Hide"}
+                          </button>
+                          <button onClick={() => handleEdit(p)} className="text-blue-600 font-bold hover:underline text-xs">Edit</button>
+                          <button onClick={() => handleDelete(p.id)} className="text-red-600 font-bold hover:underline text-xs">Delete</button>
                         </td>
                       </tr>
                     ))}
@@ -2819,6 +2871,9 @@ function AdminPage() {
                     </label>
                     <label className="flex items-center gap-2 font-bold cursor-pointer">
                       <input type="checkbox" checked={comboData.isNewArrival || false} onChange={e => setComboData({ ...comboData, isNewArrival: e.target.checked })} /> Show in New Arrivals
+                    </label>
+                    <label className="flex items-center gap-2 font-bold cursor-pointer text-amber-700">
+                      <input type="checkbox" checked={comboData.isHidden || false} onChange={e => setComboData({ ...comboData, isHidden: e.target.checked })} /> Hide from Website
                     </label>
                   </div>
 
@@ -2957,6 +3012,7 @@ function AdminPage() {
                   <th className="p-4 font-bold">Items</th>
                   <th className="p-4 font-bold">Payment</th>
                   <th className="p-4 font-bold">Total</th>
+                  <th className="p-4 font-bold text-center">Confirmed By</th>
                   <th className="p-4 font-bold text-center">Status & Actions</th>
                 </tr>
               </thead>
@@ -3004,17 +3060,30 @@ function AdminPage() {
                       </td>
                       <td className="p-4 font-bold text-gray-800">₹{o.total}</td>
                       <td className="p-4 text-center">
+                        {o.confirmedBy ? (
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-sm border ${
+                            o.confirmedBy === "Jay" ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-purple-50 text-purple-700 border-purple-200"
+                          }`}>
+                            👤 {o.confirmedBy}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 font-medium">-</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-center">
                         {status === "NEW ORDER" && (
                           <>
                             <div className="text-[10px] font-bold bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full mx-auto w-max mb-2">NEW ORDER</div>
                             <div className="flex gap-2 justify-center">
-                              <button onClick={() => updateOrderStatus(o, "CONFIRMED")} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors">Confirm</button>
+                              <button onClick={() => setConfirmingOrder(o)} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors">Confirm</button>
                               <button onClick={() => updateOrderStatus(o, "CANCELLED")} className="px-3 py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors">Cancel</button>
                             </div>
                           </>
                         )}
                         {status === "CONFIRMED" && (
-                          <div className="text-xs font-bold bg-green-200 text-green-800 px-4 py-2 rounded-lg mx-auto w-max">✓ Confirmed</div>
+                          <div className="text-xs font-bold bg-green-200 text-green-800 px-4 py-2 rounded-lg mx-auto w-max">
+                            ✓ Confirmed {o.confirmedBy ? `(${o.confirmedBy})` : ''}
+                          </div>
                         )}
                         {status === "CANCELLED" && (
                           <div className="text-xs font-bold bg-red-200 text-red-800 px-4 py-2 rounded-lg mx-auto w-max">✕ Cancelled</div>
@@ -3023,7 +3092,7 @@ function AdminPage() {
                     </tr>
                   );
                 })}
-                {pagedOrders.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-gray-400">No orders found.</td></tr>}
+                {pagedOrders.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-gray-400">No orders found.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -3054,6 +3123,50 @@ function AdminPage() {
           </>
           );
         })()}
+
+        {/* Order Confirmation Modal for Jay / Kashyap */}
+        {confirmingOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border text-center relative transform transition-all">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <CheckCircle size={28} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">Confirm Order</h3>
+              <p className="text-xs text-gray-500 mb-6">
+                Who is confirming Order <span className="font-mono font-bold text-gray-800">#{confirmingOrder.id}</span>?
+              </p>
+              
+              <div className="flex flex-col gap-3 mb-4">
+                <button
+                  onClick={() => {
+                    updateOrderStatus(confirmingOrder, "CONFIRMED", "Jay");
+                    setConfirmingOrder(null);
+                  }}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-200 active:scale-98 text-sm"
+                >
+                  <span>Confirm as Jay</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    updateOrderStatus(confirmingOrder, "CONFIRMED", "Kashyap");
+                    setConfirmingOrder(null);
+                  }}
+                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-purple-200 active:scale-98 text-sm"
+                >
+                  <span>Confirm as Kashyap</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setConfirmingOrder(null)}
+                className="w-full py-2.5 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3155,19 +3268,27 @@ export default function App() {
     let cLoaded = false;
     const checkLoaded = () => { if (pLoaded && cLoaded) setDataLoaded(true); };
 
-    const q = query(collection(db, "products"), orderBy("id", "asc"));
+    const q = collection(db, "products");
     const unsub = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
-        const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.data().id }) as Product);
+        const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.data().id ?? doc.id, docId: doc.id }) as Product);
+        fetched.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
         setProducts(fetched);
       }
       pLoaded = true; checkLoaded();
+    }, (err) => {
+      console.warn("Products snapshot listener:", err);
+      pLoaded = true; checkLoaded();
     });
-    const comboQ = query(collection(db, "combos"));
+    const comboQ = collection(db, "combos");
     const unsubCombo = onSnapshot(comboQ, (snapshot) => {
       if (!snapshot.empty) {
-        setCombos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Combo));
+        const fetchedCombos = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, docId: doc.id }) as Combo);
+        setCombos(fetchedCombos);
       }
+      cLoaded = true; checkLoaded();
+    }, (err) => {
+      console.warn("Combos snapshot listener:", err);
       cLoaded = true; checkLoaded();
     });
     return () => { unsub(); unsubCombo(); };
