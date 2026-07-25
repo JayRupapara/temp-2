@@ -2360,6 +2360,18 @@ function AdminPage() {
     }
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
+  
+  const deleteOrder = async (o: any) => {
+    if (!confirm("Are you sure you want to permanently delete this order?")) return;
+    try {
+      await deleteDoc(o.ref);
+      toast.success("Order deleted successfully");
+    } catch (e: any) {
+      toast.error("Failed to delete order", { description: e.message });
+      console.error("Delete order error:", e);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, startIndex?: number) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -3096,23 +3108,33 @@ function AdminPage() {
                         )}
                       </td>
                       <td className="p-4 text-center">
-                        {status === "NEW ORDER" && (
-                          <>
-                            <div className="text-[10px] font-bold bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full mx-auto w-max mb-2">NEW ORDER</div>
-                            <div className="flex gap-2 justify-center">
-                              <button onClick={() => setConfirmingOrder(o)} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors">Confirm</button>
-                              <button onClick={() => updateOrderStatus(o, "CANCELLED")} className="px-3 py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors">Cancel</button>
+                        <div className="flex flex-col gap-2 items-center">
+                          {status === "NEW ORDER" && (
+                            <>
+                              <div className="text-[10px] font-bold bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full w-max">NEW ORDER</div>
+                              <div className="flex gap-2 justify-center">
+                                <button onClick={() => setConfirmingOrder(o)} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors">Confirm</button>
+                                <button onClick={() => updateOrderStatus(o, "CANCELLED")} className="px-3 py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors">Cancel</button>
+                              </div>
+                            </>
+                          )}
+                          {status === "CONFIRMED" && (
+                            <div className="text-xs font-bold bg-green-200 text-green-800 px-4 py-2 rounded-lg w-max">
+                              ✓ Confirmed {o.confirmedBy ? `(${o.confirmedBy})` : ''}
                             </div>
-                          </>
-                        )}
-                        {status === "CONFIRMED" && (
-                          <div className="text-xs font-bold bg-green-200 text-green-800 px-4 py-2 rounded-lg mx-auto w-max">
-                            ✓ Confirmed {o.confirmedBy ? `(${o.confirmedBy})` : ''}
-                          </div>
-                        )}
-                        {status === "CANCELLED" && (
-                          <div className="text-xs font-bold bg-red-200 text-red-800 px-4 py-2 rounded-lg mx-auto w-max">✕ Cancelled</div>
-                        )}
+                          )}
+                          {status === "CANCELLED" && (
+                            <div className="text-xs font-bold bg-red-200 text-red-800 px-4 py-2 rounded-lg w-max">✕ Cancelled</div>
+                          )}
+                          
+                          <button 
+                            onClick={() => deleteOrder(o)} 
+                            className="mt-1 p-1.5 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-colors flex items-center gap-1 text-xs"
+                            title="Delete Order"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
