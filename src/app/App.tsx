@@ -38,6 +38,10 @@ import insta3 from "../imports/insta 3.webp";
 import insta4 from "../imports/insta 4.webp";
 import insta5 from "../imports/insta 5.webp";
 import insta6 from "../imports/insta 6.webp";
+import rakshabandhanImg from "../imports/rakshabndhan sale.png";
+import under199Img from "../imports/under 199.png";
+import under299Img from "../imports/under 299.png";
+import under499Img from "../imports/under 499.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Page = "home" | "shop" | "product" | "checkout" | "confirmation" | "account" | "admin" | "shipping" | "return" | "privacy" | "terms" | "wishlist" | "contact";
@@ -1913,14 +1917,8 @@ function HomePage() {
   const visibleProducts = products.filter(p => !p.isHidden);
   const activeFestivals = Array.from(new Set(visibleProducts.filter(p => p.festival).map(p => p.festival as string)));
   
-  const [activeSaleTab, setActiveSaleTab] = useState<number | string>(199);
+  const [activeSaleTab, setActiveSaleTab] = useState<number | string>("Rakshabandhan");
   const [showAllSale, setShowAllSale] = useState(false);
-
-  useEffect(() => {
-    if (activeFestivals.length > 0 && activeSaleTab === 199) {
-      setActiveSaleTab(activeFestivals[0]);
-    }
-  }, [products]);
 
   const featured = visibleProducts.filter(p => p.isFeatured);
   
@@ -1929,10 +1927,18 @@ function HomePage() {
   const sale499 = visibleProducts.filter(p => p.price > 299 && p.price <= 499);
   
   const activeSaleProducts = typeof activeSaleTab === 'string' 
-    ? visibleProducts.filter(p => p.festival === activeSaleTab) 
+    ? visibleProducts.filter(p => {
+        if (!p.festival) return false;
+        // Strict case-insensitive match for the selected festival
+        if (Array.isArray(p.festival)) {
+          return p.festival.some(f => typeof f === 'string' && f.toLowerCase() === activeSaleTab.toLowerCase());
+        }
+        return String(p.festival).toLowerCase() === activeSaleTab.toLowerCase();
+      }) 
     : activeSaleTab === 199 ? sale199 : activeSaleTab === 299 ? sale299 : sale499;
 
-  const saleTabs = [...activeFestivals, 199, 299, 499];
+  // Explicitly set only the requested 4 tabs
+  const saleTabs = ["Rakshabandhan", 199, 299, 499];
 
   const displayedSale = showAllSale ? activeSaleProducts : activeSaleProducts.slice(0, 4);
   const saleGridCols = displayedSale.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
@@ -1960,22 +1966,41 @@ function HomePage() {
             <p className="text-sm lg:text-base max-w-xl mx-auto" style={{ color: "#6B5A4E" }}>Grab your favorite premium jewellery at unbeatable prices.</p>
           </div>
           
-          <div className="flex justify-center gap-3 mb-10 overflow-x-auto pb-2 no-scrollbar">
-            {saleTabs.map(tier => (
-              <button 
-                key={tier}
-                onClick={() => { setActiveSaleTab(tier); setShowAllSale(false); }}
-                className="px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all"
-                style={{ 
-                  background: activeSaleTab === tier ? "#d9534f" : "#FCFBF8",
-                  color: activeSaleTab === tier ? "#FFF" : "#5A4035",
-                  border: `1.5px solid ${activeSaleTab === tier ? "#d9534f" : "#E8DCC8"}`,
-                  boxShadow: activeSaleTab === tier ? "0 4px 12px rgba(217,83,79,0.3)" : "none"
-                }}
-              >
-                {typeof tier === 'string' ? `${tier} Deals` : `Under ₹${tier}`}
-              </button>
-            ))}
+          <div className="flex sm:justify-center gap-4 sm:gap-8 mb-10 overflow-x-auto pb-4 pt-2 px-2 no-scrollbar snap-x snap-mandatory hide-scrollbar">
+            {saleTabs.map(tier => {
+              let imgSrc = "";
+              let label = "";
+              if (tier === "Rakshabandhan") { imgSrc = rakshabandhanImg; label = "Rakshabandhan Sale"; }
+              else if (tier === 199) { imgSrc = under199Img; label = "Under ₹199"; }
+              else if (tier === 299) { imgSrc = under299Img; label = "Under ₹299"; }
+              else if (tier === 499) { imgSrc = under499Img; label = "Under ₹499"; }
+              else {
+                label = typeof tier === 'string' ? `${tier} Deals` : `Under ₹${tier}`;
+              }
+
+              return (
+                <button 
+                  key={tier}
+                  onClick={() => { setActiveSaleTab(tier); setShowAllSale(false); }}
+                  className="flex flex-col items-center gap-3 flex-shrink-0 snap-center transition-transform hover:scale-105 active:scale-95 group"
+                >
+                  <div className={`w-[75px] h-[75px] sm:w-[105px] sm:h-[105px] rounded-full overflow-hidden transition-all duration-300 ${activeSaleTab === tier ? 'shadow-lg scale-[1.05]' : 'shadow-sm group-hover:shadow-md'}`}
+                       style={{ border: activeSaleTab === tier ? "2.5px solid #d9534f" : "1.5px solid #E8DCC8" }}>
+                    {imgSrc ? (
+                      <ImageWithFallback src={imgSrc} alt={label} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-[#EFE7DD] text-[#3D2B1F] text-xs font-bold text-center px-2">
+                        {label}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[11px] sm:text-[13px] font-bold whitespace-nowrap transition-colors"
+                        style={{ color: activeSaleTab === tier ? "#d9534f" : "#5A4035" }}>
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <div className={`grid grid-cols-2 gap-5 mb-10 ${saleGridCols}`}>
