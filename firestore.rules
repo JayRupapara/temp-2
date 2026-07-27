@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write for all users (Adjust based on auth system)
+    match /products/{document=**} {
+      allow read, write: if true;
+    }
+    match /combos/{document=**} {
+      allow read, write: if true;
+    }
+    match /orders/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // NEW ADMIN PANEL COLLECTIONS
+    match /admin_orders/{document=**} {
+      allow read, write: if true;
+    }
+    match /customers/{document=**} {
+      allow read, write: if true;
+    }
+    match /audit_log/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
