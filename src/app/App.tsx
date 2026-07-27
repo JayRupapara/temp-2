@@ -14,6 +14,7 @@ import { auth, googleProvider, db, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup, updateDoc } from "firebase/firestore";
 import { ref, uploadString, getDownloadURL, uploadBytes } from "firebase/storage";
 import AdminPage from "./admin/AdminPage";
+import { Analytics } from "@vercel/analytics/react";
 
 import logoImg from "../imports/IMG_5778.PNG";
 import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.webp";
@@ -3440,6 +3441,7 @@ export default function App() {
           {["shipping", "return", "privacy", "terms"].includes(page) && <PolicyPage type={page as any} />}
         </>
       )}
+      <Analytics />
     </Ctx.Provider>
   );
 }
