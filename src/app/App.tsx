@@ -3596,7 +3596,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-  useEffect(() => {
     // ── Real-time Listener: Payment Settings ──
     const unsubPayment = onSnapshot(doc(db, "settings", "payment"), (snap) => {
       if (snap.exists()) {
