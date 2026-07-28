@@ -34,25 +34,32 @@ export default function OrderDetailModal({
   if (!order) return null;
 
   const handleSave = () => {
-    // Calculate margin automatically
-    const total = formData.total || 0;
-    const productCost = formData.productCost || 0;
-    const courierCost = formData.courierCost || 0;
-    const otherExpense = formData.otherExpense || 0;
-    const margin = total - productCost - courierCost - otherExpense;
+    const total = formData.total !== undefined ? formData.total : (order.total || 0);
+    const productCost = formData.productCost !== undefined ? formData.productCost : (order.productCost || 0);
+    const courierCost = formData.courierCost !== undefined ? formData.courierCost : (order.courierCost || 0);
+    const otherExpense = formData.otherExpense !== undefined ? formData.otherExpense : (order.otherExpense || 0);
+    
+    let margin = 0;
+    if (formData.margin !== undefined) {
+      margin = formData.margin;
+    } else if (productCost > 0 || courierCost > 0 || otherExpense > 0) {
+      margin = total - productCost - courierCost - otherExpense;
+    } else {
+      margin = order.margin || 0;
+    }
 
     const updates = {
       ...formData,
+      total,
+      productCost,
+      courierCost,
+      otherExpense,
       margin,
     };
     
     onSave(order, updates);
     setMode("view");
     toast.success("Order updated successfully");
-  };
-
-  const handleInputChange = (field: keyof AdminOrder, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCustomerChange = (field: string, value: string) => {
@@ -68,7 +75,25 @@ export default function OrderDetailModal({
     setFormData(prev => ({ ...prev, items: newItems }));
   };
 
-  const currentMargin = (formData.total || 0) - (formData.productCost || 0) - (formData.courierCost || 0) - (formData.otherExpense || 0);
+  const handleInputChange = (field: keyof AdminOrder, value: any) => {
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      if (["productCost", "courierCost", "otherExpense", "total"].includes(field)) {
+        const t = next.total !== undefined ? Number(next.total) : (order.total || 0);
+        const pc = next.productCost !== undefined ? Number(next.productCost) : (order.productCost || 0);
+        const cc = next.courierCost !== undefined ? Number(next.courierCost) : (order.courierCost || 0);
+        const oe = next.otherExpense !== undefined ? Number(next.otherExpense) : (order.otherExpense || 0);
+        if (pc > 0 || cc > 0 || oe > 0) {
+          next.margin = t - pc - cc - oe;
+        }
+      }
+      return next;
+    });
+  };
+
+  const hasCostsEntered = (formData.productCost || 0) > 0 || (formData.courierCost || 0) > 0 || (formData.otherExpense || 0) > 0 || (order.productCost || 0) > 0 || (order.courierCost || 0) > 0 || (order.otherExpense || 0) > 0;
+  const calculatedMargin = hasCostsEntered ? ((formData.total ?? order.total ?? 0) - (formData.productCost ?? order.productCost ?? 0) - (formData.courierCost ?? order.courierCost ?? 0) - (formData.otherExpense ?? order.otherExpense ?? 0)) : (order.margin || 0);
+  const displayMargin = formData.margin !== undefined ? formData.margin : calculatedMargin;
 
   const bgBase = darkMode ? "bg-[#1C1C1C]" : "bg-white";
   const bgCard = darkMode ? "bg-[#2A2A2A]" : "bg-[#F8F6F2]";
@@ -239,16 +264,23 @@ export default function OrderDetailModal({
                           <label className={`text-xs ${textMuted}`}>Other Exp</label>
                           <input
                             type="number"
-                            value={formData.otherExpense || 0}
+                            value={formData.otherExpense ?? 0}
                             onChange={(e) => handleInputChange("otherExpense", Number(e.target.value))}
                             className={`w-full p-2 text-sm rounded-lg border ${borderCol} bg-transparent ${textMain}`}
                           />
                         </div>
                         <div>
-                          <label className={`text-xs ${textMuted}`}>Margin (Auto)</label>
-                          <div className={`w-full p-2 text-sm rounded-lg border ${borderCol} bg-opacity-5 bg-black ${textMain}`}>
-                            ₹{currentMargin}
-                          </div>
+                          <label className={`text-xs font-semibold ${textMuted}`}>Net Margin (₹)</label>
+                          <input
+                            type="number"
+                            value={displayMargin}
+                            onChange={(e) => handleInputChange("margin", Number(e.target.value))}
+                            className={`w-full p-2 text-sm font-bold rounded-lg border outline-none transition-all ${
+                              displayMargin >= 0 
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300 focus:ring-2 focus:ring-emerald-400" 
+                                : "bg-rose-50 text-rose-800 border-rose-300 focus:ring-2 focus:ring-rose-400"
+                            }`}
+                          />
                         </div>
                       </div>
                       

@@ -3,6 +3,7 @@ import { setDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { toast } from "sonner";
 import { Plus, X, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { syncCatalogBundle } from "../../utils/catalogSync";
 
 export type Combo = {
   id: string; name: string; subtitle: string; description: string;
@@ -58,13 +59,18 @@ export default function CombosTab({ combos, darkMode }: CombosTabProps) {
       const nextState = !c.isHidden;
       const targetDocId = c.docId || c.id;
       await setDoc(doc(db, "combos", targetDocId), { isHidden: nextState }, { merge: true });
+      await syncCatalogBundle();
       toast.success(nextState ? `"${c.name}" is now hidden` : `"${c.name}" is now visible`);
     } catch (e: any) { toast.error("Failed", { description: e.message }); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this combo?")) return;
-    try { await deleteDoc(doc(db, "combos", id)); toast.success("Combo deleted"); }
+    try { 
+      await deleteDoc(doc(db, "combos", id)); 
+      await syncCatalogBundle();
+      toast.success("Combo deleted"); 
+    }
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
 
@@ -167,6 +173,7 @@ export default function CombosTab({ combos, darkMode }: CombosTabProps) {
       Object.keys(cleanData).forEach(key => (cleanData as any)[key] === undefined && delete (cleanData as any)[key]);
       
       await setDoc(doc(db, "combos", cleanData.id!), cleanData);
+      await syncCatalogBundle();
       toast.success("Combo saved!");
       setEditing(null);
     } catch (e: any) { toast.error(e.message); }

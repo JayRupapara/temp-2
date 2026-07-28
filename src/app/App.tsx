@@ -14,6 +14,8 @@ import { auth, googleProvider, db, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, orderBy, Timestamp, onSnapshot, setDoc, doc, deleteDoc, collectionGroup, updateDoc } from "firebase/firestore";
 import { ref, uploadString, getDownloadURL, uploadBytes } from "firebase/storage";
 import AdminPage from "./admin/AdminPage";
+import { logUserActivity, logSystemError } from "./utils/systemLogger";
+import { trackReads } from "./utils/readTracker";
 
 import logoImg from "../imports/IMG_5778.PNG";
 import pearlImg from "../imports/ChatGPT_Image_Jun_10__2026__02_58_08_PM.webp";
@@ -690,7 +692,7 @@ function StickyMobileCTA({ page }: { page: Page }) {
 // ── Hero Section ───────────────────────────────────────────────────────────
 function HeroSection() {
   const countdown = useCountdown();
-  const { setPage, products, combos, navigateToProduct } = useApp();
+  const { setPage, products, combos, navigateToProduct, setShopCategory } = useApp();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const banners = [
@@ -782,15 +784,15 @@ function HeroSection() {
             Beautifully crafted jewellery designed to make you shine with confidence — for everyday wear and every precious occasion.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.82 }} className="absolute bottom-6 left-5 right-5 flex flex-col gap-3 z-30 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mt-2 lg:flex-row lg:w-auto">
-            <button onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
+            <button onClick={() => { setShopCategory("sale-199"); setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
               className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:scale-[1.02] hover:shadow-lg w-full lg:w-auto text-center"
               style={{ background: "#3D2B1F", color: "#F8F6F2", boxShadow: "0 8px 24px rgba(61,43,31,0.25)" }}>
-              Shop Collection
+              Explore Sale
             </button>
-            <button onClick={() => document.getElementById("bestsellers")?.scrollIntoView({ behavior: "smooth" })}
+            <button onClick={() => { setShopCategory("combos"); setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
               className="px-8 py-4 rounded-full text-[12px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-white/80 hover:shadow-md flex items-center justify-center gap-3 w-full lg:w-auto bg-white/40 backdrop-blur-sm"
               style={{ border: "1px solid rgba(61,43,31,0.2)", color: "#3D2B1F" }}>
-              View Best Sellers <ArrowRight size={14} />
+              Combo Offers <ArrowRight size={14} />
             </button>
           </motion.div>
         </div>
@@ -1186,7 +1188,7 @@ function ShopPage() {
         
         {((!showProducts || filteredProducts.length === 0) && (!showCombos || filteredCombos.length === 0)) && (
           <div className="text-center py-20 text-gray-500 col-span-2 md:col-span-4">
-            No {productType === "All" ? "items" : productType.toLowerCase()} found in {categories.find(c => c.id === category)?.label.toLowerCase()}.
+            No {productType === "All" ? "items" : productType.toLowerCase()} found in {categories.find(c => c.id === shopCategory)?.label?.toLowerCase() || "this category"}.
           </div>
         )}
       </div>
@@ -1392,6 +1394,12 @@ function CheckoutPage() {
       ...ord,
       placed: Timestamp.fromDate(ord.placed),
       ...(razorpayPaymentId ? { razorpayPaymentId } : {})
+    });
+
+    logUserActivity("ORDER_PLACED", `Order #${ord.id} placed by ${ord.delivery?.name || 'Customer'} (₹${ord.total})`, {
+      user: ord.delivery?.name || "Customer",
+      userEmail: ord.delivery?.email || user.email || "",
+      orderId: ord.id,
     });
 
     // Send "Order Placed" email via Google Apps Script
@@ -2209,6 +2217,7 @@ function AccountPage() {
       try {
         const q = query(collection(db, "users", user.uid, "orders"), orderBy("placed", "desc"));
         const snapshot = await getDocs(q);
+        trackReads("user/orders", snapshot.docs.length);
         const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setOrders(fetchedOrders);
       } catch (err) {
@@ -2360,6 +2369,7 @@ function OldAdminPage() {
     if (authed) {
       const q = query(collectionGroup(db, "orders"));
       const unsub = onSnapshot(q, (snapshot) => {
+        trackReads("admin/orders(old)", snapshot.docs.length);
         if (!snapshot.empty) {
           const fetched = snapshot.docs.map(doc => { const data = doc.data(); return { ...data, id: data.id || doc.id, ref: doc.ref }; });
           // Sort by placed date desc
@@ -3426,45 +3436,108 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "settings", "payment"), (snapshot) => {
-      if (snapshot.exists()) {
-        setPaymentSettings(prev => ({ ...prev, ...snapshot.data() }));
+    // ── Optimized: Cached one-time fetch for payment settings ──────────
+    // Uses localStorage cache to avoid reads on every page load.
+    const CACHE_KEY = "svj_payment_settings";
+    const CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+    const loadPayment = async () => {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, ts } = JSON.parse(cached);
+          setPaymentSettings(prev => ({ ...prev, ...data }));
+          if (Date.now() - ts < CACHE_TTL) return; // Cache still fresh, skip Firestore
+        }
+        // Fetch from Firestore (1 read)
+        const { getDoc } = await import("firebase/firestore");
+        const snap = await getDoc(doc(db, "settings", "payment"));
+        trackReads("settings/payment", 1);
+        if (snap.exists()) {
+          const data = snap.data();
+          setPaymentSettings(prev => ({ ...prev, ...data }));
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+        }
+      } catch (err) {
+        console.warn("Payment settings fetch error:", err);
       }
-    }, (err) => {
-      console.warn("Payment settings listener error:", err);
-    });
-    return () => unsub();
+    };
+    loadPayment();
   }, []);
 
   useEffect(() => {
+    // ── Optimized: Bundled Catalog Fetch (1 READ TOTAL FOR ENTIRE CATALOG) ─────
+    // Reads single settings/catalog document instead of 30+ separate collection docs.
+    const PRODUCTS_KEY = "svj_products_cache";
+    const COMBOS_KEY = "svj_combos_cache";
+    const CACHE_TTL = 5 * 60 * 1000; // 5 min
+
     let pLoaded = false;
     let cLoaded = false;
+    let cacheFresh = false;
     const checkLoaded = () => { if (pLoaded && cLoaded) setDataLoaded(true); };
 
-    const q = collection(db, "products");
-    const unsub = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.data().id ?? doc.id, docId: doc.id }) as Product);
-        fetched.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
-        setProducts(fetched);
+    // Try loading from localStorage cache first (instant, 0 reads)
+    try {
+      const cachedP = localStorage.getItem(PRODUCTS_KEY);
+      const cachedC = localStorage.getItem(COMBOS_KEY);
+      if (cachedP && cachedC) {
+        const { data: pData, ts: pTs } = JSON.parse(cachedP);
+        const { data: cData, ts: cTs } = JSON.parse(cachedC);
+        if (pData && cData) {
+          setProducts(pData);
+          setCombos(cData);
+          pLoaded = true; cLoaded = true;
+          if (Date.now() - pTs < CACHE_TTL && Date.now() - cTs < CACHE_TTL) {
+            cacheFresh = true;
+          }
+        }
       }
-      pLoaded = true; checkLoaded();
-    }, (err) => {
-      console.warn("Products snapshot listener:", err);
-      pLoaded = true; checkLoaded();
-    });
-    const comboQ = collection(db, "combos");
-    const unsubCombo = onSnapshot(comboQ, (snapshot) => {
-      if (!snapshot.empty) {
-        const fetchedCombos = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, docId: doc.id }) as Combo);
-        setCombos(fetchedCombos);
+    } catch (e) { /* ignore */ }
+
+    checkLoaded();
+
+    if (cacheFresh) return; // Served from browser cache (0 reads!)
+
+    // Fetch from Firestore: Try 1-READ Catalog Bundle first
+    const fetchData = async () => {
+      try {
+        const { getDoc, doc } = await import("firebase/firestore");
+        const bundleSnap = await getDoc(doc(db, "settings", "catalog"));
+        trackReads("settings/catalog(bundle)", 1);
+
+        if (bundleSnap.exists()) {
+          const bundleData = bundleSnap.data();
+          if (Array.isArray(bundleData.products) && Array.isArray(bundleData.combos)) {
+            setProducts(bundleData.products);
+            setCombos(bundleData.combos);
+            localStorage.setItem(PRODUCTS_KEY, JSON.stringify({ data: bundleData.products, ts: Date.now() }));
+            localStorage.setItem(COMBOS_KEY, JSON.stringify({ data: bundleData.combos, ts: Date.now() }));
+            pLoaded = true; cLoaded = true;
+            checkLoaded();
+            return;
+          }
+        }
+
+        // Fallback if bundle doesn't exist yet: fetch collections and create bundle
+        const { syncCatalogBundle } = await import("./utils/catalogSync");
+        const bundle = await syncCatalogBundle();
+        if (bundle) {
+          trackReads("products(initial-sync)", bundle.products.length);
+          trackReads("combos(initial-sync)", bundle.combos.length);
+          setProducts(bundle.products);
+          setCombos(bundle.combos);
+          localStorage.setItem(PRODUCTS_KEY, JSON.stringify({ data: bundle.products, ts: Date.now() }));
+          localStorage.setItem(COMBOS_KEY, JSON.stringify({ data: bundle.combos, ts: Date.now() }));
+        }
+      } catch (err) {
+        console.warn("Fetch catalog error:", err);
+      } finally {
+        pLoaded = true; cLoaded = true;
+        checkLoaded();
       }
-      cLoaded = true; checkLoaded();
-    }, (err) => {
-      console.warn("Combos snapshot listener:", err);
-      cLoaded = true; checkLoaded();
-    });
-    return () => { unsub(); unsubCombo(); };
+    };
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -3531,10 +3604,16 @@ export default function App() {
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
-  const addToCart = (p: Product, qty = 1) => setCart(prev => {
-    const ex = prev.find(i => i.product.id === p.id);
-    return ex ? prev.map(i => i.product.id === p.id ? { ...i, qty: i.qty + qty } : i) : [...prev, { product: p, qty }];
-  });
+  const addToCart = (p: Product, qty = 1) => {
+    logUserActivity("ADD_TO_CART", `Added ${qty}x "${p.name}" (₹${p.price}) to cart`, {
+      user: user?.displayName || "Customer",
+      userEmail: user?.email || "",
+    });
+    setCart(prev => {
+      const ex = prev.find(i => i.product.id === p.id);
+      return ex ? prev.map(i => i.product.id === p.id ? { ...i, qty: i.qty + qty } : i) : [...prev, { product: p, qty }];
+    });
+  };
   const removeFromCart = (id: number | string) => setCart(prev => prev.filter(i => i.product.id !== id));
   const updateQty = (id: number | string, qty: number) => qty <= 0 ? removeFromCart(id) : setCart(prev => prev.map(i => i.product.id === id ? { ...i, qty } : i));
   const clearCart = () => setCart([]);

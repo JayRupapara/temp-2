@@ -62,9 +62,15 @@ export interface CustomerProfile {
 
 export interface AuditEntry {
   id?: string;
-  orderId: string;
-  action: "created" | "confirmed" | "edited" | "cancelled" | "deleted" | "margin_updated" | "status_changed";
+  orderId?: string;
+  action: string;
   user: string;
+  userEmail?: string;
+  env?: "local" | "live";
+  url?: string;
+  severity?: "error" | "warning" | "info";
+  type?: "error" | "activity" | "admin" | "checkout_failure";
+  stack?: string;
   timestamp: Timestamp | any;
   details: string;
 }

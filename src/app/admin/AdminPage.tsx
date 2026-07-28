@@ -56,7 +56,7 @@ export default function AdminPage() {
   // Hooks
   const { orders, loading: ordersLoading, createManualOrder, updateOrder, confirmOrder, cancelOrder, deleteOrder } = useOrders(authed);
   const customerLookup = useCustomers();
-  const { entries: auditEntries, loading: auditLoading, logAction, getEntriesForOrder } = useAuditLog(authed);
+  const { entries: auditEntries, loading: auditLoading, logAction, getEntriesForOrder, purgeOldLogs, exportLogsToCSV } = useAuditLog(authed && tab === "audit");
 
   // Dark mode persistence
   useEffect(() => {
@@ -333,7 +333,7 @@ export default function AdminPage() {
             )}
 
             { tab === "audit" && (
-              <AuditLogTimeline entries={auditEntries} loading={auditLoading} darkMode={darkMode} />
+              <AuditLogTimeline entries={auditEntries} loading={auditLoading} darkMode={darkMode} onExportCSV={exportLogsToCSV} onPurgeOld={purgeOldLogs} />
             )}
 
             {tab === "payment" && (

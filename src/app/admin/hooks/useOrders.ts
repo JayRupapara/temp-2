@@ -1,12 +1,15 @@
 // ── useOrders Hook ─────────────────────────────────────────────────────────
 // Merges website orders (collectionGroup) + manual orders (admin_orders)
 import { useState, useEffect, useCallback } from "react";
-import { collection, collectionGroup, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from "firebase/firestore";
+import { collection, collectionGroup, query, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 import { AdminOrder, OrderSource, OrderStatus, PaymentType, OrderCustomer, OrderItem, AdminUser } from "../admin/types";
 import { toast } from "sonner";
+import { trackReads } from "../../utils/readTracker";
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1hEKEZboMD0Z49sOwnPNPMH02WqLlCyYSqCmAeCnPf9dgIQkQsLXoAsbr-cN5Nqqm/exec";
+const ADMIN_ORDERS_CACHE_KEY = "svj_admin_orders_cache";
+const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
 
 function normalizeWebsiteOrder(data: any, ref: any): AdminOrder {
   const status: OrderStatus = data.status === "CONFIRMED" ? "CONFIRMED"
@@ -69,6 +72,35 @@ function normalizeManualOrder(data: any, ref: any): AdminOrder {
   };
 }
 
+async function sendOrderStatusEmail(order: AdminOrder, status: string) {
+  const customerEmail = order.customer?.email;
+  if (!customerEmail) {
+    toast.info(`No customer email provided for Order #${order.id} — email skipped.`);
+    return;
+  }
+
+  try {
+    const payload = {
+      type: status,
+      id: order.id,
+      payment: order.payment,
+      total: order.total,
+      delivery: order.customer,
+      items: (order.items || []).map(i => ({ qty: i.qty, product: { name: i.name, price: i.price } })),
+    };
+
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload),
+    });
+    toast.success(`Confirmation email triggered for ${customerEmail}`);
+  } catch (err) {
+    console.warn("Status email failed:", err);
+  }
+}
+
 export function useOrders(authed: boolean) {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,9 +123,10 @@ export function useOrders(authed: boolean) {
       setLoading(false);
     };
 
-    // Website orders
+    // Website orders (real-time)
     const q1 = query(collectionGroup(db, "orders"));
     const unsub1 = onSnapshot(q1, (snapshot) => {
+      trackReads("admin/orders(web)", snapshot.docs.length);
       websiteOrders = snapshot.docs.map(d => normalizeWebsiteOrder(d.data(), d.ref));
       merge();
     }, (err) => {
@@ -102,9 +135,10 @@ export function useOrders(authed: boolean) {
     });
     unsubscribers.push(unsub1);
 
-    // Manual orders
+    // Manual orders (real-time)
     const q2 = query(collection(db, "admin_orders"));
     const unsub2 = onSnapshot(q2, (snapshot) => {
+      trackReads("admin/orders(manual)", snapshot.docs.length);
       manualOrders = snapshot.docs.map(d => normalizeManualOrder(d.data(), d.ref));
       merge();
     }, (err) => {
@@ -125,7 +159,6 @@ export function useOrders(authed: boolean) {
     notes: string;
     orderDate?: Date;
   }) => {
-    // Generate order ID
     const count = orders.filter(o => o.isManual).length;
     const orderId = `SVJ-M${(100001 + count).toString()}`;
 
@@ -159,6 +192,13 @@ export function useOrders(authed: boolean) {
       delete cleanUpdates.isManual;
       await updateDoc(order.ref, cleanUpdates);
       toast.success("Order updated");
+
+      const finalStatus = updates.status || order.status;
+      const finalConfirmedBy = updates.confirmedBy !== undefined ? updates.confirmedBy : order.confirmedBy;
+      if (finalStatus === "CONFIRMED" || finalStatus === "CANCELLED") {
+        const updatedOrder = { ...order, ...updates, status: finalStatus, confirmedBy: finalConfirmedBy };
+        await sendOrderStatusEmail(updatedOrder, finalStatus);
+      }
     } catch (e: any) {
       toast.error("Failed to update order", { description: e.message });
     }
@@ -168,26 +208,9 @@ export function useOrders(authed: boolean) {
     if (!order.ref) return;
     try {
       await updateDoc(order.ref, { status: "CONFIRMED", confirmed: true, confirmedBy });
-      toast.success(`Order confirmed by ${confirmedBy}`);
-
-      // Send email notification
-      if (order.customer?.email) {
-        try {
-          await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-              type: "CONFIRMED",
-              id: order.id,
-              payment: order.payment,
-              total: order.total,
-              delivery: order.customer,
-              items: order.items.map(i => ({ qty: i.qty, product: { name: i.name, price: i.price } })),
-            }),
-          });
-        } catch { /* silent */ }
-      }
+      toast.success(`Order marked CONFIRMED by ${confirmedBy}`);
+      const updatedOrder = { ...order, status: "CONFIRMED" as OrderStatus, confirmedBy };
+      await sendOrderStatusEmail(updatedOrder, "CONFIRMED");
     } catch (e: any) {
       toast.error("Failed to confirm order", { description: e.message });
     }
@@ -198,24 +221,8 @@ export function useOrders(authed: boolean) {
     try {
       await updateDoc(order.ref, { status: "CANCELLED", confirmed: false });
       toast.success("Order cancelled");
-
-      if (order.customer?.email) {
-        try {
-          await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-              type: "CANCELLED",
-              id: order.id,
-              payment: order.payment,
-              total: order.total,
-              delivery: order.customer,
-              items: order.items.map(i => ({ qty: i.qty, product: { name: i.name, price: i.price } })),
-            }),
-          });
-        } catch { /* silent */ }
-      }
+      const updatedOrder = { ...order, status: "CANCELLED" as OrderStatus };
+      await sendOrderStatusEmail(updatedOrder, "CANCELLED");
     } catch (e: any) {
       toast.error("Failed to cancel", { description: e.message });
     }

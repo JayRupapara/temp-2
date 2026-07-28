@@ -4,6 +4,7 @@ import { setDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { toast } from "sonner";
 import { Plus, X, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { syncCatalogBundle } from "../../utils/catalogSync";
 
 type Product = {
   id: number | string; name: string; subtitle: string; description: string;
@@ -55,13 +56,18 @@ export default function ProductsTab({ products, darkMode }: ProductsTabProps) {
       const nextState = !p.isHidden;
       const targetDocId = p.docId || p.id.toString();
       await setDoc(doc(db, "products", targetDocId), { isHidden: nextState }, { merge: true });
+      await syncCatalogBundle();
       toast.success(nextState ? `"${p.name}" is now hidden` : `"${p.name}" is now visible`);
     } catch (e: any) { toast.error("Failed", { description: e.message }); }
   };
 
   const handleDelete = async (id: number | string) => {
     if (!confirm("Delete this product?")) return;
-    try { await deleteDoc(doc(db, "products", id.toString())); toast.success("Product deleted"); }
+    try { 
+      await deleteDoc(doc(db, "products", id.toString())); 
+      await syncCatalogBundle();
+      toast.success("Product deleted"); 
+    }
     catch (e: any) { toast.error("Error", { description: e.message }); }
   };
 
@@ -160,9 +166,13 @@ export default function ProductsTab({ products, darkMode }: ProductsTabProps) {
         cleanData.images = uploadedImages.filter(img => !!img);
         if (cleanData.images.length > 0) cleanData.image = cleanData.images[0];
       }
+      cleanData.price = Number(cleanData.price) || 0;
+      cleanData.originalPrice = Number(cleanData.originalPrice) || 0;
       Object.keys(cleanData).forEach(key => (cleanData as any)[key] === undefined && delete (cleanData as any)[key]);
       delete (cleanData as any).docId;
-      await setDoc(doc(db, "products", cleanData.id!.toString()), cleanData);
+      const targetDocId = (cleanData.docId || cleanData.id)?.toString();
+      await setDoc(doc(db, "products", targetDocId), cleanData);
+      await syncCatalogBundle();
       toast.success("Product saved!");
       setEditing(null);
     } catch (e: any) { toast.error(e.message); }
