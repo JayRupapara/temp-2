@@ -62,7 +62,7 @@ type CartItem = { product: Product; qty: number };
 type DeliveryForm = { name: string; phone: string; email: string; address: string; city: string; state: string; pincode: string };
 type OrderData = { id: string; items: CartItem[]; delivery: DeliveryForm; payment: "prepaid" | "cod"; total: number; placed: Date; confirmed?: boolean };
 type AppCtx = {
-  page: Page; setPage: (p: Page) => void;
+  page: Page; setPage: (p: Page, queryParams?: Record<string, string>) => void;
   cart: CartItem[]; addToCart: (p: Product, qty?: number) => void;
   removeFromCart: (id: number | string) => void; updateQty: (id: number | string, q: number) => void;
   cartTotal: number; cartCount: number; clearCart: () => void;
@@ -1055,8 +1055,15 @@ function ShopPage() {
     { id: "necklaces", label: "Necklaces" },
     { id: "bracelets", label: "Bracelets" },
     { id: "earrings", label: "Earrings" },
-    { id: "rings", label: "Rings" }
+    { id: "rings", label: "Rings" },
+    { id: "combos", label: "Combos" }
   ];
+
+  const isSale = shopCategory.startsWith("sale-");
+  if (isSale && !categories.find(c => c.id === shopCategory)) {
+     const target = shopCategory.replace("sale-", "");
+     categories.unshift({ id: shopCategory, label: isNaN(Number(target)) ? `${target} Deals` : `Under ₹${target}` });
+  }
 
   const productTypes = ["All", "Single Products", "Combo Packs"];
 
@@ -1088,8 +1095,33 @@ function ShopPage() {
     return "mixed";
   };
 
-  const filteredCombos = combos.filter(c => !c.isHidden && getComboCategory(c) === shopCategory);
-  const filteredProducts = products.filter(p => !p.isHidden && normalizeCategory(p.category) === shopCategory);
+  const isPriceSale = isSale && ["199", "299", "499"].includes(shopCategory.replace("sale-", ""));
+  const saleTargetStr = isSale ? shopCategory.replace("sale-", "").toLowerCase() : "";
+  const maxPrice = isPriceSale ? Number(saleTargetStr) : Infinity;
+  const minPrice = isPriceSale ? (maxPrice === 199 ? 0 : maxPrice === 299 ? 199 : 299) : 0;
+
+  const filteredCombos = combos.filter(c => {
+    if (c.isHidden) return false;
+    if (isSale) {
+      if (isPriceSale) return c.price <= maxPrice && c.price > minPrice;
+      if (!c.festival) return false;
+      if (Array.isArray(c.festival)) return c.festival.some(f => String(f).toLowerCase() === saleTargetStr);
+      return String(c.festival).toLowerCase() === saleTargetStr;
+    }
+    if (shopCategory === "combos") return true;
+    return getComboCategory(c) === shopCategory;
+  });
+  const filteredProducts = products.filter(p => {
+    if (p.isHidden) return false;
+    if (isSale) {
+      if (isPriceSale) return p.price <= maxPrice && p.price > minPrice;
+      if (!p.festival) return false;
+      if (Array.isArray(p.festival)) return p.festival.some(f => String(f).toLowerCase() === saleTargetStr);
+      return String(p.festival).toLowerCase() === saleTargetStr;
+    }
+    if (shopCategory === "combos") return false;
+    return normalizeCategory(p.category) === shopCategory;
+  });
 
   const showCombos = productType === "All" || productType === "Combo Packs";
   const showProducts = productType === "All" || productType === "Single Products";
@@ -1985,9 +2017,9 @@ function HomePage() {
     ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D"
   })) as any[];
 
-  const goToShop = (cat: string) => {
-    setShopCategory(cat);
-    setPage("shop");
+  const goToShop = (cat: string, isSale = false) => {
+    setShopCategory(isSale ? `sale-${cat}` : cat);
+    setPage("shop", isSale ? { sale: cat } : { category: cat });
   };
 
   // Explicitly set only the requested 4 tabs
@@ -2050,7 +2082,7 @@ function HomePage() {
               <h3 className="text-xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
                 {typeof activeSaleTab === 'string' ? `${activeSaleTab} Deals` : `Under ₹${activeSaleTab}`}
               </h3>
-              <button onClick={() => goToShop("necklaces")} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "#d9534f" }}>
+              <button onClick={() => goToShop(activeSaleTab.toString(), true)} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "#d9534f" }}>
                 View All <ArrowRight size={12} />
               </button>
             </div>
@@ -2074,7 +2106,7 @@ function HomePage() {
               ))}
               {activeSaleProducts.length > saleDisplayProducts.length && (
                 <div className={`w-[42vw] sm:w-[40vw] flex-shrink-0 snap-start flex items-center justify-center ${saleDisplayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
-                  <div onClick={() => goToShop("necklaces")} className="w-full h-full min-h-[320px] rounded-[1.5rem] bg-[#FCFBF8] border border-[rgba(217,83,79,0.3)] flex flex-col items-center justify-center p-6 cursor-pointer group transition-all hover:bg-[#FDF8F5] hover:shadow-lg">
+                  <div onClick={() => goToShop(activeSaleTab.toString(), true)} className="w-full h-full min-h-[320px] rounded-[1.5rem] bg-[#FCFBF8] border border-[rgba(217,83,79,0.3)] flex flex-col items-center justify-center p-6 cursor-pointer group transition-all hover:bg-[#FDF8F5] hover:shadow-lg">
                     <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:bg-[#d9534f] group-hover:text-white" style={{ background: "rgba(217,83,79,0.15)", color: "#d9534f" }}>
                       <ArrowRight size={24} strokeWidth={2.5} />
                     </div>
@@ -2090,7 +2122,7 @@ function HomePage() {
             <div className="hidden lg:block text-center mt-8">
               <Reveal>
                 <button 
-                  onClick={() => goToShop("necklaces")}
+                  onClick={() => goToShop(activeSaleTab.toString(), true)}
                   className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
                   style={{ background: "#FCFBF8", border: "1.5px solid #d9534f", color: "#d9534f" }}>
                   {typeof activeSaleTab === 'string' ? `View All ${activeSaleTab} Deals` : `View All Under ₹${activeSaleTab}`}
@@ -2111,7 +2143,7 @@ function HomePage() {
       )}
 
       {/* Product Categories */}
-      <HorizontalProductSlider title="Combo Collection" products={activeCombos} onViewAll={() => goToShop("necklaces")} />
+      <HorizontalProductSlider title="Combo Collection" products={activeCombos} onViewAll={() => goToShop("combos")} />
       
       <BrandStory />
 
@@ -3368,12 +3400,20 @@ export default function App() {
       const search = window.location.search;
       const params = new URLSearchParams(search);
       const productId = params.get("product");
+      const category = params.get("category");
+      const sale = params.get("sale");
 
       if (productId) {
          setPageState("product");
-         // The actual product selection happens when products/combos are loaded
-      } else if (path === "/admin") setPageState("admin");
-      else if (path === "/") setPageState("home");
+      } else if (category || sale) {
+         setPageState("shop");
+         if (category) setShopCategory(category);
+         if (sale) setShopCategory(`sale-${sale}`);
+      } else if (path === "/admin") {
+         setPageState("admin");
+      } else {
+         setPageState("home");
+      }
     };
     window.addEventListener("popstate", handleLocation);
     handleLocation();
@@ -3459,11 +3499,27 @@ export default function App() {
     toast.success("Logged out");
   };
 
-  const setPage = (p: Page) => { 
+  const setPage = (p: Page, queryParams?: Record<string, string>) => { 
     setPageState(p); 
-    if (p === "admin" && window.location.pathname !== "/admin") window.history.pushState({}, "", "/admin");
-    if (p === "home" && window.location.pathname === "/admin") window.history.pushState({}, "", "/");
-    if (p !== "product" && window.location.search.includes("product=")) window.history.pushState({}, "", window.location.pathname);
+    const url = new URL(window.location.href);
+    let path = url.pathname;
+    
+    if (p === "admin") path = "/admin";
+    else if (path === "/admin") path = "/";
+    
+    let search = "";
+    if (queryParams && Object.keys(queryParams).length > 0) {
+       const params = new URLSearchParams();
+       Object.entries(queryParams).forEach(([k, v]) => params.set(k, v));
+       search = "?" + params.toString();
+    } else if (p === "product" && window.location.search.includes("product=")) {
+       search = window.location.search;
+    }
+    
+    const newUrl = path + search;
+    if (window.location.pathname + window.location.search !== newUrl) {
+      window.history.pushState({ page: p, ...queryParams }, "", newUrl);
+    }
   };
 
   const navigateToProduct = (p: Product) => {
