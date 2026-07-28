@@ -677,7 +677,7 @@ function StickyMobileCTA({ page }: { page: Page }) {
     <AnimatePresence>
       <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="fixed bottom-7 left-5 z-[45] md:hidden flex pointer-events-none" style={{ right: "80px" }}>
-        <button onClick={() => { document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" }); }}
+        <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           className="w-full py-4 rounded-full text-[13px] font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all active:scale-95 pointer-events-auto"
           style={{ background: "#3D2B1F", color: "#FCFBF8", boxShadow: "0 8px 32px rgba(61,43,31,0.35)" }}>
           🛍 Shop Collection
@@ -920,6 +920,7 @@ function FAQItem({ faq }: { faq: typeof FAQS[0] }) {
 // ── Brand Story ────────────────────────────────────────────────────────────
 function BrandStory() {
   const { ref, visible } = useReveal();
+  const { setPage } = useApp();
   return (
     <>
       {/* Editorial Split Hero Section (Single Banner) */}
@@ -954,7 +955,7 @@ function BrandStory() {
               </div>
 
               {/* Shop Collection Button */}
-              <button onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
+              <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className="px-8 py-5 text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-500 hover:bg-black/80 flex items-center justify-between max-w-[260px] shadow-lg shadow-black/10"
                 style={{ background: "#3D2B1F", color: "#F8F6F2" }}>
                 <span>Shop Collection</span> <ArrowRight size={14} style={{ color: "#CFA18D" }} />
