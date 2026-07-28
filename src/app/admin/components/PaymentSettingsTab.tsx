@@ -13,6 +13,7 @@ export default function PaymentSettingsTab({ darkMode }: { darkMode: boolean }) 
   const [codCharge, setCodCharge] = useState(49);
   const [codUnavailableMsg, setCodUnavailableMsg] = useState("Cash on Delivery is temporarily unavailable. Prepaid orders are open and shipping as usual.");
   const [prepaidMsg, setPrepaidMsg] = useState("Prepaid orders are open and shipping as usual.");
+  const [saleEnabled, setSaleEnabled] = useState(true);
 
   const dm = darkMode;
   const bgCard = dm ? "bg-gray-900" : "bg-white";
@@ -31,6 +32,7 @@ export default function PaymentSettingsTab({ darkMode }: { darkMode: boolean }) 
           if (data.codCharge !== undefined) setCodCharge(data.codCharge);
           if (data.codUnavailableMsg) setCodUnavailableMsg(data.codUnavailableMsg);
           if (data.prepaidMsg) setPrepaidMsg(data.prepaidMsg);
+          if (data.saleEnabled !== undefined) setSaleEnabled(data.saleEnabled);
         }
       } catch (err) {
         console.error("Failed to fetch payment settings:", err);
@@ -49,6 +51,7 @@ export default function PaymentSettingsTab({ darkMode }: { darkMode: boolean }) 
         codCharge,
         codUnavailableMsg,
         prepaidMsg,
+        saleEnabled,
         updatedAt: new Date(),
       }, { merge: true });
       toast.success("Payment settings saved successfully!");
@@ -75,8 +78,8 @@ export default function PaymentSettingsTab({ darkMode }: { darkMode: boolean }) 
           <CreditCard size={20} className="text-[#CFA18D]" />
         </div>
         <div>
-          <h2 className={`text-xl font-bold ${textMain}`}>Payment Settings</h2>
-          <p className={`text-xs ${textSub}`}>Configure checkout options and messaging</p>
+          <h2 className={`text-xl font-bold ${textMain}`}>Site & Payment Settings</h2>
+          <p className={`text-xs ${textSub}`}>Configure checkout options and homepage layout</p>
         </div>
       </div>
 
@@ -101,6 +104,30 @@ export default function PaymentSettingsTab({ darkMode }: { darkMode: boolean }) 
               className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${codEnabled ? 'bg-[#059669]' : 'bg-gray-400'}`}
             >
               <div className={`absolute top-1 bg-white w-5 h-5 rounded-full shadow-sm transition-transform duration-300 ${codEnabled ? 'left-8' : 'left-1'}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Sale Section Toggle */}
+        <div className={`p-5 rounded-xl border ${border} ${dm ? 'bg-gray-800/50' : 'bg-gray-50/50'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className={`font-bold ${textMain} mb-1 flex items-center gap-2`}>
+                Homepage Sale Section
+                {saleEnabled ? (
+                  <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold">ACTIVE</span>
+                ) : (
+                  <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full font-bold">DISABLED</span>
+                )}
+              </h3>
+              <p className={`text-xs ${textSub}`}>Show or hide the Rakshabandhan / Festival Sale on the homepage.</p>
+            </div>
+            
+            <button 
+              onClick={() => setSaleEnabled(!saleEnabled)}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${saleEnabled ? 'bg-[#059669]' : 'bg-gray-400'}`}
+            >
+              <div className={`absolute top-1 bg-white w-5 h-5 rounded-full shadow-sm transition-transform duration-300 ${saleEnabled ? 'left-8' : 'left-1'}`} />
             </button>
           </div>
         </div>

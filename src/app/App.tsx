@@ -7,7 +7,7 @@ import {
   Menu, X, ShoppingBag, Heart, Star, ArrowRight,
   Phone, Mail, MapPin, ChevronDown, Package, Truck, CreditCard,
   Shield, CheckCircle, Plus, Minus, Trash2, Clock, Instagram,
-  Send, Zap, RefreshCw, Check, ChevronLeft, User as UserIcon, MessageCircle, Eye, EyeOff
+  Send, Zap, RefreshCw, Check, ChevronLeft, ChevronRight, User as UserIcon, MessageCircle, Eye, EyeOff
 } from "lucide-react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider, db, storage } from "./firebase";
@@ -75,6 +75,7 @@ type AppCtx = {
   products: Product[];
   combos: Combo[];
   paymentSettings: PaymentSettings;
+  shopCategory: string; setShopCategory: (c: string) => void;
 };
 
 export type PaymentSettings = {
@@ -82,6 +83,7 @@ export type PaymentSettings = {
   codCharge: number;
   codUnavailableMsg: string;
   prepaidMsg: string;
+  saleEnabled?: boolean;
 };
 
 // ── Data ───────────────────────────────────────────────────────────────────
@@ -966,63 +968,6 @@ function BrandStory() {
   );
 }
 
-// ── Combo Section ──────────────────────────────────────────────────────────
-function ComboSection() {
-  const { combos } = useApp();
-  const [showAll, setShowAll] = useState(false);
-  
-  const visibleCombos = combos.filter(c => !c.isHidden);
-  if (visibleCombos.length === 0) return null;
-
-  const displayedCombos = showAll ? visibleCombos : visibleCombos.slice(0, 4);
-  const comboGridCols = displayedCombos.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
-                        displayedCombos.length === 2 ? "md:grid-cols-2 md:max-w-3xl md:mx-auto" : 
-                        displayedCombos.length === 3 ? "md:grid-cols-3 md:max-w-5xl md:mx-auto" : 
-                        "md:grid-cols-3 lg:grid-cols-4";
-
-  return (
-    <section className="py-24 lg:py-28" style={{ background: "linear-gradient(135deg, #EFE7DD, #F8F6F2, #E8DCC8)" }}>
-      <div className="max-w-7xl mx-auto px-5 lg:px-8">
-        <STitle eyebrow="Bundle & Save" title="Combo Collections" subtitle="Two pieces, one perfect story — curated gift sets at special prices." />
-        <div className={`grid grid-cols-2 gap-4 lg:gap-8 mb-10 ${comboGridCols}`}>
-          {displayedCombos.map((c, i) => (
-            <div key={c.id} className={`h-full ${!showAll && i >= 2 ? 'hidden md:block' : ''}`}>
-              <ProductCard product={{ ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D" } as unknown as Product} delay={i * 0.15} />
-            </div>
-          ))}
-        </div>
-        
-        {/* Desktop Button */}
-        {combos.length > 4 && (
-          <div className="hidden md:block text-center">
-            <Reveal>
-              <button 
-                onClick={() => setShowAll(!showAll)} 
-                className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
-                style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
-                {showAll ? "Show Less" : "View More Combos"}
-              </button>
-            </Reveal>
-          </div>
-        )}
-
-        {/* Mobile Button */}
-        {combos.length > 2 && (
-          <div className="block md:hidden text-center">
-            <Reveal>
-              <button 
-                onClick={() => setShowAll(!showAll)} 
-                className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
-                style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
-                {showAll ? "Show Less" : "View More Combos"}
-              </button>
-            </Reveal>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
 
 // ── Instagram Gallery ──────────────────────────────────────────────────────
 function InstagramGallery() {
@@ -1099,8 +1044,7 @@ function PostersSection() {
 }
 
 function ShopPage() {
-  const { products, combos, setPage, setSelectedProduct, addToCart, setCartOpen } = useApp();
-  const [category, setCategory] = useState("necklaces");
+  const { products, combos, setPage, setSelectedProduct, addToCart, setCartOpen, shopCategory, setShopCategory } = useApp();
   const [productType, setProductType] = useState("All");
 
   useEffect(() => {
@@ -1144,8 +1088,8 @@ function ShopPage() {
     return "mixed";
   };
 
-  const filteredCombos = combos.filter(c => !c.isHidden && getComboCategory(c) === category);
-  const filteredProducts = products.filter(p => !p.isHidden && normalizeCategory(p.category) === category);
+  const filteredCombos = combos.filter(c => !c.isHidden && getComboCategory(c) === shopCategory);
+  const filteredProducts = products.filter(p => !p.isHidden && normalizeCategory(p.category) === shopCategory);
 
   const showCombos = productType === "All" || productType === "Combo Packs";
   const showProducts = productType === "All" || productType === "Single Products";
@@ -1160,13 +1104,13 @@ function ShopPage() {
           {categories.map(cat => (
             <button
               key={cat.id}
-              onClick={() => setCategory(cat.id)}
-              className={`px-5 sm:px-8 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex-1 sm:flex-none whitespace-nowrap ${category === cat.id ? 'shadow-lg scale-105' : 'hover:scale-105 hover:bg-white'}`}
+              onClick={() => setShopCategory(cat.id)}
+              className={`px-5 sm:px-8 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex-1 sm:flex-none whitespace-nowrap ${shopCategory === cat.id ? 'shadow-lg scale-105' : 'hover:scale-105 hover:bg-white'}`}
               style={{
-                background: category === cat.id ? 'linear-gradient(135deg, #CFA18D, #A67B66)' : '#FCFBF8',
-                color: category === cat.id ? '#FFFFFF' : '#8C7B6B',
-                border: category === cat.id ? '1px solid #CFA18D' : '1px solid rgba(203,184,169,0.5)',
-                boxShadow: category === cat.id ? '0 8px 24px rgba(207,161,141,0.3)' : 'none'
+                background: shopCategory === cat.id ? 'linear-gradient(135deg, #CFA18D, #A67B66)' : '#FCFBF8',
+                color: shopCategory === cat.id ? '#FFFFFF' : '#8C7B6B',
+                border: shopCategory === cat.id ? '1px solid #CFA18D' : '1px solid rgba(203,184,169,0.5)',
+                boxShadow: shopCategory === cat.id ? '0 8px 24px rgba(207,161,141,0.3)' : 'none'
               }}
             >
               {cat.label}
@@ -1942,18 +1886,69 @@ function Footer() {
   );
 }
 
+// ── Horizontal Product Slider ───────────────────────────────────────────────
+function HorizontalProductSlider({ title, products, onViewAll, hideViewAll = false }: { title: string, products: Product[], onViewAll: () => void, hideViewAll?: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  if (products.length === 0) return null;
+  const displayProducts = products.slice(0, 5);
+  const showDesktopArrows = displayProducts.length > 4;
+
+  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
+  const scrollRight = () => scrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
+  
+  return (
+    <section className="py-12 lg:py-20" style={{ background: "#F8F6F2" }}>
+      <div className="max-w-7xl mx-auto px-5 lg:px-8 relative">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl lg:text-4xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{title}</h2>
+          {!hideViewAll && (
+            <button onClick={onViewAll} className="text-[12px] font-bold uppercase tracking-[0.1em] hover:opacity-80 transition-opacity" style={{ color: "#CFA18D" }}>
+              View All
+            </button>
+          )}
+        </div>
+        
+        {showDesktopArrows && (
+          <>
+            <button onClick={scrollLeft} className="hidden lg:flex absolute top-[55%] left-0 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white shadow-[0_4px_14px_rgba(207,161,141,0.2)] items-center justify-center text-[#5A4035] hover:text-[#3D2B1F] border border-[rgba(203,184,169,0.3)] transition-all hover:scale-105">
+              <ChevronLeft size={22}/>
+            </button>
+            <button onClick={scrollRight} className="hidden lg:flex absolute top-[55%] right-0 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white shadow-[0_4px_14px_rgba(207,161,141,0.2)] items-center justify-center text-[#5A4035] hover:text-[#3D2B1F] border border-[rgba(203,184,169,0.3)] transition-all hover:scale-105">
+              <ChevronRight size={22}/>
+            </button>
+          </>
+        )}
+
+        <div ref={scrollRef} className={`flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 ${displayProducts.length <= 4 ? 'lg:grid lg:grid-cols-4' : ''}`} style={{ WebkitOverflowScrolling: 'touch' }}>
+          {displayProducts.map((p, i) => (
+            <div key={p.id} className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start ${displayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+              <ProductCard product={p} delay={i * 0.1} />
+            </div>
+          ))}
+          {products.length > displayProducts.length && !hideViewAll && (
+            <div className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start flex items-center justify-center ${displayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+              <div onClick={onViewAll} className="w-full h-full min-h-[320px] rounded-[1.5rem] bg-[#FCFBF8] border border-[rgba(203,184,169,0.3)] flex flex-col items-center justify-center p-6 cursor-pointer group transition-all hover:bg-[#FDF8F5] hover:shadow-lg">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:bg-[#CFA18D] group-hover:text-white" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>
+                  <ArrowRight size={24} strokeWidth={2.5} />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-[#3D2B1F]" style={{ fontFamily: "'Playfair Display', serif" }}>Discover More</h3>
+                <p className="text-xs text-center text-[#8C7B6B]">Explore {products.length - displayProducts.length} more styles</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Home Page ──────────────────────────────────────────────────────────────
 function HomePage() {
-  const { products, setPage, paymentSettings } = useApp();
-  const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const { products, combos, setPage, paymentSettings, setShopCategory } = useApp();
   const [showAllReviews, setShowAllReviews] = useState(false);
   const visibleProducts = products.filter(p => !p.isHidden);
-  const activeFestivals = Array.from(new Set(visibleProducts.filter(p => p.festival).map(p => p.festival as string)));
   
   const [activeSaleTab, setActiveSaleTab] = useState<number | string>("Rakshabandhan");
-  const [showAllSale, setShowAllSale] = useState(false);
-
-  const featured = visibleProducts.filter(p => p.isFeatured);
   
   const sale199 = visibleProducts.filter(p => p.price <= 199);
   const sale299 = visibleProducts.filter(p => p.price > 199 && p.price <= 299);
@@ -1962,28 +1957,41 @@ function HomePage() {
   const activeSaleProducts = typeof activeSaleTab === 'string' 
     ? visibleProducts.filter(p => {
         if (!p.festival) return false;
-        // Strict case-insensitive match for the selected festival
-        if (Array.isArray(p.festival)) {
-          return p.festival.some(f => typeof f === 'string' && f.toLowerCase() === activeSaleTab.toLowerCase());
-        }
+        if (Array.isArray(p.festival)) return p.festival.some(f => typeof f === 'string' && f.toLowerCase() === activeSaleTab.toLowerCase());
         return String(p.festival).toLowerCase() === activeSaleTab.toLowerCase();
       }) 
     : activeSaleTab === 199 ? sale199 : activeSaleTab === 299 ? sale299 : sale499;
 
+  const saleDisplayProducts = activeSaleProducts.slice(0, 5);
+  const saleShowDesktopArrows = saleDisplayProducts.length > 4;
+  const saleScrollRef = useRef<HTMLDivElement>(null);
+
+  const saleScrollLeft = () => saleScrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
+  const saleScrollRight = () => saleScrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
+
+  // Sorting helper for categories (in stock first)
+  const sortedByCategory = (category: string) => {
+    return visibleProducts
+      .filter(p => p.category?.toLowerCase().includes(category.toLowerCase()))
+      .sort((a, b) => (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0));
+  };
+
+  const necklaces = sortedByCategory("necklace");
+  const earrings = sortedByCategory("earring");
+  const rings = sortedByCategory("ring");
+  const bracelets = sortedByCategory("bracelet");
+  
+  const activeCombos = combos.filter(c => !c.isHidden).map(c => ({
+    ...c, badge: c.badge || "Combo Set", badgeColor: c.badgeColor || "#CFA18D"
+  })) as any[];
+
+  const goToShop = (cat: string) => {
+    setShopCategory(cat);
+    setPage("shop");
+  };
+
   // Explicitly set only the requested 4 tabs
   const saleTabs = ["Rakshabandhan", 199, 299, 499];
-
-  const displayedSale = showAllSale ? activeSaleProducts : activeSaleProducts.slice(0, 4);
-  const saleGridCols = displayedSale.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
-                       displayedSale.length === 2 ? "md:grid-cols-2 md:max-w-3xl md:mx-auto" : 
-                       displayedSale.length === 3 ? "md:grid-cols-3 md:max-w-5xl md:mx-auto" : 
-                       "md:grid-cols-4";
-
-  const displayedFeatured = showAllFeatured ? featured : featured.slice(0, 4);
-  const featuredGridCols = displayedFeatured.length === 1 ? "md:grid-cols-1 md:max-w-sm md:mx-auto" : 
-                           displayedFeatured.length === 2 ? "md:grid-cols-2 md:max-w-3xl md:mx-auto" : 
-                           displayedFeatured.length === 3 ? "md:grid-cols-3 md:max-w-5xl md:mx-auto" : 
-                           "md:grid-cols-4";
 
   return (
     <>
@@ -1992,7 +2000,8 @@ function HomePage() {
       <TrustBar />
 
       {/* Sale Section */}
-      <section id="sale-section" className="py-24 lg:py-32" style={{ background: "#FDF8F5" }}>
+      {paymentSettings.saleEnabled !== false && (
+      <section id="sale-section" className="py-16 lg:py-24" style={{ background: "#FDF8F5" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
           <div className="text-center mb-8">
             <h2 className="text-4xl lg:text-5xl mb-4 font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#d9534f" }}>Sale is Live ⚡</h2>
@@ -2014,7 +2023,7 @@ function HomePage() {
               return (
                 <button 
                   key={tier}
-                  onClick={() => { setActiveSaleTab(tier); setShowAllSale(false); }}
+                  onClick={() => setActiveSaleTab(tier)}
                   className="flex flex-col items-center gap-3 flex-shrink-0 snap-center transition-transform hover:scale-105 active:scale-95 group"
                 >
                   <div className={`w-[75px] h-[75px] sm:w-[105px] sm:h-[105px] rounded-full overflow-hidden transition-all duration-300 ${activeSaleTab === tier ? 'shadow-lg scale-[1.05]' : 'shadow-sm group-hover:shadow-md'}`}
@@ -2036,55 +2045,80 @@ function HomePage() {
             })}
           </div>
 
-          <div className={`grid grid-cols-2 gap-5 mb-10 ${saleGridCols}`}>
-            {displayedSale.map((p, i) => (
-              <ProductCard key={p.id} product={{ ...p, badge: "Sale" }} delay={i * 0.1} />
-            ))}
-            {activeSaleProducts.length === 0 && (
-              <p className="text-gray-400 text-sm col-span-4 text-center py-10">More styles adding soon to this collection!</p>
+          <div className="relative">
+            <div className="flex justify-between items-center mb-6 lg:hidden">
+              <h3 className="text-xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
+                {typeof activeSaleTab === 'string' ? `${activeSaleTab} Deals` : `Under ₹${activeSaleTab}`}
+              </h3>
+              <button onClick={() => goToShop("necklaces")} className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "#d9534f" }}>
+                View All
+              </button>
+            </div>
+
+            {saleShowDesktopArrows && (
+              <>
+                <button onClick={saleScrollLeft} className="hidden lg:flex absolute top-[55%] left-0 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white shadow-[0_4px_14px_rgba(217,83,79,0.2)] items-center justify-center text-[#d9534f] hover:text-[#c9302c] border border-[rgba(217,83,79,0.3)] transition-all hover:scale-105">
+                  <ChevronLeft size={22}/>
+                </button>
+                <button onClick={saleScrollRight} className="hidden lg:flex absolute top-[55%] right-0 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white shadow-[0_4px_14px_rgba(217,83,79,0.2)] items-center justify-center text-[#d9534f] hover:text-[#c9302c] border border-[rgba(217,83,79,0.3)] transition-all hover:scale-105">
+                  <ChevronRight size={22}/>
+                </button>
+              </>
             )}
+
+            <div ref={saleScrollRef} className={`flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 ${saleDisplayProducts.length <= 4 ? 'lg:grid lg:grid-cols-4' : ''}`} style={{ WebkitOverflowScrolling: 'touch' }}>
+              {saleDisplayProducts.map((p, i) => (
+                <div key={p.id} className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start ${saleDisplayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+                  <ProductCard product={{ ...p, badge: "Sale" }} delay={i * 0.1} />
+                </div>
+              ))}
+              {activeSaleProducts.length > saleDisplayProducts.length && (
+                <div className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start flex items-center justify-center ${saleDisplayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+                  <div onClick={() => goToShop("necklaces")} className="w-full h-full min-h-[320px] rounded-[1.5rem] bg-[#FCFBF8] border border-[rgba(217,83,79,0.3)] flex flex-col items-center justify-center p-6 cursor-pointer group transition-all hover:bg-[#FDF8F5] hover:shadow-lg">
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:bg-[#d9534f] group-hover:text-white" style={{ background: "rgba(217,83,79,0.15)", color: "#d9534f" }}>
+                      <ArrowRight size={24} strokeWidth={2.5} />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 text-[#3D2B1F]" style={{ fontFamily: "'Playfair Display', serif" }}>See All Deals</h3>
+                    <p className="text-xs text-center text-[#8C7B6B]">Explore {activeSaleProducts.length - saleDisplayProducts.length} more offers</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {activeSaleProducts.length > 4 && (
-            <div className="text-center">
+          {activeSaleProducts.length > 5 && (
+            <div className="hidden lg:block text-center mt-8">
               <Reveal>
                 <button 
-                  onClick={() => setShowAllSale(!showAllSale)}
+                  onClick={() => goToShop("necklaces")}
                   className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
                   style={{ background: "#FCFBF8", border: "1.5px solid #d9534f", color: "#d9534f" }}>
-                  {showAllSale ? "View Less" : (typeof activeSaleTab === 'string' ? `View All ${activeSaleTab} Deals` : `View All Under ₹${activeSaleTab}`)}
+                  {typeof activeSaleTab === 'string' ? `View All ${activeSaleTab} Deals` : `View All Under ₹${activeSaleTab}`}
                 </button>
               </Reveal>
             </div>
           )}
+          
+          {activeSaleProducts.length === 0 && (
+            <p className="text-gray-400 text-sm col-span-4 text-center py-10">More styles adding soon to this collection!</p>
+          )}
         </div>
       </section>
+      )}
 
-      <ComboSection />
+      {paymentSettings.saleEnabled === false && (
+         <div className="pt-8"></div>
+      )}
+
+      {/* Product Categories */}
+      <HorizontalProductSlider title="Combo Collection" products={activeCombos} onViewAll={() => goToShop("necklaces")} />
       
       <BrandStory />
 
-      <section id="featured" className="py-24 lg:py-32" style={{ background: "#F8F6F2" }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8">
-          <STitle eyebrow="Handpicked for You" title="Featured Collections" subtitle="Our most-loved pieces, curated for timeless elegance." />
-          <div className={`grid grid-cols-2 gap-4 sm:gap-6 mb-10 ${featuredGridCols}`}>
-            {displayedFeatured.map((p, i) => <ProductCard key={p.id} product={p} delay={i * 0.12} />)}
-            {featured.length === 0 && <p className="text-gray-400 text-sm col-span-2 md:col-span-3 text-center">No featured products selected.</p>}
-          </div>
-          {featured.length > 4 && (
-            <div className="text-center">
-              <Reveal>
-                <button 
-                  onClick={() => setShowAllFeatured(!showAllFeatured)}
-                  className="px-8 py-3.5 rounded-full text-sm font-bold transition-all hover:scale-105" 
-                  style={{ background: "#FCFBF8", border: "1.5px solid #CFA18D", color: "#3D2B1F", boxShadow: "0 4px 14px rgba(207,161,141,0.1)" }}>
-                  {showAllFeatured ? "View Less" : "View More"}
-                </button>
-              </Reveal>
-            </div>
-          )}
-        </div>
-      </section>
+      <HorizontalProductSlider title="Necklaces" products={necklaces} onViewAll={() => goToShop("necklaces")} />
+      <HorizontalProductSlider title="Earrings" products={earrings} onViewAll={() => goToShop("earrings")} />
+      <HorizontalProductSlider title="Rings" products={rings} onViewAll={() => goToShop("rings")} />
+      <HorizontalProductSlider title="Bracelets" products={bracelets} onViewAll={() => goToShop("bracelets")} />
 
       <section className="py-24 lg:py-32" style={{ background: "#EFE7DD" }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8">
@@ -3319,11 +3353,13 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(PRODUCTS); // fallback to hardcoded initially
   const [combos, setCombos] = useState<Combo[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [shopCategory, setShopCategory] = useState("necklaces");
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
     codEnabled: true,
     codCharge: 49,
     codUnavailableMsg: "Cash on Delivery is temporarily unavailable. Prepaid orders are open and shipping as usual.",
-    prepaidMsg: "Prepaid orders are open and shipping as usual."
+    prepaidMsg: "Prepaid orders are open and shipping as usual.",
+    saleEnabled: true,
   });
 
   useEffect(() => {
@@ -3448,7 +3484,7 @@ export default function App() {
   const clearCart = () => setCart([]);
   const toggleWishlist = (id: number | string) => setWishlist(prev => prev.includes(id as number) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, navigateToProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos, paymentSettings };
+  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, navigateToProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos, paymentSettings, shopCategory, setShopCategory };
 
   return (
     <Ctx.Provider value={ctx}>
