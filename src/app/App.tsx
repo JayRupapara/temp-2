@@ -3596,108 +3596,52 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // ── Optimized: Cached one-time fetch for payment settings ──────────
-    // Uses localStorage cache to avoid reads on every page load.
-    const CACHE_KEY = "svj_payment_settings";
-    const CACHE_TTL = 5 * 60 * 1000; // 5 min
-
-    const loadPayment = async () => {
-      try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const { data, ts } = JSON.parse(cached);
-          setPaymentSettings(prev => ({ ...prev, ...data }));
-          if (Date.now() - ts < CACHE_TTL) return; // Cache still fresh, skip Firestore
-        }
-        // Fetch from Firestore (1 read)
-        const { getDoc } = await import("firebase/firestore");
-        const snap = await getDoc(doc(db, "settings", "payment"));
-        trackReads("settings/payment", 1);
-        if (snap.exists()) {
-          const data = snap.data();
-          setPaymentSettings(prev => ({ ...prev, ...data }));
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-        }
-      } catch (err) {
-        console.warn("Payment settings fetch error:", err);
-      }
-    };
-    loadPayment();
-  }, []);
-
   useEffect(() => {
-    // ── Optimized: Bundled Catalog Fetch (1 READ TOTAL FOR ENTIRE CATALOG) ─────
-    // Reads single settings/catalog document instead of 30+ separate collection docs.
-    const PRODUCTS_KEY = "svj_products_cache";
-    const COMBOS_KEY = "svj_combos_cache";
-    const CACHE_TTL = 5 * 60 * 1000; // 5 min
+    // ── Real-time Listener: Payment Settings ──
+    const unsubPayment = onSnapshot(doc(db, "settings", "payment"), (snap) => {
+      if (snap.exists()) {
+        setPaymentSettings(prev => ({ ...prev, ...snap.data() }));
+      }
+    });
 
-    let pLoaded = false;
-    let cLoaded = false;
-    let cacheFresh = false;
-    const checkLoaded = () => { if (pLoaded && cLoaded) setDataLoaded(true); };
+    // ── Real-time Listener: Catalog Bundle ──
+    let bundleLoaded = false;
+    const checkLoaded = () => { if (bundleLoaded) setDataLoaded(true); };
 
-    // Try loading from localStorage cache first (instant, 0 reads)
-    try {
-      const cachedP = localStorage.getItem(PRODUCTS_KEY);
-      const cachedC = localStorage.getItem(COMBOS_KEY);
-      if (cachedP && cachedC) {
-        const { data: pData, ts: pTs } = JSON.parse(cachedP);
-        const { data: cData, ts: cTs } = JSON.parse(cachedC);
-        if (pData && cData) {
-          setProducts(pData);
-          setCombos(cData);
-          pLoaded = true; cLoaded = true;
-          if (Date.now() - pTs < CACHE_TTL && Date.now() - cTs < CACHE_TTL) {
-            cacheFresh = true;
-          }
+    const unsubCatalog = onSnapshot(doc(db, "settings", "catalog"), async (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (Array.isArray(data.products) && Array.isArray(data.combos)) {
+          setProducts(data.products);
+          setCombos(data.combos);
+          bundleLoaded = true;
+          checkLoaded();
+          return;
         }
       }
-    } catch (e) { /* ignore */ }
-
-    checkLoaded();
-
-    if (cacheFresh) return; // Served from browser cache (0 reads!)
-
-    // Fetch from Firestore: Try 1-READ Catalog Bundle first
-    const fetchData = async () => {
-      try {
-        const { getDoc, doc } = await import("firebase/firestore");
-        const bundleSnap = await getDoc(doc(db, "settings", "catalog"));
-        trackReads("settings/catalog(bundle)", 1);
-
-        if (bundleSnap.exists()) {
-          const bundleData = bundleSnap.data();
-          if (Array.isArray(bundleData.products) && Array.isArray(bundleData.combos)) {
-            setProducts(bundleData.products);
-            setCombos(bundleData.combos);
-            localStorage.setItem(PRODUCTS_KEY, JSON.stringify({ data: bundleData.products, ts: Date.now() }));
-            localStorage.setItem(COMBOS_KEY, JSON.stringify({ data: bundleData.combos, ts: Date.now() }));
-            pLoaded = true; cLoaded = true;
-            checkLoaded();
-            return;
+      
+      // Fallback: If bundle doesn't exist, try to sync it once
+      if (!bundleLoaded) {
+        try {
+          const { syncCatalogBundle } = await import("./utils/catalogSync");
+          const bundle = await syncCatalogBundle();
+          if (bundle) {
+            setProducts(bundle.products);
+            setCombos(bundle.combos);
           }
+        } catch (err) {
+          console.warn("Initial catalog sync failed:", err);
+        } finally {
+          bundleLoaded = true;
+          checkLoaded();
         }
-
-        // Fallback if bundle doesn't exist yet: fetch collections and create bundle
-        const { syncCatalogBundle } = await import("./utils/catalogSync");
-        const bundle = await syncCatalogBundle();
-        if (bundle) {
-          trackReads("products(initial-sync)", bundle.products.length);
-          trackReads("combos(initial-sync)", bundle.combos.length);
-          setProducts(bundle.products);
-          setCombos(bundle.combos);
-          localStorage.setItem(PRODUCTS_KEY, JSON.stringify({ data: bundle.products, ts: Date.now() }));
-          localStorage.setItem(COMBOS_KEY, JSON.stringify({ data: bundle.combos, ts: Date.now() }));
-        }
-      } catch (err) {
-        console.warn("Fetch catalog error:", err);
-      } finally {
-        pLoaded = true; cLoaded = true;
-        checkLoaded();
       }
+    });
+
+    return () => {
+      unsubPayment();
+      unsubCatalog();
     };
-    fetchData();
   }, []);
 
   useEffect(() => {
