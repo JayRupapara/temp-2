@@ -74,6 +74,14 @@ type AppCtx = {
   user: any; login: () => void; logout: () => void;
   products: Product[];
   combos: Combo[];
+  paymentSettings: PaymentSettings;
+};
+
+export type PaymentSettings = {
+  codEnabled: boolean;
+  codCharge: number;
+  codUnavailableMsg: string;
+  prepaidMsg: string;
 };
 
 // ── Data ───────────────────────────────────────────────────────────────────
@@ -95,13 +103,17 @@ const TESTIMONIALS = [
   { id: 8, name: "manav desai.", city: "Vadodara", rating: 5, text: "Amazing value and looks very premium.", order: "Infinity Spark Ring", verified: true },
 ];
 
-const FAQS = [
-  { q: "How long does delivery take?", a: "Orders are typically delivered within 5–8 business days across India. Express delivery is available at checkout for select pin codes." },
-  { q: "Why is COD ₹49 more expensive?", a: "Cash on Delivery orders incur a ₹49 handling fee to cover packaging and secure verification costs. Choose any prepaid method (UPI, Cards, Net Banking) to get FREE delivery!" },
-  { q: "What is the return policy?", a: "We offer a 1-day easy return policy. Contact us within 1 day of delivery with photos, and we will arrange a free replacement or full refund — no questions asked." },
-  { q: "Are the pieces nickel-free and skin-safe?", a: "Yes! All our jewellery is nickel-free, lead-free, and cadmium-free. Made with premium anti-tarnish coating. Safe for sensitive skin and daily wear." },
-  { q: "How do I track my order?", a: "To track your order, please contact us directly on WhatsApp." }
-];
+const getFAQS = (paymentSettings?: PaymentSettings) => {
+  const codCharge = paymentSettings?.codCharge ?? 49;
+  const codEnabled = paymentSettings?.codEnabled ?? true;
+  return [
+    { q: "How long does delivery take?", a: "Orders are typically delivered within 5–8 business days across India. Express delivery is available at checkout for select pin codes." },
+    ...(codEnabled ? [{ q: `Why is COD ₹${codCharge} more expensive?`, a: `Cash on Delivery orders incur a ₹${codCharge} handling fee to cover packaging and secure verification costs. Choose any prepaid method (UPI, Cards, Net Banking) to get FREE delivery!` }] : []),
+    { q: "What is the return policy?", a: "We offer a 1-day easy return policy. Contact us within 1 day of delivery with photos, and we will arrange a free replacement or full refund — no questions asked." },
+    { q: "Are the pieces nickel-free and skin-safe?", a: "Yes! All our jewellery is nickel-free, lead-free, and cadmium-free. Made with premium anti-tarnish coating. Safe for sensitive skin and daily wear." },
+    { q: "How do I track my order?", a: "To track your order, please contact us directly on WhatsApp." }
+  ];
+};
 
 const RECENT_ORDERS = [
   { name: "Priya S.", city: "Mumbai", product: "Pearl Seashell Necklace" },
@@ -417,7 +429,8 @@ function LoadingScreen({ onDone, dataLoaded }: { onDone: () => void; dataLoaded?
 
 // ── Cart Drawer ────────────────────────────────────────────────────────────
 function CartDrawer() {
-  const { cart, cartOpen, setCartOpen, removeFromCart, updateQty, cartTotal, setPage } = useApp();
+  const { cart, cartOpen, setCartOpen, removeFromCart, updateQty, cartTotal, setPage, paymentSettings } = useApp();
+  const codEnabled = paymentSettings?.codEnabled ?? true;
   return (
     <AnimatePresence>
       {cartOpen && (
@@ -521,7 +534,7 @@ function CartDrawer() {
                 <div className="flex justify-center gap-5 pt-3 pb-1">
                    <div className="flex flex-col items-center gap-1.5 text-[9px] uppercase tracking-wider text-center" style={{ color: "#8C7B6B" }}><Shield size={16} strokeWidth={1.5} style={{ color: "#CFA18D" }}/> Secure<br/>Checkout</div>
                    <div className="flex flex-col items-center gap-1.5 text-[9px] uppercase tracking-wider text-center" style={{ color: "#8C7B6B" }}><Truck size={16} strokeWidth={1.5} style={{ color: "#CFA18D" }}/> Fast<br/>Delivery</div>
-                   <div className="flex flex-col items-center gap-1.5 text-[9px] uppercase tracking-wider text-center" style={{ color: "#8C7B6B" }}><CreditCard size={16} strokeWidth={1.5} style={{ color: "#CFA18D" }}/> COD<br/>Available</div>
+                   {codEnabled && <div className="flex flex-col items-center gap-1.5 text-[9px] uppercase tracking-wider text-center" style={{ color: "#8C7B6B" }}><CreditCard size={16} strokeWidth={1.5} style={{ color: "#CFA18D" }}/> COD<br/>Available</div>}
                 </div>
               </div>
             )}
@@ -534,7 +547,7 @@ function CartDrawer() {
 
 // ── Navbar ─────────────────────────────────────────────────────────────────
 function Navbar() {
-  const { cartCount, setCartOpen, setPage, wishlist, user, login } = useApp();
+  const { cartCount, setCartOpen, setPage, wishlist, user, login, paymentSettings } = useApp();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => {
@@ -552,10 +565,10 @@ function Navbar() {
     { label: "Contact Us", action: () => { setPage("contact"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
   ];
   const marqueeItems = [
-    "Cash on Delivery Available",
+    ...(paymentSettings?.codEnabled ?? true ? ["Cash on Delivery Available"] : []),
     "Secure Checkout",
     "Premium Quality Jewellery",
-    "Trusted by 1000+ Customers",
+    "Trusted by 5000+ Customers",
     "Free Delivery on Prepaid Orders",
   ];
   return (
@@ -1207,7 +1220,9 @@ function ShopPage() {
 
 // ── Product Detail Page ────────────────────────────────────────────────────
 function ProductDetailPage() {
-  const { setPage, addToCart, selectedProduct: p, wishlist, toggleWishlist, products, setCartOpen } = useApp();
+  const { setPage, addToCart, selectedProduct: p, wishlist, toggleWishlist, products, setCartOpen, paymentSettings } = useApp();
+  const codCharge = paymentSettings?.codCharge || 49;
+  const codEnabled = paymentSettings?.codEnabled ?? true;
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -1295,9 +1310,13 @@ function ProductDetailPage() {
             <div className="mb-5"><StockIndicator stock={p.stock} /></div>
             <div className="p-4 rounded-2xl mb-6" style={{ background: "rgba(207,161,141,0.08)", border: "1px solid rgba(207,161,141,0.2)" }}>
               <div className="flex items-center gap-2 mb-2 text-sm font-bold" style={{ color: "#059669" }}>
-                <Zap size={14} /> Save ₹49 — Choose Prepaid for FREE Delivery
+                <Zap size={14} /> {codEnabled ? `Save ₹${codCharge} — Choose Prepaid for FREE Delivery` : 'FREE Delivery on all Prepaid Orders'}
               </div>
-              <p className="text-xs" style={{ color: "#6B5A4E" }}>Prepaid: FREE delivery · COD: ₹49 extra · All India delivery in 5–8 days</p>
+              <p className="text-xs" style={{ color: "#6B5A4E" }}>
+                {codEnabled 
+                  ? `Prepaid: FREE delivery · COD: ₹${codCharge} extra · All India delivery in 5–8 days`
+                  : `Prepaid only · All India delivery in 5–8 days · ${paymentSettings?.codUnavailableMsg || ''}`}
+              </p>
             </div>
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center rounded-full overflow-hidden" style={{ border: "1.5px solid rgba(203,184,169,0.5)" }}>
@@ -1364,10 +1383,12 @@ function ProductDetailPage() {
 
 // ── Checkout Page ──────────────────────────────────────────────────────────
 function CheckoutPage() {
-  const { cart, cartTotal, setPage, setOrder, clearCart, user, login } = useApp();
+  const { cart, cartTotal, setPage, setOrder, clearCart, user, login, paymentSettings } = useApp();
   const [step, setStep] = useState<"delivery" | "payment">("delivery");
   const [form, setForm] = useState<DeliveryForm>({ name: user?.displayName || "", phone: "", email: user?.email || "", address: "", city: "", state: "", pincode: "" });
-  const [payment, setPayment] = useState<"prepaid" | "cod">("prepaid");
+  
+  // Set default payment based on COD availability
+  const [payment, setPayment] = useState<"prepaid" | "cod">(paymentSettings?.codEnabled ? "prepaid" : "prepaid");
 
   useEffect(() => {
     if (user) {
@@ -1379,7 +1400,7 @@ function CheckoutPage() {
     }
   }, [user]);
   const [paying, setPaying] = useState(false);
-  const codCharge = 50;
+  const { codEnabled, codCharge, codUnavailableMsg, prepaidMsg } = paymentSettings || { codEnabled: true, codCharge: 49, codUnavailableMsg: "", prepaidMsg: "" };
   const discount = cartTotal >= 500 ? 50 : 0;
   const total = cartTotal - discount + (payment === "cod" ? codCharge : 0);
 
@@ -1478,6 +1499,10 @@ function CheckoutPage() {
 
   const placeCODOrder = async () => {
     if (!user) return;
+    if (!codEnabled) {
+      toast.error("Cash on Delivery is currently disabled.");
+      return;
+    }
     setPaying(true);
     try {
       await saveOrderToFirestore();
@@ -1606,19 +1631,26 @@ function CheckoutPage() {
                       <p className="text-xs font-bold" style={{ color: "#059669" }}>FREE</p>
                     </div>
                   </button>
-                  <button onClick={() => setPayment("cod")} className="w-full p-4 rounded-xl flex items-center gap-3 text-left transition-all"
-                    style={{ border: payment === "cod" ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", background: payment === "cod" ? "rgba(207,161,141,0.06)" : "#fff" }}>
-                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: payment === "cod" ? "#CFA18D" : "rgba(203,184,169,0.4)" }}>
-                      {payment === "cod" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#CFA18D" }} />}
+                  {codEnabled ? (
+                    <button onClick={() => setPayment("cod")} className="w-full p-4 rounded-xl flex items-center gap-3 text-left transition-all"
+                      style={{ border: payment === "cod" ? "2px solid #CFA18D" : "2px solid rgba(203,184,169,0.3)", background: payment === "cod" ? "rgba(207,161,141,0.06)" : "#fff" }}>
+                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: payment === "cod" ? "#CFA18D" : "rgba(203,184,169,0.4)" }}>
+                        {payment === "cod" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#CFA18D" }} />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold" style={{ color: "#3D2B1F" }}>Cash on Delivery</p>
+                        <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>+₹{codCharge} COD charges will be added</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold" style={{ color: "#DC2626" }}>+₹{codCharge}</p>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="w-full p-4 rounded-xl flex flex-col gap-2 text-left" style={{ border: "1px solid rgba(220,38,38,0.2)", background: "rgba(220,38,38,0.05)" }}>
+                      <p className="text-sm font-bold" style={{ color: "#DC2626" }}>{codUnavailableMsg}</p>
+                      <p className="text-xs font-semibold" style={{ color: "#3D2B1F" }}>{prepaidMsg}</p>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold" style={{ color: "#3D2B1F" }}>Cash on Delivery</p>
-                      <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>+₹{codCharge} COD charges will be added</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold" style={{ color: "#DC2626" }}>+₹{codCharge}</p>
-                    </div>
-                  </button>
+                  )}
                 </div>
 
 
@@ -1665,7 +1697,7 @@ function CheckoutPage() {
                   </span>
                 </div>
                 {payment === "prepaid" && <div className="text-[10px] text-center py-1 rounded" style={{ background: "rgba(5,150,105,0.08)", color: "#059669" }}>✨ Free delivery on prepaid!</div>}
-                 {payment === "cod" && <div className="text-[10px] text-center py-1 rounded" style={{ background: "rgba(220,38,38,0.05)", color: "#DC2626" }}>Switch to Prepaid to save ₹50 on delivery!</div>}
+                 {payment === "cod" && codEnabled && <div className="text-[10px] text-center py-1 rounded" style={{ background: "rgba(220,38,38,0.05)", color: "#DC2626" }}>Switch to Prepaid to save ₹{codCharge} on delivery!</div>}
                 <div className="flex justify-between text-sm font-bold pt-1 border-t" style={{ borderColor: "rgba(203,184,169,0.3)", color: "#3D2B1F" }}>
                   <span>Total</span><span style={{ color: "#CFA18D" }}>₹{total}</span>
                 </div>
@@ -1912,7 +1944,7 @@ function Footer() {
 
 // ── Home Page ──────────────────────────────────────────────────────────────
 function HomePage() {
-  const { products, setPage } = useApp();
+  const { products, setPage, paymentSettings } = useApp();
   const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const visibleProducts = products.filter(p => !p.isHidden);
@@ -2084,7 +2116,7 @@ function HomePage() {
       <section className="py-24 lg:py-28" style={{ background: "#EFE7DD" }}>
         <div className="max-w-3xl mx-auto px-5 lg:px-8">
           <STitle eyebrow="Questions Answered" title="Frequently Asked Questions" subtitle="Everything you need to know before shopping with us." />
-          <div>{FAQS.map((faq, i) => <FAQItem key={i} faq={faq} />)}</div>
+          <div>{getFAQS(paymentSettings).map((faq, i) => <FAQItem key={i} faq={faq} />)}</div>
         </div>
       </section>
 
@@ -3287,6 +3319,12 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(PRODUCTS); // fallback to hardcoded initially
   const [combos, setCombos] = useState<Combo[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
+    codEnabled: true,
+    codCharge: 49,
+    codUnavailableMsg: "Cash on Delivery is temporarily unavailable. Prepaid orders are open and shipping as usual.",
+    prepaidMsg: "Prepaid orders are open and shipping as usual."
+  });
 
   useEffect(() => {
     const handleLocation = () => {
@@ -3308,6 +3346,17 @@ export default function App() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => setUser(u));
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "settings", "payment"), (snapshot) => {
+      if (snapshot.exists()) {
+        setPaymentSettings(prev => ({ ...prev, ...snapshot.data() }));
+      }
+    }, (err) => {
+      console.warn("Payment settings listener error:", err);
+    });
     return () => unsub();
   }, []);
 
@@ -3399,7 +3448,7 @@ export default function App() {
   const clearCart = () => setCart([]);
   const toggleWishlist = (id: number | string) => setWishlist(prev => prev.includes(id as number) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, navigateToProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos };
+  const ctx: AppCtx = { page, setPage, cart, addToCart, removeFromCart, updateQty, cartTotal, cartCount, clearCart, cartOpen, setCartOpen, selectedProduct, setSelectedProduct, navigateToProduct, order, setOrder, wishlist, toggleWishlist, user, login, logout, products, combos, paymentSettings };
 
   return (
     <Ctx.Provider value={ctx}>

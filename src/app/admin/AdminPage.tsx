@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ShoppingBag, Package, Layers, BarChart3, ClipboardList,
-  Bell, Moon, Sun, LogOut, Menu, X
+  Bell, Moon, Sun, LogOut, Menu, X, CreditCard
 } from "lucide-react";
 
 // Hooks
@@ -25,8 +25,9 @@ import ConfirmOrderModal from "./components/ConfirmOrderModal";
 import CustomerProfileModal from "./components/CustomerProfileModal";
 import ReportsTab from "./components/ReportsTab";
 import AuditLogTimeline from "./components/AuditLogTimeline";
+import PaymentSettingsTab from "./components/PaymentSettingsTab";
 
-type AdminTab = "orders" | "products" | "combos" | "reports" | "audit";
+type AdminTab = "orders" | "products" | "combos" | "reports" | "audit" | "payment";
 
 // Get useApp from parent context
 import { useApp } from "./adminExports";
@@ -160,6 +161,7 @@ export default function AdminPage() {
     { id: "combos", label: "Combos", icon: Layers },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "audit", label: "Audit Log", icon: ClipboardList },
+    { id: "payment", label: "Payment", icon: CreditCard },
   ];
 
   const dm = darkMode;
@@ -330,8 +332,12 @@ export default function AdminPage() {
               <ReportsTab orders={orders} darkMode={darkMode} />
             )}
 
-            {tab === "audit" && (
+            { tab === "audit" && (
               <AuditLogTimeline entries={auditEntries} loading={auditLoading} darkMode={darkMode} />
+            )}
+
+            {tab === "payment" && (
+              <PaymentSettingsTab darkMode={darkMode} />
             )}
           </motion.div>
         </AnimatePresence>
