@@ -562,7 +562,6 @@ function Navbar() {
     { label: "Home", action: () => { setPage("home"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
     { label: "Sale is Live ⚡", action: () => scroll("sale-section") },
     { label: "Products", action: () => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
-    { label: "Featured", action: () => scroll("featured") },
     { label: "About Us", action: () => scroll("about") },
     { label: "Contact Us", action: () => { setPage("contact"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); } },
   ];
