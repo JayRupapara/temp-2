@@ -315,7 +315,7 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
             <Heart size={13} className={wished ? "fill-rose-400 text-rose-400" : "text-[#8C7B6B]"} />
           </button>
 
-          <div className="relative overflow-hidden cursor-pointer touch-pan-y" style={{ paddingTop: "115%", background: "#EFE7DD" }}
+          <div className="relative overflow-hidden cursor-pointer touch-pan-y" style={{ paddingTop: "100%", background: "#EFE7DD" }}
             onClick={handleInteraction} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
           >
             {allImages.map((img, i) => (
@@ -347,8 +347,8 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
             </div>
           </div>
 
-          <div className="p-4 sm:p-5 flex flex-col flex-1 cursor-pointer" onClick={handleInteraction}>
-            <button className="text-left text-[14px] sm:text-[15px] leading-snug mb-1.5 hover:underline" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", fontWeight: 500 }}>
+          <div className="p-3 sm:p-4 flex flex-col flex-1 cursor-pointer" onClick={handleInteraction}>
+            <button className="text-left text-[13px] sm:text-[14px] leading-snug mb-1.5 hover:underline line-clamp-2" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F", fontWeight: 500 }}>
               {product.name}
             </button>
             <div className="flex items-center gap-1 mb-2">
@@ -372,9 +372,9 @@ function ProductCard({ product, delay = 0 }: { product: Product; delay?: number 
                   setCartOpen(true);
                 }, 400); 
               }}
-              className="mt-auto w-full py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              className="mt-auto w-full py-2 sm:py-2.5 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 flex items-center justify-center gap-1.5"
               style={{ background: "#CFA18D", color: "#FCFBF8", boxShadow: "0 4px 12px rgba(207,161,141,0.25)" }}>
-              <ShoppingBag size={14} /> {isAdding ? "Adding..." : "Add to Cart"}
+              <ShoppingBag size={12} /> {isAdding ? "Adding..." : "Add to Cart"}
             </button>
           </div>
         </div>
@@ -1898,12 +1898,12 @@ function HorizontalProductSlider({ title, products, onViewAll, hideViewAll = fal
   
   return (
     <section className="py-12 lg:py-20" style={{ background: "#F8F6F2" }}>
-      <div className="max-w-7xl mx-auto px-5 lg:px-8 relative">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 relative">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl lg:text-4xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>{title}</h2>
           {!hideViewAll && (
-            <button onClick={onViewAll} className="text-[12px] font-bold uppercase tracking-[0.1em] hover:opacity-80 transition-opacity" style={{ color: "#CFA18D" }}>
-              View All
+            <button onClick={onViewAll} className="flex items-center gap-1 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.1em] hover:opacity-80 transition-opacity whitespace-nowrap" style={{ color: "#CFA18D" }}>
+              View All <ArrowRight size={14} />
             </button>
           )}
         </div>
@@ -1919,14 +1919,14 @@ function HorizontalProductSlider({ title, products, onViewAll, hideViewAll = fal
           </>
         )}
 
-        <div ref={scrollRef} className={`flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 ${displayProducts.length <= 4 ? 'lg:grid lg:grid-cols-4' : ''}`} style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={scrollRef} className={`flex gap-3 sm:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 ${displayProducts.length <= 4 ? 'lg:grid lg:grid-cols-4' : ''}`} style={{ WebkitOverflowScrolling: 'touch' }}>
           {displayProducts.map((p, i) => (
-            <div key={p.id} className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start ${displayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+            <div key={p.id} className={`w-[42vw] sm:w-[40vw] flex-shrink-0 snap-start ${displayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
               <ProductCard product={p} delay={i * 0.1} />
             </div>
           ))}
           {products.length > displayProducts.length && !hideViewAll && (
-            <div className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start flex items-center justify-center ${displayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+            <div className={`w-[42vw] sm:w-[40vw] flex-shrink-0 snap-start flex items-center justify-center ${displayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
               <div onClick={onViewAll} className="w-full h-full min-h-[320px] rounded-[1.5rem] bg-[#FCFBF8] border border-[rgba(203,184,169,0.3)] flex flex-col items-center justify-center p-6 cursor-pointer group transition-all hover:bg-[#FDF8F5] hover:shadow-lg">
                 <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:bg-[#CFA18D] group-hover:text-white" style={{ background: "rgba(207,161,141,0.15)", color: "#CFA18D" }}>
                   <ArrowRight size={24} strokeWidth={2.5} />
@@ -2002,7 +2002,7 @@ function HomePage() {
       {/* Sale Section */}
       {paymentSettings.saleEnabled !== false && (
       <section id="sale-section" className="py-16 lg:py-24" style={{ background: "#FDF8F5" }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-8">
             <h2 className="text-4xl lg:text-5xl mb-4 font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#d9534f" }}>Sale is Live ⚡</h2>
             <p className="text-sm lg:text-base max-w-xl mx-auto" style={{ color: "#6B5A4E" }}>Grab your favorite premium jewellery at unbeatable prices.</p>
@@ -2050,8 +2050,8 @@ function HomePage() {
               <h3 className="text-xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>
                 {typeof activeSaleTab === 'string' ? `${activeSaleTab} Deals` : `Under ₹${activeSaleTab}`}
               </h3>
-              <button onClick={() => goToShop("necklaces")} className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "#d9534f" }}>
-                View All
+              <button onClick={() => goToShop("necklaces")} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "#d9534f" }}>
+                View All <ArrowRight size={12} />
               </button>
             </div>
 
@@ -2066,14 +2066,14 @@ function HomePage() {
               </>
             )}
 
-            <div ref={saleScrollRef} className={`flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 ${saleDisplayProducts.length <= 4 ? 'lg:grid lg:grid-cols-4' : ''}`} style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div ref={saleScrollRef} className={`flex gap-3 sm:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 ${saleDisplayProducts.length <= 4 ? 'lg:grid lg:grid-cols-4' : ''}`} style={{ WebkitOverflowScrolling: 'touch' }}>
               {saleDisplayProducts.map((p, i) => (
-                <div key={p.id} className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start ${saleDisplayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+                <div key={p.id} className={`w-[42vw] sm:w-[40vw] flex-shrink-0 snap-start ${saleDisplayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
                   <ProductCard product={{ ...p, badge: "Sale" }} delay={i * 0.1} />
                 </div>
               ))}
               {activeSaleProducts.length > saleDisplayProducts.length && (
-                <div className={`w-[60vw] sm:w-[40vw] flex-shrink-0 snap-start flex items-center justify-center ${saleDisplayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
+                <div className={`w-[42vw] sm:w-[40vw] flex-shrink-0 snap-start flex items-center justify-center ${saleDisplayProducts.length <= 4 ? 'lg:w-auto' : 'lg:w-[calc(25%-1.125rem)]'}`}>
                   <div onClick={() => goToShop("necklaces")} className="w-full h-full min-h-[320px] rounded-[1.5rem] bg-[#FCFBF8] border border-[rgba(217,83,79,0.3)] flex flex-col items-center justify-center p-6 cursor-pointer group transition-all hover:bg-[#FDF8F5] hover:shadow-lg">
                     <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:bg-[#d9534f] group-hover:text-white" style={{ background: "rgba(217,83,79,0.15)", color: "#d9534f" }}>
                       <ArrowRight size={24} strokeWidth={2.5} />
