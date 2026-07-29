@@ -1,15 +1,14 @@
 // ── useOrders Hook ─────────────────────────────────────────────────────────
 // Merges website orders (collectionGroup) + manual orders (admin_orders)
 import { useState, useEffect, useCallback } from "react";
-import { collection, collectionGroup, query, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
+import { collection, collectionGroup, query, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, limit } from "firebase/firestore";
 import { db } from "../../firebase";
 import { AdminOrder, OrderSource, OrderStatus, PaymentType, OrderCustomer, OrderItem, AdminUser } from "../admin/types";
 import { toast } from "sonner";
 import { trackReads } from "../../utils/readTracker";
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1hEKEZboMD0Z49sOwnPNPMH02WqLlCyYSqCmAeCnPf9dgIQkQsLXoAsbr-cN5Nqqm/exec";
-const ADMIN_ORDERS_CACHE_KEY = "svj_admin_orders_cache";
-const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+const ORDERS_CACHE_KEY = "svj_admin_orders_cache_v2";
 
 function normalizeWebsiteOrder(data: any, ref: any): AdminOrder {
   const status: OrderStatus = data.status === "CONFIRMED" ? "CONFIRMED"
@@ -102,8 +101,21 @@ async function sendOrderStatusEmail(order: AdminOrder, status: string) {
 }
 
 export function useOrders(authed: boolean) {
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<AdminOrder[]>(() => {
+    try {
+      const cached = sessionStorage.getItem(ORDERS_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed.orders) && Date.now() - parsed.ts < 3 * 60 * 1000) {
+          return parsed.orders;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => orders.length === 0);
 
   useEffect(() => {
     if (!authed) return;
@@ -121,10 +133,21 @@ export function useOrders(authed: boolean) {
       });
       setOrders(all);
       setLoading(false);
+
+      // Save serializable snapshot to sessionStorage cache
+      try {
+        const serializable = all.map(o => {
+          const { ref, ...rest } = o;
+          return rest;
+        });
+        sessionStorage.setItem(ORDERS_CACHE_KEY, JSON.stringify({ ts: Date.now(), orders: serializable }));
+      } catch (e) {
+        // ignore storage quota errors
+      }
     };
 
-    // Website orders (real-time)
-    const q1 = query(collectionGroup(db, "orders"));
+    // Website orders (real-time limited to 200)
+    const q1 = query(collectionGroup(db, "orders"), limit(200));
     const unsub1 = onSnapshot(q1, (snapshot) => {
       trackReads("admin/orders(web)", snapshot.docs.length);
       websiteOrders = snapshot.docs.map(d => normalizeWebsiteOrder(d.data(), d.ref));
@@ -135,8 +158,8 @@ export function useOrders(authed: boolean) {
     });
     unsubscribers.push(unsub1);
 
-    // Manual orders (real-time)
-    const q2 = query(collection(db, "admin_orders"));
+    // Manual orders (real-time limited to 200)
+    const q2 = query(collection(db, "admin_orders"), limit(200));
     const unsub2 = onSnapshot(q2, (snapshot) => {
       trackReads("admin/orders(manual)", snapshot.docs.length);
       manualOrders = snapshot.docs.map(d => normalizeManualOrder(d.data(), d.ref));
@@ -195,9 +218,11 @@ export function useOrders(authed: boolean) {
 
       const finalStatus = updates.status || order.status;
       const finalConfirmedBy = updates.confirmedBy !== undefined ? updates.confirmedBy : order.confirmedBy;
-      if (finalStatus === "CONFIRMED" || finalStatus === "CANCELLED") {
-        const updatedOrder = { ...order, ...updates, status: finalStatus, confirmedBy: finalConfirmedBy };
-        await sendOrderStatusEmail(updatedOrder, finalStatus);
+      
+      // Only send email if the status is ACTUALLY changing to CONFIRMED or CANCELLED
+      if (updates.status && updates.status !== order.status && (updates.status === "CONFIRMED" || updates.status === "CANCELLED")) {
+        const updatedOrder = { ...order, ...updates, status: updates.status, confirmedBy: finalConfirmedBy };
+        await sendOrderStatusEmail(updatedOrder, updates.status);
       }
     } catch (e: any) {
       toast.error("Failed to update order", { description: e.message });

@@ -95,14 +95,45 @@ export function logAdminAction(action: string, details: string, adminName: strin
 if (typeof window !== "undefined") {
   window.addEventListener("error", (event) => {
     const errorMsg = event.message || "Unhandled Window Error";
+
+    // Filter out cross-origin "Script error." — these are from browser extensions
+    // or third-party scripts and provide no useful debugging info.
+    if (errorMsg === "Script error." || errorMsg === "Script error") {
+      console.warn("[SystemLogger] Ignored cross-origin Script error (browser extension or 3rd party)");
+      return;
+    }
+
     const stack = event.error?.stack || `${event.filename}:${event.lineno}:${event.colno}`;
-    logSystemError(`Frontend Exception: ${errorMsg}`, stack, { action: "WINDOW_ERROR" });
+
+    // Extract component/file source from stack trace for quick root cause
+    let source = "Unknown";
+    const srcMatch = stack.match(/src\/app\/([^\s?:]+)/);
+    if (srcMatch) source = srcMatch[1];
+
+    logSystemError(`Frontend Exception: ${errorMsg}`, stack, {
+      action: "WINDOW_ERROR",
+      details: `Frontend Exception: ${errorMsg}`,
+      rootCause: source,
+      userAgent: navigator.userAgent?.substring(0, 120),
+      pageUrl: window.location.pathname,
+    } as any);
   });
 
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason;
     const msg = typeof reason === "string" ? reason : reason?.message || "Unhandled Promise Rejection";
     const stack = reason?.stack || "";
-    logSystemError(`Unhandled Promise Rejection: ${msg}`, stack, { action: "PROMISE_REJECTION" });
+
+    // Extract component/file source from stack trace
+    let source = "Unknown";
+    const srcMatch = stack.match(/src\/app\/([^\s?:]+)/);
+    if (srcMatch) source = srcMatch[1];
+
+    logSystemError(`Unhandled Promise Rejection: ${msg}`, stack, {
+      action: "PROMISE_REJECTION",
+      rootCause: source,
+      userAgent: navigator.userAgent?.substring(0, 120),
+      pageUrl: window.location.pathname,
+    } as any);
   });
 }

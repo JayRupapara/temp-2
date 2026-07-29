@@ -20,8 +20,7 @@ import ProductsTab from "./components/ProductsTab";
 import CombosTab from "./components/CombosTab";
 import OrdersTab from "./components/OrdersTab";
 import NewOrderModal from "./components/NewOrderModal";
-import OrderDetailModal from "./components/OrderDetailModal";
-import ConfirmOrderModal from "./components/ConfirmOrderModal";
+
 import CustomerProfileModal from "./components/CustomerProfileModal";
 import ReportsTab from "./components/ReportsTab";
 import AuditLogTimeline from "./components/AuditLogTimeline";
@@ -37,7 +36,9 @@ import { db } from "../firebase";
 import { Key, Lock, ShieldCheck } from "lucide-react";
 
 export default function AdminPage() {
-  const { products, combos } = useApp();
+  const appCtx = useApp();
+  const products = appCtx?.products ?? [];
+  const combos = appCtx?.combos ?? [];
 
   // Auth & Backend Password State
   const [authed, setAuthed] = useState(false);
@@ -63,9 +64,7 @@ export default function AdminPage() {
 
   // Order modals
   const [newOrderOpen, setNewOrderOpen] = useState(false);
-  const [viewingOrder, setViewingOrder] = useState<AdminOrder | null>(null);
-  const [viewMode, setViewMode] = useState<"view" | "edit">("view");
-  const [confirmingOrder, setConfirmingOrder] = useState<AdminOrder | null>(null);
+
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
 
   // Hooks
@@ -192,25 +191,69 @@ export default function AdminPage() {
 
   const handleConfirmOrder = async (order: AdminOrder, confirmedBy: AdminUser) => {
     await confirmOrder(order, confirmedBy);
-    await logAction({ orderId: order.id, action: "confirmed", user: confirmedBy, details: `Order confirmed by ${confirmedBy}` });
-    setConfirmingOrder(null);
+    const orderTag = `#${order.id.slice(-6).toUpperCase()}`;
+    const custName = order.customer?.name ? ` (${order.customer.name})` : "";
+    await logAction({ orderId: order.id, action: "confirmed", user: confirmedBy, details: `Order ${orderTag}${custName} confirmed by ${confirmedBy}` });
   };
 
   const handleCancelOrder = async (order: AdminOrder) => {
     await cancelOrder(order);
-    await logAction({ orderId: order.id, action: "cancelled", user: "Admin", details: "Order cancelled" });
+    const orderTag = `#${order.id.slice(-6).toUpperCase()}`;
+    const custName = order.customer?.name ? ` (${order.customer.name})` : "";
+    await logAction({ orderId: order.id, action: "cancelled", user: "Admin", details: `Order ${orderTag}${custName} cancelled` });
   };
 
   const handleDeleteOrder = async (order: AdminOrder) => {
     if (!confirm("Are you sure you want to permanently delete this order?")) return;
+    const orderTag = `#${order.id.slice(-6).toUpperCase()}`;
+    const custName = order.customer?.name ? ` (${order.customer.name})` : "";
     await deleteOrder(order);
-    await logAction({ orderId: order.id, action: "deleted", user: "Admin", details: "Order permanently deleted" });
+    await logAction({ orderId: order.id, action: "deleted", user: "Admin", details: `Order ${orderTag}${custName} permanently deleted` });
   };
 
   const handleSaveOrder = async (order: AdminOrder, updates: Partial<AdminOrder>) => {
     await updateOrder(order, updates);
-    await logAction({ orderId: order.id, action: "edited", user: "Admin", details: `Order updated: ${Object.keys(updates).join(", ")}` });
-    setViewingOrder(null);
+
+    // Build smart human-readable log of what actually changed
+    const changes: string[] = [];
+    const orderTag = `#${order.id.slice(-6).toUpperCase()}`;
+    const custName = order.customer?.name ? ` (${order.customer.name})` : "";
+
+    if (updates.status && updates.status !== order.status) {
+      changes.push(`Status: ${order.status || "NEW"} → ${updates.status}`);
+    }
+    if (updates.confirmedBy && updates.confirmedBy !== order.confirmedBy) {
+      changes.push(`Confirmed by: ${updates.confirmedBy}`);
+    }
+    if (updates.payment && updates.payment !== order.payment) {
+      changes.push(`Payment: ${order.payment || "—"} → ${updates.payment}`);
+    }
+    if (updates.total !== undefined && updates.total !== order.total) {
+      changes.push(`Total: ₹${order.total || 0} → ₹${updates.total}`);
+    }
+    if (updates.productCost !== undefined && updates.productCost !== (order as any).productCost) {
+      changes.push(`Product Cost: ₹${(order as any).productCost || 0} → ₹${updates.productCost}`);
+    }
+    if (updates.courierCost !== undefined && updates.courierCost !== (order as any).courierCost) {
+      changes.push(`Courier Cost: ₹${(order as any).courierCost || 0} → ₹${updates.courierCost}`);
+    }
+    if (updates.margin !== undefined && updates.margin !== (order as any).margin) {
+      changes.push(`Margin: ₹${(order as any).margin || 0} → ₹${updates.margin}`);
+    }
+    if (updates.notes !== undefined && updates.notes !== (order as any).notes) {
+      changes.push(`Notes updated`);
+    }
+    if ((updates as any).customer && JSON.stringify((updates as any).customer) !== JSON.stringify((order as any).customer)) {
+      changes.push(`Customer info updated`);
+    }
+    if (updates.source && updates.source !== order.source) {
+      changes.push(`Source: ${order.source || "—"} → ${updates.source}`);
+    }
+
+    const changeSummary = changes.length > 0 ? changes.join(" | ") : `Fields modified: ${Object.keys(updates).join(", ")}`;
+    const summary = `Order ${orderTag}${custName} updated: ${changeSummary}`;
+
+    await logAction({ orderId: order.id, action: "edited", user: updates.confirmedBy || "Admin", details: summary });
   };
 
   const handleCreateManualOrder = async (data: any) => {
@@ -483,9 +526,8 @@ export default function AdminPage() {
                 orders={orders}
                 loading={ordersLoading}
                 darkMode={darkMode}
-                onViewOrder={(o) => { setViewingOrder(o); setViewMode("view"); }}
-                onEditOrder={(o) => { setViewingOrder(o); setViewMode("edit"); }}
-                onConfirmOrder={(o) => setConfirmingOrder(o)}
+                onSaveOrder={handleSaveOrder}
+                onConfirmOrder={handleConfirmOrder}
                 onCancelOrder={handleCancelOrder}
                 onDeleteOrder={handleDeleteOrder}
                 onNewOrder={() => setNewOrderOpen(true)}
@@ -525,21 +567,7 @@ export default function AdminPage() {
         customerLookup={customerLookup}
       />
 
-      <OrderDetailModal
-        order={viewingOrder}
-        mode={viewMode}
-        onClose={() => setViewingOrder(null)}
-        onSave={handleSaveOrder}
-        auditEntries={viewingOrder ? getEntriesForOrder(viewingOrder.id) : []}
-        darkMode={darkMode}
-      />
 
-      <ConfirmOrderModal
-        order={confirmingOrder}
-        onClose={() => setConfirmingOrder(null)}
-        onConfirm={handleConfirmOrder}
-        darkMode={darkMode}
-      />
 
       <CustomerProfileModal
         phone={customerPhone}

@@ -1,6 +1,6 @@
 // ── useAuditLog Hook ───────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from "react";
-import { collection, query, orderBy, onSnapshot, Timestamp, getDocs, where, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, Timestamp, getDocs, where, deleteDoc, doc, limit } from "firebase/firestore";
 import { db } from "../../firebase";
 import { AuditEntry } from "../types";
 import { logSystemEvent, getSystemEnv, getCurrentUrl } from "../../utils/systemLogger";
@@ -34,8 +34,8 @@ export function useAuditLog(authed: boolean) {
     // Run purge silently on load
     purgeOldLogs();
 
-    // Listen to real-time logs ordered by timestamp descending
-    const q = query(collection(db, "audit_log"), orderBy("timestamp", "desc"));
+    // Listen to top 100 most recent logs ordered by timestamp descending
+    const q = query(collection(db, "audit_log"), orderBy("timestamp", "desc"), limit(100));
     const unsub = onSnapshot(q, (snapshot) => {
       trackReads("audit_log", snapshot.docs.length);
       const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AuditEntry));

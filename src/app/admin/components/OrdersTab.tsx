@@ -1,22 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Plus, ChevronDown, Eye, Edit3, Trash2, Copy, Filter, 
-  ChevronLeft, ChevronRight, CheckCircle2, Clock, DollarSign, ListOrdered
+  Search, Plus, ChevronDown, Trash2, Copy, Filter, 
+  ChevronLeft, ChevronRight, CheckCircle2, Clock, DollarSign, ListOrdered, Check, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   AdminOrder, SOURCE_CONFIG, STATUS_CONFIG, PAYMENT_CONFIG, 
-  OrderSource, OrderStatus 
+  OrderSource, OrderStatus, AdminUser 
 } from '../types';
 
 interface OrdersTabProps {
   orders: AdminOrder[];
   loading: boolean;
   darkMode: boolean;
-  onViewOrder: (order: AdminOrder) => void;
-  onEditOrder: (order: AdminOrder) => void;
-  onConfirmOrder: (order: AdminOrder) => void;
+  onSaveOrder: (order: AdminOrder, updates: Partial<AdminOrder>) => void;
+  onConfirmOrder: (order: AdminOrder, confirmedBy: AdminUser) => void;
   onCancelOrder: (order: AdminOrder) => void;
   onDeleteOrder: (order: AdminOrder) => void;
   onNewOrder: () => void;
@@ -42,12 +41,188 @@ const formatDate = (dateVal: any) => {
   }
 };
 
+// Inline Row Component
+function OrderRow({ order, darkMode, onCustomerClick, copyCustomerDetails, onSaveOrder, onDeleteOrder }: any) {
+  const [localCost, setLocalCost] = useState(order.productCost || 0);
+
+  const handleCostBlur = () => {
+    const num = Number(localCost) || 0;
+    if (num !== (order.productCost || 0)) {
+      const newMargin = (order.total || 0) - num - (order.courierCost || 0) - (order.otherExpense || 0);
+      onSaveOrder(order, { productCost: num, margin: newMargin });
+    }
+  };
+
+  const currentMargin = (order.total || 0) - Number(localCost) - (order.courierCost || 0) - (order.otherExpense || 0);
+
+  return (
+    <motion.tr 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className={`hover:${darkMode ? 'bg-stone-800/50' : 'bg-stone-50'} transition-colors group align-top`}
+    >
+      {/* Order ID + Date + Source merged */}
+      <td className="px-3 py-4 min-w-[120px]">
+        <div className="flex flex-col gap-1.5">
+          <span className={`text-sm font-bold ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
+            #{order.id.slice(-6).toUpperCase()}
+          </span>
+          <span className={`text-xs ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>
+            {formatDate(order.placed)}
+          </span>
+          <div>
+            <span 
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+              style={{ backgroundColor: SOURCE_CONFIG[order.source]?.bg || '#eee', color: SOURCE_CONFIG[order.source]?.color || '#333' }}
+            >
+              <span>{SOURCE_CONFIG[order.source]?.icon}</span>
+              {SOURCE_CONFIG[order.source]?.label || order.source}
+            </span>
+          </div>
+        </div>
+      </td>
+
+      {/* Customer details */}
+      <td className="px-3 py-4 min-w-[200px] max-w-[240px]">
+        <div className="flex items-start justify-between group/cust">
+          <div>
+            <p className={`text-sm font-bold ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>{order.customer.name}</p>
+            <p className={`text-xs mt-0.5 ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>{order.customer.phone}</p>
+            {order.customer.email && <p className={`text-xs mt-0.5 ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>{order.customer.email}</p>}
+            <p className={`text-xs mt-1 leading-tight break-words ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>
+              {order.customer.address}, {order.customer.city}, {order.customer.state} - {order.customer.pincode}
+            </p>
+          </div>
+          <button 
+            onClick={() => copyCustomerDetails(order)}
+            className={`p-1 rounded opacity-0 group-hover/cust:opacity-100 transition-opacity ${darkMode ? 'hover:bg-stone-700 text-stone-400' : 'hover:bg-stone-200 text-[#8C7B6B]'}`}
+            title="Copy Customer Details"
+          >
+            <Copy size={14} />
+          </button>
+        </div>
+      </td>
+
+      {/* Items with bigger images & wrapping text */}
+      <td className="px-3 py-4 w-[200px] max-w-[200px]">
+        <ul className={`text-xs space-y-2.5 ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>
+          {order.items.map((item: any, i: number) => (
+            <li key={i} className="flex items-start gap-2.5">
+              {item.image ? (
+                <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg border border-stone-200 dark:border-stone-700 shrink-0 shadow-sm" />
+              ) : (
+                <div className={`w-12 h-12 rounded-lg border flex items-center justify-center shrink-0 ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-stone-50 border-stone-200'}`}>
+                  <span className="text-[10px] opacity-50">IMG</span>
+                </div>
+              )}
+              <div className="min-w-0 flex-1 break-words">
+                <span className="font-bold text-amber-700 dark:text-amber-400">{item.qty}x</span> <span className="font-medium leading-snug">{item.name}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </td>
+
+      <td className="px-3 py-4">
+        <span className={`text-sm font-bold ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
+          ₹{order.total?.toLocaleString('en-IN') || 0}
+        </span>
+      </td>
+
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-1 text-sm font-medium">
+          <span className={darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}>₹</span>
+          <input 
+            type="number"
+            value={localCost}
+            onChange={e => setLocalCost(e.target.value)}
+            onBlur={handleCostBlur}
+            className={`w-16 p-1 text-sm border rounded outline-none ${darkMode ? 'bg-stone-800 border-stone-700 text-stone-200' : 'bg-white border-[#E6E2DB] text-[#3D2B1F]'}`}
+          />
+        </div>
+      </td>
+
+      <td className="px-4 py-4">
+        <span className={`text-sm font-bold ${currentMargin >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+          ₹{currentMargin.toLocaleString('en-IN')}
+        </span>
+      </td>
+
+      {/* Payment + Status merged */}
+      <td className="px-3 py-4">
+        <div className="flex flex-col gap-1.5 items-start">
+          <span 
+            className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap"
+            style={{ backgroundColor: PAYMENT_CONFIG[order.payment]?.bg || '#eee', color: PAYMENT_CONFIG[order.payment]?.color || '#333' }}
+          >
+            {PAYMENT_CONFIG[order.payment]?.label || order.payment}
+          </span>
+          <span 
+            className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase whitespace-nowrap"
+            style={{ 
+              backgroundColor: STATUS_CONFIG[order.status]?.bg || '#eee', 
+              color: STATUS_CONFIG[order.status]?.color || '#333',
+              borderColor: STATUS_CONFIG[order.status]?.color || '#333'
+            }}
+          >
+            {order.status}
+          </span>
+        </div>
+      </td>
+
+      <td className="px-4 py-4 min-w-[120px]">
+        {order.status === 'NEW' ? (
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => onSaveOrder(order, { status: 'CONFIRMED' })}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors dark:bg-emerald-900/30 dark:border-emerald-800/50 dark:text-emerald-400"
+            >
+              <Check size={12} /> Yes
+            </button>
+            <button 
+              onClick={() => onSaveOrder(order, { status: 'CANCELLED' })}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400"
+            >
+              <X size={12} /> No
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <select
+              value={order.confirmedBy || ""}
+              onChange={e => onSaveOrder(order, { confirmedBy: e.target.value })}
+              className={`text-xs p-1 border rounded outline-none ${darkMode ? 'bg-stone-800 border-stone-700 text-stone-200' : 'bg-[#F8F6F2] border-[#E6E2DB] text-[#3D2B1F]'}`}
+            >
+              <option value="">Assign Admin</option>
+              <option value="Jay">Jay</option>
+              <option value="Kashyap">Kashyap</option>
+            </select>
+          </div>
+        )}
+      </td>
+
+      <td className="px-4 py-4 text-right">
+        <button
+          onClick={() => {
+            if (window.confirm(`Are you sure you want to permanently delete order ${order.id}?`)) {
+              onDeleteOrder(order);
+            }
+          }}
+          className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-stone-700 text-stone-400 hover:text-red-400' : 'hover:bg-[#F8F6F2] text-[#8C7B6B] hover:text-red-600'}`}
+          title="Delete Order"
+        >
+          <Trash2 size={16} />
+        </button>
+      </td>
+    </motion.tr>
+  );
+}
+
+
 export default function OrdersTab({
   orders,
   loading,
   darkMode,
-  onViewOrder,
-  onEditOrder,
+  onSaveOrder,
   onConfirmOrder,
   onCancelOrder,
   onDeleteOrder,
@@ -101,12 +276,6 @@ export default function OrdersTab({
     const text = `Name: ${order.customer.name}\nPhone: ${order.customer.phone}\nAddress: ${order.customer.address}, ${order.customer.city}, ${order.customer.state} - ${order.customer.pincode}`;
     navigator.clipboard.writeText(text);
     toast.success('Customer details copied to clipboard!');
-  };
-
-  const handleDelete = (order: AdminOrder) => {
-    if (window.confirm(`Are you sure you want to delete order ${order.id}?`)) {
-      onDeleteOrder(order);
-    }
   };
 
   const handlePageChange = (page: number) => {
@@ -260,242 +429,43 @@ export default function OrdersTab({
           </div>
         ) : (
           <>
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            {/* Table View (Responsive scroll) */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                   <tr className={`border-b ${darkMode ? 'border-stone-800 bg-stone-900/50' : 'border-[#E6E2DB] bg-[#F8F6F2]'}`}>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Order ID</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Date</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Customer</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Source</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Amount</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Margin</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>By</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Payment</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'}`}>Status</th>
-                    <th className={`px-4 py-4 text-sm font-semibold ${darkMode ? 'text-stone-300' : 'text-[#3D2B1F]'} text-right`}>Actions</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Order ID</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Customer</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Items</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Amount</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Cost</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Margin</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Payment / Status</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>Confirm</th>
+                    <th className={`px-3 py-4 text-xs uppercase tracking-wider font-semibold ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'} text-right`}>Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                   <AnimatePresence>
                     {paginatedOrders.map((order) => (
-                      <motion.tr 
-                        key={order.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className={`hover:${darkMode ? 'bg-stone-800/50' : 'bg-stone-50'} transition-colors group`}
-                      >
-                        <td className="px-4 py-4 align-middle">
-                          <span className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
-                            #{order.id.slice(-6).toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle">
-                          <span className={`text-sm ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>
-                            {formatDate(order.placed)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle max-w-[200px]">
-                          <div className="flex items-center gap-2">
-                            <div>
-                              <p className={`text-sm font-medium truncate ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
-                                {order.customer.name}
-                              </p>
-                              <button 
-                                onClick={() => onCustomerClick(order.customer.phone)}
-                                className={`text-xs hover:underline ${darkMode ? 'text-stone-400 hover:text-stone-200' : 'text-[#8C7B6B] hover:text-[#3D2B1F]'}`}
-                              >
-                                {order.customer.phone}
-                              </button>
-                            </div>
-                            <button 
-                              onClick={() => copyCustomerDetails(order)}
-                              className={`ml-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-stone-700 text-stone-400' : 'hover:bg-stone-200 text-[#8C7B6B]'}`}
-                              title="Copy Customer Details"
-                            >
-                              <Copy size={14} />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 align-middle">
-                          <span 
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                            style={{ 
-                              backgroundColor: SOURCE_CONFIG[order.source]?.bg || '#eee', 
-                              color: SOURCE_CONFIG[order.source]?.color || '#333'
-                            }}
-                          >
-                            <span>{SOURCE_CONFIG[order.source]?.icon}</span>
-                            {SOURCE_CONFIG[order.source]?.label || order.source}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle">
-                          <span className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
-                            ₹{order.total?.toLocaleString('en-IN') || 0}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle">
-                          <span className={`text-sm font-medium ${(order.margin || 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                            ₹{order.margin?.toLocaleString('en-IN') || 0}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle">
-                          <span className={`text-sm ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>
-                            {order.confirmedBy || '-'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle">
-                          <span 
-                            className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium"
-                            style={{ 
-                              backgroundColor: PAYMENT_CONFIG[order.payment]?.bg || '#eee', 
-                              color: PAYMENT_CONFIG[order.payment]?.color || '#333'
-                            }}
-                          >
-                            {PAYMENT_CONFIG[order.payment]?.label || order.payment}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle">
-                          <span 
-                            className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium border"
-                            style={{ 
-                              backgroundColor: STATUS_CONFIG[order.status]?.bg || '#eee', 
-                              color: STATUS_CONFIG[order.status]?.color || '#333',
-                              borderColor: STATUS_CONFIG[order.status]?.color || '#333'
-                            }}
-                          >
-                            {STATUS_CONFIG[order.status]?.label || order.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 align-middle text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => onViewOrder(order)}
-                              className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-stone-700 text-stone-400 hover:text-stone-200' : 'hover:bg-[#F8F6F2] text-[#8C7B6B] hover:text-[#3D2B1F]'}`}
-                              title="View Order"
-                            >
-                              <Eye size={16} />
-                            </button>
-                            <button
-                              onClick={() => onEditOrder(order)}
-                              className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-stone-700 text-stone-400 hover:text-blue-400' : 'hover:bg-[#F8F6F2] text-[#8C7B6B] hover:text-blue-600'}`}
-                              title="Edit Order"
-                            >
-                              <Edit3 size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(order)}
-                              className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-stone-700 text-stone-400 hover:text-red-400' : 'hover:bg-[#F8F6F2] text-[#8C7B6B] hover:text-red-600'}`}
-                              title="Delete Order"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
+                      <OrderRow 
+                        key={order.id} 
+                        order={order} 
+                        darkMode={darkMode} 
+                        onCustomerClick={onCustomerClick}
+                        copyCustomerDetails={copyCustomerDetails}
+                        onSaveOrder={onSaveOrder}
+                        onDeleteOrder={onDeleteOrder}
+                      />
                     ))}
                   </AnimatePresence>
                 </tbody>
               </table>
             </div>
-
-            {/* Mobile List View */}
-            <div className="md:hidden divide-y divide-stone-100 dark:divide-stone-800">
-              {paginatedOrders.map((order) => (
-                <div key={order.id} className="p-4 space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`font-semibold ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
-                          #{order.id.slice(-6).toUpperCase()}
-                        </span>
-                        <span 
-                          className="px-2 py-0.5 rounded text-[10px] font-medium border"
-                          style={{ 
-                            backgroundColor: STATUS_CONFIG[order.status]?.bg || '#eee', 
-                            color: STATUS_CONFIG[order.status]?.color || '#333',
-                            borderColor: STATUS_CONFIG[order.status]?.color || '#333'
-                          }}
-                        >
-                          {STATUS_CONFIG[order.status]?.label || order.status}
-                        </span>
-                      </div>
-                      <p className={`text-xs ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>
-                        {formatDate(order.placed)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
-                        ₹{order.total?.toLocaleString('en-IN') || 0}
-                      </p>
-                      <span 
-                        className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium mt-1"
-                        style={{ 
-                          backgroundColor: PAYMENT_CONFIG[order.payment]?.bg || '#eee', 
-                          color: PAYMENT_CONFIG[order.payment]?.color || '#333'
-                        }}
-                      >
-                        {PAYMENT_CONFIG[order.payment]?.label || order.payment}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={`p-3 rounded-xl flex justify-between items-center ${darkMode ? 'bg-stone-800/50' : 'bg-[#F8F6F2]'}`}>
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: SOURCE_CONFIG[order.source]?.bg || '#eee' }}
-                      >
-                        <span className="text-sm">{SOURCE_CONFIG[order.source]?.icon}</span>
-                      </div>
-                      <div className="truncate">
-                        <p className={`text-sm font-medium truncate ${darkMode ? 'text-stone-200' : 'text-[#3D2B1F]'}`}>
-                          {order.customer.name}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <p className={`text-xs ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>
-                            {order.customer.phone}
-                          </p>
-                          <button 
-                            onClick={() => copyCustomerDetails(order)}
-                            className={darkMode ? 'text-stone-500' : 'text-[#8C7B6B]'}
-                          >
-                            <Copy size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={() => onViewOrder(order)}
-                        className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-stone-800 text-stone-300' : 'bg-white text-[#8C7B6B]'}`}
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        onClick={() => onEditOrder(order)}
-                        className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-stone-800 text-stone-300' : 'bg-white text-[#8C7B6B]'}`}
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(order)}
-                        className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-stone-800 text-red-400' : 'bg-white text-red-500'}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className={`px-4 py-4 md:px-6 md:py-4 border-t flex items-center justify-between ${darkMode ? 'border-stone-800' : 'border-[#E6E2DB]'}`}>
+              <div className={`px-4 py-4 md:px-6 md:py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 ${darkMode ? 'border-stone-800' : 'border-[#E6E2DB]'}`}>
                 <p className={`text-sm ${darkMode ? 'text-stone-400' : 'text-[#8C7B6B]'}`}>
                   Showing <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)}</span> of <span className="font-medium">{filteredOrders.length}</span> results
                 </p>

@@ -2525,29 +2525,7 @@ function OldAdminPage() {
   const [ordersList, setOrdersList] = useState<any[]>([]);
   const newOrdersCount = ordersList.filter(o => (o.status || (o.confirmed ? "CONFIRMED" : "NEW ORDER")) === "NEW ORDER").length;
 
-  useEffect(() => {
-    if (authed) {
-      const q = query(collectionGroup(db, "orders"));
-      const unsub = onSnapshot(q, (snapshot) => {
-        trackReads("admin/orders(old)", snapshot.docs.length);
-        if (!snapshot.empty) {
-          const fetched = snapshot.docs.map(doc => { const data = doc.data(); return { ...data, id: data.id || doc.id, ref: doc.ref }; });
-          // Sort by placed date desc
-          fetched.sort((a: any, b: any) => {
-            const dateA = a.placed?.toMillis ? a.placed.toMillis() : 0;
-            const dateB = b.placed?.toMillis ? b.placed.toMillis() : 0;
-            return dateB - dateA;
-          });
-          setOrdersList(fetched);
-        } else {
-          setOrdersList([]);
-        }
-      }, (error) => {
-        toast.error("Permissions error fetching orders", { description: "Please update your Firestore rules to allow reading the 'orders' collectionGroup." });
-      });
-      return () => unsub();
-    }
-  }, [tab, authed]);
+  // Removed redundant collectionGroup("orders") onSnapshot listener that was duplicating reads from AdminPage's useOrders hook.
 
   if (!authed) {
     return (
