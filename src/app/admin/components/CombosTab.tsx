@@ -64,10 +64,11 @@ export default function CombosTab({ combos, darkMode }: CombosTabProps) {
     } catch (e: any) { toast.error("Failed", { description: e.message }); }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (c: Combo) => {
     if (!confirm("Delete this combo?")) return;
     try { 
-      await deleteDoc(doc(db, "combos", id)); 
+      const targetDocId = c.docId || c.id;
+      await deleteDoc(doc(db, "combos", targetDocId)); 
       await syncCatalogBundle();
       toast.success("Combo deleted"); 
     }
@@ -311,7 +312,7 @@ export default function CombosTab({ combos, darkMode }: CombosTabProps) {
                       {c.isHidden ? "Unhide" : "Hide"}
                     </button>
                     <button onClick={() => handleEdit(c)} className="text-blue-600 font-bold hover:underline text-xs">Edit</button>
-                    <button onClick={() => handleDelete(c.id)} className="text-red-600 font-bold hover:underline text-xs">Delete</button>
+                    <button onClick={() => handleDelete(c)} className="text-red-600 font-bold hover:underline text-xs">Delete</button>
                   </td>
                 </tr>
               ))}

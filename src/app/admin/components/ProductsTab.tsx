@@ -61,10 +61,11 @@ export default function ProductsTab({ products, darkMode }: ProductsTabProps) {
     } catch (e: any) { toast.error("Failed", { description: e.message }); }
   };
 
-  const handleDelete = async (id: number | string) => {
+  const handleDelete = async (p: Product) => {
     if (!confirm("Delete this product?")) return;
     try { 
-      await deleteDoc(doc(db, "products", id.toString())); 
+      const targetDocId = p.docId || p.id.toString();
+      await deleteDoc(doc(db, "products", targetDocId)); 
       await syncCatalogBundle();
       toast.success("Product deleted"); 
     }
@@ -339,7 +340,7 @@ export default function ProductsTab({ products, darkMode }: ProductsTabProps) {
                       {p.isHidden ? "Unhide" : "Hide"}
                     </button>
                     <button onClick={() => handleEdit(p)} className="text-blue-600 font-bold hover:underline text-xs">Edit</button>
-                    <button onClick={() => handleDelete(p.id)} className="text-red-600 font-bold hover:underline text-xs">Delete</button>
+                    <button onClick={() => handleDelete(p)} className="text-red-600 font-bold hover:underline text-xs">Delete</button>
                   </td>
                 </tr>
               ))}

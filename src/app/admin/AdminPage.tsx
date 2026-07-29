@@ -40,7 +40,7 @@ export default function AdminPage() {
   const { products, combos } = useApp();
 
   // Auth & Backend Password State
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem("svj_admin_authed") === "true");
+  const [authed, setAuthed] = useState(false);
   const [pwd, setPwd] = useState("");
   const [backendPass, setBackendPass] = useState<string | null>(null);
   const [isCheckingPass, setIsCheckingPass] = useState(true);
@@ -86,7 +86,7 @@ export default function AdminPage() {
         }
       } catch (err) {
         console.warn("Security fetch error:", err);
-        setBackendPass("1212"); // Safety fallback
+        setIsFirstTimeSetup(true);
       } finally {
         setIsCheckingPass(false);
       }
@@ -122,10 +122,10 @@ export default function AdminPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleLoginSubmit = () => {
-    const targetPass = backendPass || "1212";
-    if (pwd === targetPass) {
+    if (!backendPass) { toast.error("No password configured. Please set up first."); return; }
+    if (pwd === backendPass) {
       setAuthed(true);
-      sessionStorage.setItem("svj_admin_authed", "true");
+
       toast.success("Welcome back to Admin Panel!");
     } else {
       toast.error("Incorrect Password");
@@ -148,7 +148,7 @@ export default function AdminPage() {
       setBackendPass(setupPass);
       setIsFirstTimeSetup(false);
       setAuthed(true);
-      sessionStorage.setItem("svj_admin_authed", "true");
+
       toast.success("Admin password configured in backend successfully!");
     } catch (err: any) {
       toast.error("Failed to save password", { description: err.message });
@@ -156,8 +156,8 @@ export default function AdminPage() {
   };
 
   const handleChangePassword = async () => {
-    const activePass = backendPass || "1212";
-    if (currentPassInput !== activePass) {
+    if (!backendPass) { toast.error("No password configured."); return; }
+    if (currentPassInput !== backendPass) {
       return toast.error("Current password is incorrect!");
     }
     if (!newPassInput || newPassInput.length < 4) {
@@ -185,7 +185,7 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     setAuthed(false);
-    sessionStorage.removeItem("svj_admin_authed");
+
     setPwd("");
     toast.info("Logged out of Admin Panel");
   };

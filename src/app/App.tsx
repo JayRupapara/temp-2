@@ -58,7 +58,7 @@ type Combo = {
   id: string; name: string; subtitle: string; description: string;
   price: number; originalPrice: number; category: string; image: string; images?: string[];
   badge: string; badgeColor: string; stock: number; rating: number; reviews: number; care: string;
-  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; saving?: number; festival?: string;
+  isFeatured?: boolean; isBestseller?: boolean; isNewArrival?: boolean; isHidden?: boolean; saving?: number; festival?: string;
 };
 type CartItem = { product: Product; qty: number };
 type DeliveryForm = { name: string; phone: string; email: string; address: string; city: string; state: string; pincode: string };
@@ -634,7 +634,7 @@ function Navbar() {
                 <div className="flex flex-col gap-3.5">
                   <button onClick={() => scroll("sale-section")} className="text-left text-[15px] font-semibold flex items-center gap-1" style={{ color: "#d9534f" }}>Sale is Live ⚡</button>
                   <button onClick={() => { setPage("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Products</button>
-                  <button onClick={() => scroll("featured")} className="text-left text-[15px] font-semibold" style={{ color: "#3D2B1F" }}>Featured Collections</button>
+
                 </div>
               </div>
               <div>
@@ -897,7 +897,7 @@ function TestiCard({ t, delay }: { t: typeof TESTIMONIALS[0]; delay: number }) {
 }
 
 // ── FAQ Item ───────────────────────────────────────────────────────────────
-function FAQItem({ faq }: { faq: typeof FAQS[0] }) {
+function FAQItem({ faq }: { faq: { q: string; a: string } }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ borderBottom: "1px solid rgba(203,184,169,0.25)" }}>
@@ -1386,34 +1386,121 @@ function CheckoutPage() {
 
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1hEKEZboMD0Z49sOwnPNPMH02WqLlCyYSqCmAeCnPf9dgIQkQsLXoAsbr-cN5Nqqm/exec";
 
-  const saveOrderToFirestore = async (razorpayPaymentId?: string) => {
-    if (!user) return;
+  // ── SAFETY NET: Save to global paid_orders collection ──────────────────
+  // This ensures payment info is NEVER lost, even if user auth expires
+  const saveToPaidOrdersSafetyNet = async (orderData: Record<string, any>) => {
+    try {
+      await addDoc(collection(db, "paid_orders"), {
+        ...orderData,
+        savedAt: Timestamp.now(),
+        source: "safety_net",
+      });
+    } catch (err) {
+      console.error("[CRITICAL] Failed to save to paid_orders safety net:", err);
+      // Even if this fails, the audit log below should capture it
+    }
+  };
+
+  // ── CORE: Save order to Firestore with full safety ─────────────────────
+  const saveOrderToFirestore = async (razorpayPaymentId?: string, capturedUid?: string) => {
+    const uid = capturedUid || user?.uid;
     const orderId = "SVJ-" + Math.floor(100000 + Math.random() * 900000);
     const ord: OrderData = { id: orderId, items: [...cart], delivery: { ...form }, payment, total, placed: new Date(), confirmed: false };
-    await addDoc(collection(db, "users", user.uid, "orders"), {
+
+    const orderDoc: Record<string, any> = {
       ...ord,
       placed: Timestamp.fromDate(ord.placed),
-      ...(razorpayPaymentId ? { razorpayPaymentId } : {})
-    });
+      ...(razorpayPaymentId ? { razorpayPaymentId } : {}),
+    };
 
-    logUserActivity("ORDER_PLACED", `Order #${ord.id} placed by ${ord.delivery?.name || 'Customer'} (₹${ord.total})`, {
-      user: ord.delivery?.name || "Customer",
-      userEmail: ord.delivery?.email || user.email || "",
-      orderId: ord.id,
-    });
+    // Serialize items safely for logging (avoid circular refs)
+    const safeItems = ord.items.map(i => ({
+      qty: i.qty,
+      product: { name: i.product?.name || "Unknown", price: i.product?.price || 0 }
+    }));
 
-    // Send "Order Placed" email via Google Apps Script
+    // ── Step 1: Always save to global paid_orders safety net FIRST ──
+    // This runs before the user-specific save, so even if auth is gone, we have a record
+    if (razorpayPaymentId) {
+      await saveToPaidOrdersSafetyNet({
+        orderId,
+        razorpayPaymentId,
+        uid: uid || "UNKNOWN",
+        customerName: form.name,
+        customerPhone: form.phone,
+        customerEmail: form.email || "",
+        paymentMethod: payment,
+        total,
+        items: safeItems,
+        delivery: { ...form },
+      });
+    }
+
+    // ── Step 2: Save to user's orders subcollection ──────────────────
+    if (!uid) {
+      // User auth is gone — log critical error with ALL payment details
+      const errorMsg = `CRITICAL: User auth lost during payment! Payment ID: ${razorpayPaymentId || 'N/A'}, Order: ${orderId}, Customer: ${form.name} (${form.phone}), Amount: ₹${total}`;
+      logSystemError(errorMsg, "User UID was null/undefined when saving order. Payment was captured by Razorpay but user-specific order could not be saved. Check paid_orders collection for backup.", {
+        action: "PAYMENT_ORDER_SAVE_FAILED",
+        user: form.name || "Customer",
+        userEmail: form.email || "",
+        orderId,
+      });
+      
+      // Still show confirmation to the user — the money is taken, we must acknowledge
+      setOrder(ord);
+      clearCart();
+      setPage("confirmation");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // Attempt save with 1 retry
+    let saved = false;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await addDoc(collection(db, "users", uid, "orders"), orderDoc);
+        saved = true;
+        break;
+      } catch (err: any) {
+        console.error(`[Payment] Order save attempt ${attempt} failed:`, err);
+        if (attempt === 2) {
+          // Both attempts failed — log critical error
+          logSystemError(
+            `Order save FAILED after 2 attempts. Payment ID: ${razorpayPaymentId || 'N/A'}, Order: ${orderId}, Customer: ${form.name} (${form.phone}), Amount: ₹${total}, Error: ${err.message || err}`,
+            err.stack || "",
+            {
+              action: "PAYMENT_ORDER_SAVE_FAILED",
+              user: form.name || "Customer",
+              userEmail: form.email || "",
+              orderId,
+            }
+          );
+        } else {
+          // Wait 1 second before retry
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    }
+
+    // ── Step 3: Log ORDER_PLACED ─────────────────────────────────────
+    if (saved) {
+      logUserActivity("ORDER_PLACED", `Order #${orderId} placed by ${form.name || 'Customer'} (₹${total}) | Payment: ${payment}${razorpayPaymentId ? ` | Razorpay: ${razorpayPaymentId}` : ''}`, {
+        user: form.name || "Customer",
+        userEmail: form.email || user?.email || "",
+        orderId,
+      });
+    }
+
+    // ── Step 4: Send email notification ──────────────────────────────
     try {
       const emailPayload = JSON.stringify({
         type: "PLACED",
-        id: ord.id,
+        id: orderId,
         payment: ord.payment,
         total: ord.total,
         delivery: ord.delivery,
-        items: ord.items.map(i => ({
-          qty: i.qty,
-          product: { name: i.product.name, price: i.product.price }
-        }))
+        items: safeItems,
       });
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
@@ -1423,17 +1510,36 @@ function CheckoutPage() {
       });
     } catch (err) {
       console.warn("Email notification failed (non-critical):", err);
+      logSystemError(`Order email notification failed for #${orderId}`, String(err), {
+        action: "EMAIL_FAILED",
+        user: form.name || "Customer",
+        orderId,
+      });
     }
 
+    // ── Step 5: Navigate to confirmation ─────────────────────────────
     setOrder(ord);
     clearCart();
     setPage("confirmation");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // ── PREPAID PAYMENT HANDLER ────────────────────────────────────────────
   const handlePrepaidPay = () => {
     if (!user) return;
+
+    // ★ Capture uid NOW, before Razorpay opens — auth may expire during payment
+    const capturedUid = user.uid;
+    const capturedEmail = user.email || form.email || "";
+
     setPaying(true);
+
+    // ── Log PAYMENT_INITIATED ────────────────────────────────────────
+    logUserActivity("PAYMENT_INITIATED", `Prepaid payment initiated by ${form.name} (${form.phone}) for ₹${total}`, {
+      user: form.name || "Customer",
+      userEmail: capturedEmail,
+    });
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.onload = () => {
@@ -1442,7 +1548,7 @@ function CheckoutPage() {
         amount: total * 100, // paise
         currency: "INR",
         name: "Shri Vallabh Jewels",
-        description: cart.map(i => `${i.qty}x ${i.product.name}`).join(", "),
+        description: cart.map(i => `${i.qty}x ${i.product?.name || 'Item'}`).join(", "),
         
         prefill: {
           name: form.name,
@@ -1454,12 +1560,50 @@ function CheckoutPage() {
         },
         theme: { color: "#CFA18D" },
         handler: async (response: any) => {
+          const razorpayPaymentId = response.razorpay_payment_id;
+
+          // ── Log PAYMENT_SUCCESS immediately — BEFORE attempting order save ──
+          logUserActivity("PAYMENT_SUCCESS", `Razorpay payment captured! ID: ${razorpayPaymentId} | Customer: ${form.name} (${form.phone}) | Amount: ₹${total}`, {
+            user: form.name || "Customer",
+            userEmail: capturedEmail,
+          });
+
           try {
-            await saveOrderToFirestore(response.razorpay_payment_id);
-            toast.success("Payment successful! 🎉");
-          } catch (err) {
-            console.error("Order save error:", err);
-            toast.error("Payment done but order save failed. Please contact support.");
+            // Pass the pre-captured uid so auth expiry doesn't lose the order
+            await saveOrderToFirestore(razorpayPaymentId, capturedUid);
+            toast.success("Payment successful! Order placed 🎉");
+          } catch (err: any) {
+            console.error("[CRITICAL] Order save failed after payment:", err);
+
+            // ── Log PAYMENT_ORDER_SAVE_FAILED with all details ──────
+            logSystemError(
+              `CRITICAL: Payment captured but order save threw error! Razorpay ID: ${razorpayPaymentId}, Customer: ${form.name} (${form.phone}), Amount: ₹${total}, Error: ${err.message || err}`,
+              err.stack || "",
+              {
+                action: "PAYMENT_ORDER_SAVE_FAILED",
+                user: form.name || "Customer",
+                userEmail: capturedEmail,
+              }
+            );
+
+            // ── Emergency: try safety net one more time ──────────────
+            try {
+              await saveToPaidOrdersSafetyNet({
+                orderId: "SVJ-EMERGENCY-" + Date.now(),
+                razorpayPaymentId,
+                uid: capturedUid || "UNKNOWN",
+                customerName: form.name,
+                customerPhone: form.phone,
+                customerEmail: form.email || "",
+                paymentMethod: payment,
+                total,
+                items: cart.map(i => ({ qty: i.qty, product: { name: i.product?.name || "Unknown", price: i.product?.price || 0 } })),
+                delivery: { ...form },
+                errorMessage: err.message || String(err),
+              });
+            } catch (_) { /* last resort failed, but audit log has the details */ }
+
+            toast.error("Payment received! We are processing your order. If you don't see it in your account within a few minutes, please contact us on WhatsApp.", { duration: 15000 });
           } finally {
             setPaying(false);
           }
@@ -1467,6 +1611,10 @@ function CheckoutPage() {
         modal: {
           ondismiss: () => {
             setPaying(false);
+            logUserActivity("PAYMENT_DISMISSED", `Payment modal dismissed by ${form.name} (${form.phone}) for ₹${total}`, {
+              user: form.name || "Customer",
+              userEmail: capturedEmail,
+            });
             toast.error("Payment cancelled.");
           }
         }
@@ -1476,11 +1624,17 @@ function CheckoutPage() {
     };
     script.onerror = () => {
       setPaying(false);
+      logSystemError("Razorpay checkout.js failed to load", "", {
+        action: "RAZORPAY_LOAD_FAILED",
+        user: form.name || "Customer",
+        userEmail: capturedEmail,
+      });
       toast.error("Could not load payment gateway. Check your internet connection.");
     };
     document.body.appendChild(script);
   };
 
+  // ── COD ORDER HANDLER ──────────────────────────────────────────────────
   const placeCODOrder = async () => {
     if (!user) return;
     if (!codEnabled) {
@@ -1490,8 +1644,13 @@ function CheckoutPage() {
     setPaying(true);
     try {
       await saveOrderToFirestore();
-    } catch (err) {
-      console.error("Order error:", err);
+    } catch (err: any) {
+      console.error("COD order error:", err);
+      logSystemError(`COD order failed: ${err.message || err}`, err.stack || "", {
+        action: "COD_ORDER_FAILED",
+        user: form.name || "Customer",
+        userEmail: form.email || user?.email || "",
+      });
       toast.error("Failed to place order", { description: "Please try again." });
     } finally {
       setPaying(false);
@@ -1698,8 +1857,6 @@ function CheckoutPage() {
 function OrderConfirmation() {
   const { order, setPage } = useApp();
   if (!order) return null;
-  const delivery = new Date(order.placed);
-  delivery.setDate(delivery.getDate() + 7);
   return (
     <div className="min-h-screen pt-24 flex items-center justify-center px-5" style={{ background: "#F8F6F2" }}>
       <div className="max-w-md w-full text-center py-16">
@@ -1726,7 +1883,7 @@ function OrderConfirmation() {
               <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Order ID</p><p className="font-bold" style={{ color: "#3D2B1F" }}>{order.id}</p></div>
               <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Payment</p><p className="font-bold capitalize" style={{ color: "#3D2B1F" }}>{order.payment === "cod" ? "Cash on Delivery" : "Prepaid"}</p></div>
               <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Total Paid</p><p className="font-bold" style={{ color: "#CFA18D" }}>₹{order.total}</p></div>
-              <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Est. Delivery</p><p className="font-bold" style={{ color: "#3D2B1F" }}>{delivery.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p></div>
+              <div><p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "#8C7B6B" }}>Est. Delivery</p><p className="font-bold" style={{ color: "#CFA18D" }}>5–8 Days</p></div>
             </div>
             <div className="mt-3 pt-3 border-t" style={{ borderColor: "rgba(203,184,169,0.3)" }}>
               <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "#8C7B6B" }}>Delivering to</p>
@@ -2288,15 +2445,18 @@ function AccountPage() {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {ord.items?.map((item: CartItem, i: number) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <img src={item.product.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-[#F8F6F2]" />
-                        <div className="flex-1">
-                          <p className="text-sm font-bold leading-tight line-clamp-1" style={{ color: "#3D2B1F" }}>{item.product.name}</p>
-                          <p className="text-xs" style={{ color: "#8C7B6B" }}>Qty: {item.qty}</p>
+                    {ord.items?.map((item: any, i: number) => {
+                      if (!item?.product) return null;
+                      return (
+                        <div key={i} className="flex items-center gap-3">
+                          <img src={item.product.image || ''} alt="" className="w-12 h-12 rounded-lg object-cover bg-[#F8F6F2]" />
+                          <div className="flex-1">
+                            <p className="text-sm font-bold leading-tight line-clamp-1" style={{ color: "#3D2B1F" }}>{item.product.name || 'Product'}</p>
+                            <p className="text-xs" style={{ color: "#8C7B6B" }}>Qty: {item.qty || 1}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="mt-5 pt-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ borderColor: "rgba(203,184,169,0.2)" }}>
                     <p className="text-xs font-semibold flex items-center gap-2" style={{ color: "#8C7B6B" }}>
@@ -3436,108 +3596,51 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // ── Optimized: Cached one-time fetch for payment settings ──────────
-    // Uses localStorage cache to avoid reads on every page load.
-    const CACHE_KEY = "svj_payment_settings";
-    const CACHE_TTL = 5 * 60 * 1000; // 5 min
-
-    const loadPayment = async () => {
-      try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const { data, ts } = JSON.parse(cached);
-          setPaymentSettings(prev => ({ ...prev, ...data }));
-          if (Date.now() - ts < CACHE_TTL) return; // Cache still fresh, skip Firestore
-        }
-        // Fetch from Firestore (1 read)
-        const { getDoc } = await import("firebase/firestore");
-        const snap = await getDoc(doc(db, "settings", "payment"));
-        trackReads("settings/payment", 1);
-        if (snap.exists()) {
-          const data = snap.data();
-          setPaymentSettings(prev => ({ ...prev, ...data }));
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-        }
-      } catch (err) {
-        console.warn("Payment settings fetch error:", err);
+    // ── Real-time Listener: Payment Settings ──
+    const unsubPayment = onSnapshot(doc(db, "settings", "payment"), (snap) => {
+      if (snap.exists()) {
+        setPaymentSettings(prev => ({ ...prev, ...snap.data() }));
       }
-    };
-    loadPayment();
-  }, []);
+    });
 
-  useEffect(() => {
-    // ── Optimized: Bundled Catalog Fetch (1 READ TOTAL FOR ENTIRE CATALOG) ─────
-    // Reads single settings/catalog document instead of 30+ separate collection docs.
-    const PRODUCTS_KEY = "svj_products_cache";
-    const COMBOS_KEY = "svj_combos_cache";
-    const CACHE_TTL = 5 * 60 * 1000; // 5 min
+    // ── Real-time Listener: Catalog Bundle ──
+    let bundleLoaded = false;
+    const checkLoaded = () => { if (bundleLoaded) setDataLoaded(true); };
 
-    let pLoaded = false;
-    let cLoaded = false;
-    let cacheFresh = false;
-    const checkLoaded = () => { if (pLoaded && cLoaded) setDataLoaded(true); };
-
-    // Try loading from localStorage cache first (instant, 0 reads)
-    try {
-      const cachedP = localStorage.getItem(PRODUCTS_KEY);
-      const cachedC = localStorage.getItem(COMBOS_KEY);
-      if (cachedP && cachedC) {
-        const { data: pData, ts: pTs } = JSON.parse(cachedP);
-        const { data: cData, ts: cTs } = JSON.parse(cachedC);
-        if (Array.isArray(pData) && pData.length > 0 && Array.isArray(cData)) {
-          setProducts(pData);
-          setCombos(cData);
-          pLoaded = true; cLoaded = true;
-          if (Date.now() - pTs < CACHE_TTL && Date.now() - cTs < CACHE_TTL) {
-            cacheFresh = true;
+    const unsubCatalog = onSnapshot(doc(db, "settings", "catalog"), async (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (Array.isArray(data.products) && Array.isArray(data.combos)) {
+          setProducts(data.products);
+          setCombos(data.combos);
+          bundleLoaded = true;
+          checkLoaded();
+          return;
+        }
+      }
+      
+      // Fallback: If bundle doesn't exist, try to sync it once
+      if (!bundleLoaded) {
+        try {
+          const { syncCatalogBundle } = await import("./utils/catalogSync");
+          const bundle = await syncCatalogBundle();
+          if (bundle) {
+            setProducts(bundle.products);
+            setCombos(bundle.combos);
           }
+        } catch (err) {
+          console.warn("Initial catalog sync failed:", err);
+        } finally {
+          bundleLoaded = true;
+          checkLoaded();
         }
       }
-    } catch (e) { /* ignore */ }
+    });
 
-    checkLoaded();
-
-    if (cacheFresh) return; // Served from browser cache (0 reads!)
-
-    // Fetch from Firestore: Try 1-READ Catalog Bundle first
-    const fetchData = async () => {
-      try {
-        const { getDoc, doc } = await import("firebase/firestore");
-        const bundleSnap = await getDoc(doc(db, "settings", "catalog"));
-        trackReads("settings/catalog(bundle)", 1);
-
-        if (bundleSnap.exists()) {
-          const bundleData = bundleSnap.data();
-          if (Array.isArray(bundleData.products) && bundleData.products.length > 0 && Array.isArray(bundleData.combos)) {
-            setProducts(bundleData.products);
-            setCombos(bundleData.combos);
-            localStorage.setItem(PRODUCTS_KEY, JSON.stringify({ data: bundleData.products, ts: Date.now() }));
-            localStorage.setItem(COMBOS_KEY, JSON.stringify({ data: bundleData.combos, ts: Date.now() }));
-            pLoaded = true; cLoaded = true;
-            checkLoaded();
-            return;
-          }
-        }
-
-        // Fallback if bundle doesn't exist or is empty: fetch collections and create bundle
-        const { syncCatalogBundle } = await import("./utils/catalogSync");
-        const bundle = await syncCatalogBundle();
-        if (bundle) {
-          trackReads("products(initial-sync)", bundle.products.length);
-          trackReads("combos(initial-sync)", bundle.combos.length);
-          setProducts(bundle.products);
-          setCombos(bundle.combos);
-          localStorage.setItem(PRODUCTS_KEY, JSON.stringify({ data: bundle.products, ts: Date.now() }));
-          localStorage.setItem(COMBOS_KEY, JSON.stringify({ data: bundle.combos, ts: Date.now() }));
-        }
-      } catch (err) {
-        console.warn("Fetch catalog error:", err);
-      } finally {
-        pLoaded = true; cLoaded = true;
-        checkLoaded();
-      }
+    return () => {
+      unsubPayment();
+      unsubCatalog();
     };
-    fetchData();
   }, []);
 
   useEffect(() => {
