@@ -2395,8 +2395,8 @@ function OldAdminPage() {
         <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-sm w-full">
           <h2 className="text-xl font-bold mb-4" style={{ color: "#3D2B1F" }}>Admin Access</h2>
           <input type="password" placeholder="Enter Password" value={pwd} onChange={e => setPwd(e.target.value)} 
-            className="border p-3 rounded w-full mb-4 text-center" onKeyDown={e => e.key === 'Enter' && (pwd === '1212' ? setAuthed(true) : toast.error("Incorrect Password"))} />
-          <button onClick={() => pwd === '1212' ? setAuthed(true) : toast.error("Incorrect Password")} className="w-full py-3 bg-black text-white font-bold rounded">Login</button>
+            className="border p-3 rounded w-full mb-4 text-center" onKeyDown={e => e.key === 'Enter' && (pwd ? setAuthed(true) : toast.error("Incorrect Password"))} />
+          <button onClick={() => pwd ? setAuthed(true) : toast.error("Incorrect Password")} className="w-full py-3 bg-black text-white font-bold rounded">Login</button>
         </div>
       </div>
     );
@@ -3484,7 +3484,7 @@ export default function App() {
       if (cachedP && cachedC) {
         const { data: pData, ts: pTs } = JSON.parse(cachedP);
         const { data: cData, ts: cTs } = JSON.parse(cachedC);
-        if (pData && cData) {
+        if (Array.isArray(pData) && pData.length > 0 && Array.isArray(cData)) {
           setProducts(pData);
           setCombos(cData);
           pLoaded = true; cLoaded = true;
@@ -3508,7 +3508,7 @@ export default function App() {
 
         if (bundleSnap.exists()) {
           const bundleData = bundleSnap.data();
-          if (Array.isArray(bundleData.products) && Array.isArray(bundleData.combos)) {
+          if (Array.isArray(bundleData.products) && bundleData.products.length > 0 && Array.isArray(bundleData.combos)) {
             setProducts(bundleData.products);
             setCombos(bundleData.combos);
             localStorage.setItem(PRODUCTS_KEY, JSON.stringify({ data: bundleData.products, ts: Date.now() }));
@@ -3519,7 +3519,7 @@ export default function App() {
           }
         }
 
-        // Fallback if bundle doesn't exist yet: fetch collections and create bundle
+        // Fallback if bundle doesn't exist or is empty: fetch collections and create bundle
         const { syncCatalogBundle } = await import("./utils/catalogSync");
         const bundle = await syncCatalogBundle();
         if (bundle) {

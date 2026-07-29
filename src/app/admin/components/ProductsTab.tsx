@@ -181,7 +181,24 @@ export default function ProductsTab({ products, darkMode }: ProductsTabProps) {
 
   return (
     <>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
+        <button
+          onClick={async () => {
+            const toastId = toast.loading("Syncing catalog with Firestore...");
+            try {
+              localStorage.removeItem("svj_products_cache");
+              localStorage.removeItem("svj_combos_cache");
+              await syncCatalogBundle();
+              toast.success("Catalog synced successfully! Refreshing...", { id: toastId });
+              setTimeout(() => window.location.reload(), 800);
+            } catch (err: any) {
+              toast.error("Sync failed", { id: toastId, description: err.message });
+            }
+          }}
+          className="px-4 py-2.5 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+        >
+          <RefreshCw size={15} /> Sync Catalog
+        </button>
         <button onClick={handleAddNew} className="px-5 py-2.5 bg-[#CFA18D] text-white rounded-xl font-bold text-sm hover:bg-[#b88e7a] transition-colors">+ Add Product</button>
       </div>
       {editing ? (

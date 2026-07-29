@@ -21,7 +21,7 @@ export async function getCatalogBundle(): Promise<CatalogBundle | null> {
     const snap = await getDoc(BUNDLE_DOC);
     if (snap.exists()) {
       const data = snap.data() as CatalogBundle;
-      if (Array.isArray(data.products) && Array.isArray(data.combos)) {
+      if (Array.isArray(data.products) && data.products.length > 0 && Array.isArray(data.combos)) {
         return data;
       }
     }

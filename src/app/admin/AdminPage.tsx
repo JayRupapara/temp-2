@@ -32,12 +32,27 @@ type AdminTab = "orders" | "products" | "combos" | "reports" | "audit" | "paymen
 // Get useApp from parent context
 import { useApp } from "./adminExports";
 
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { Key, Lock, ShieldCheck } from "lucide-react";
+
 export default function AdminPage() {
   const { products, combos } = useApp();
 
-  // Auth
-  const [authed, setAuthed] = useState(false);
+  // Auth & Backend Password State
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem("svj_admin_authed") === "true");
   const [pwd, setPwd] = useState("");
+  const [backendPass, setBackendPass] = useState<string | null>(null);
+  const [isCheckingPass, setIsCheckingPass] = useState(true);
+  const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(false);
+
+  // Setup & Change Password Modals
+  const [setupPass, setSetupPass] = useState("");
+  const [confirmSetupPass, setConfirmSetupPass] = useState("");
+  const [changePassOpen, setChangePassOpen] = useState(false);
+  const [currentPassInput, setCurrentPassInput] = useState("");
+  const [newPassInput, setNewPassInput] = useState("");
+  const [confirmNewPassInput, setConfirmNewPassInput] = useState("");
 
   // UI State
   const [tab, setTab] = useState<AdminTab>("orders");
@@ -57,6 +72,27 @@ export default function AdminPage() {
   const { orders, loading: ordersLoading, createManualOrder, updateOrder, confirmOrder, cancelOrder, deleteOrder } = useOrders(authed);
   const customerLookup = useCustomers();
   const { entries: auditEntries, loading: auditLoading, logAction, getEntriesForOrder, purgeOldLogs, exportLogsToCSV } = useAuditLog(authed && tab === "audit");
+
+  // Fetch backend admin password on mount
+  useEffect(() => {
+    const fetchBackendPassword = async () => {
+      try {
+        const snap = await getDoc(doc(db, "settings", "security"));
+        if (snap.exists() && snap.data().adminPassword) {
+          setBackendPass(snap.data().adminPassword);
+          setIsFirstTimeSetup(false);
+        } else {
+          setIsFirstTimeSetup(true);
+        }
+      } catch (err) {
+        console.warn("Security fetch error:", err);
+        setBackendPass("1212"); // Safety fallback
+      } finally {
+        setIsCheckingPass(false);
+      }
+    };
+    fetchBackendPassword();
+  }, []);
 
   // Dark mode persistence
   useEffect(() => {
@@ -85,6 +121,75 @@ export default function AdminPage() {
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
   // ── Handlers ──────────────────────────────────────────────────────────
+  const handleLoginSubmit = () => {
+    const targetPass = backendPass || "1212";
+    if (pwd === targetPass) {
+      setAuthed(true);
+      sessionStorage.setItem("svj_admin_authed", "true");
+      toast.success("Welcome back to Admin Panel!");
+    } else {
+      toast.error("Incorrect Password");
+    }
+  };
+
+  const handleInitialSetup = async () => {
+    if (!setupPass || setupPass.length < 4) {
+      return toast.error("Password must be at least 4 characters long.");
+    }
+    if (setupPass !== confirmSetupPass) {
+      return toast.error("Passwords do not match!");
+    }
+    try {
+      await setDoc(doc(db, "settings", "security"), {
+        adminPassword: setupPass,
+        updatedAt: Date.now(),
+        updatedBy: "Initial Setup"
+      });
+      setBackendPass(setupPass);
+      setIsFirstTimeSetup(false);
+      setAuthed(true);
+      sessionStorage.setItem("svj_admin_authed", "true");
+      toast.success("Admin password configured in backend successfully!");
+    } catch (err: any) {
+      toast.error("Failed to save password", { description: err.message });
+    }
+  };
+
+  const handleChangePassword = async () => {
+    const activePass = backendPass || "1212";
+    if (currentPassInput !== activePass) {
+      return toast.error("Current password is incorrect!");
+    }
+    if (!newPassInput || newPassInput.length < 4) {
+      return toast.error("New password must be at least 4 characters long.");
+    }
+    if (newPassInput !== confirmNewPassInput) {
+      return toast.error("New passwords do not match!");
+    }
+    try {
+      await setDoc(doc(db, "settings", "security"), {
+        adminPassword: newPassInput,
+        updatedAt: Date.now(),
+        updatedBy: "Admin Panel"
+      });
+      setBackendPass(newPassInput);
+      setChangePassOpen(false);
+      setCurrentPassInput("");
+      setNewPassInput("");
+      setConfirmNewPassInput("");
+      toast.success("Admin Password updated in backend!");
+    } catch (err: any) {
+      toast.error("Failed to update password", { description: err.message });
+    }
+  };
+
+  const handleLogout = () => {
+    setAuthed(false);
+    sessionStorage.removeItem("svj_admin_authed");
+    setPwd("");
+    toast.info("Logged out of Admin Panel");
+  };
+
   const handleConfirmOrder = async (order: AdminOrder, confirmedBy: AdminUser) => {
     await confirmOrder(order, confirmedBy);
     await logAction({ orderId: order.id, action: "confirmed", user: confirmedBy, details: `Order confirmed by ${confirmedBy}` });
@@ -111,15 +216,74 @@ export default function AdminPage() {
   const handleCreateManualOrder = async (data: any) => {
     const orderId = await createManualOrder(data);
     await logAction({ orderId: orderId || "unknown", action: "created", user: data.confirmedBy || "Admin", details: `Manual order created from ${data.source}` });
-    // Save customer
     if (data.customer?.phone) {
       await customerLookup.saveCustomer(data.customer, orderId || "", data.total);
     }
     setNewOrderOpen(false);
   };
 
-  // ── Login Screen ──────────────────────────────────────────────────────
+  // ── Login / Setup Screen ──────────────────────────────────────────────
   if (!authed) {
+    if (isCheckingPass) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F8F6F2]">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-[#CFA18D] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p className="text-sm font-semibold text-gray-600">Verifying Admin Security...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // First Time Backend Setup Screen
+    if (isFirstTimeSetup) {
+      return (
+        <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F8F6F2 0%, #EDE8E1 100%)" }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-sm w-full mx-4"
+            style={{ border: "1px solid rgba(203,184,169,0.3)" }}
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#CFA18D] to-[#A67B66] flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <ShieldCheck size={30} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-bold mb-1" style={{ fontFamily: "'Playfair Display', serif", color: "#3D2B1F" }}>Initial Admin Setup</h2>
+            <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mb-5 font-medium">
+              No password found in backend. Set your master admin password to secure your panel.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="password"
+                placeholder="Set New Password"
+                value={setupPass}
+                onChange={e => setSetupPass(e.target.value)}
+                className="w-full px-5 py-3 rounded-xl border text-center font-medium outline-none focus:ring-2 focus:ring-[#CFA18D]/50 transition-all text-sm"
+                style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)", color: "#3D2B1F" }}
+              />
+              <input
+                type="password"
+                placeholder="Confirm New Password"
+                value={confirmSetupPass}
+                onChange={e => setConfirmSetupPass(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleInitialSetup()}
+                className="w-full px-5 py-3 rounded-xl border text-center font-medium outline-none focus:ring-2 focus:ring-[#CFA18D]/50 transition-all text-sm"
+                style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)", color: "#3D2B1F" }}
+              />
+              <button
+                onClick={handleInitialSetup}
+                className="w-full mt-2 py-3.5 rounded-xl font-bold text-white transition-all hover:scale-[1.02] active:scale-95 shadow-lg"
+                style={{ background: "linear-gradient(135deg, #CFA18D, #A67B66)" }}
+              >
+                Save & Continue to Admin
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+
+    // Normal Login Screen
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F8F6F2 0%, #EDE8E1 100%)" }}>
         <motion.div
@@ -138,12 +302,12 @@ export default function AdminPage() {
             placeholder="Enter Password"
             value={pwd}
             onChange={e => setPwd(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && (pwd === '1212' ? setAuthed(true) : toast.error("Incorrect Password"))}
+            onKeyDown={e => e.key === 'Enter' && handleLoginSubmit()}
             className="w-full px-5 py-3.5 rounded-xl border text-center font-medium outline-none focus:ring-2 focus:ring-[#CFA18D]/50 transition-all"
             style={{ background: "#FCFBF8", border: "1px solid rgba(203,184,169,0.3)", color: "#3D2B1F" }}
           />
           <button
-            onClick={() => pwd === '1212' ? setAuthed(true) : toast.error("Incorrect Password")}
+            onClick={handleLoginSubmit}
             className="w-full mt-4 py-3.5 rounded-xl font-bold text-white transition-all hover:scale-[1.02] active:scale-95 shadow-lg"
             style={{ background: "linear-gradient(135deg, #CFA18D, #A67B66)" }}
           >
@@ -238,9 +402,18 @@ export default function AdminPage() {
               {dm ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
+            {/* Change Password */}
+            <button
+              onClick={() => setChangePassOpen(true)}
+              className={`p-2.5 rounded-xl transition-all ${dm ? 'bg-gray-800 hover:bg-gray-700 text-amber-400' : 'bg-white hover:bg-gray-50 text-amber-600'} border ${borderColor}`}
+              title="Change Admin Password"
+            >
+              <Key size={18} />
+            </button>
+
             {/* Logout */}
             <button
-              onClick={() => { setAuthed(false); setPwd(""); }}
+              onClick={handleLogout}
               className={`p-2.5 rounded-xl transition-all ${dm ? 'bg-gray-800 hover:bg-red-900/50 text-gray-300 hover:text-red-400' : 'bg-white hover:bg-red-50 text-gray-600 hover:text-red-500'} border ${borderColor}`}
               title="Logout"
             >
@@ -374,6 +547,76 @@ export default function AdminPage() {
         onClose={() => setCustomerPhone(null)}
         darkMode={darkMode}
       />
+
+      {/* Change Password Modal */}
+      {changePassOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`w-full max-w-md p-6 rounded-2xl ${bgCard} border ${borderColor} shadow-2xl`}>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <Lock size={20} />
+                </div>
+                <h3 className={`text-lg font-bold ${textMain}`}>Change Admin Password</h3>
+              </div>
+              <button onClick={() => setChangePassOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${dm ? 'text-gray-400' : 'text-gray-600'}`}>Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassInput}
+                  onChange={e => setCurrentPassInput(e.target.value)}
+                  placeholder="Enter current password"
+                  className={`w-full px-4 py-2.5 rounded-xl text-sm border outline-none ${dm ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${dm ? 'text-gray-400' : 'text-gray-600'}`}>New Password</label>
+                <input
+                  type="password"
+                  value={newPassInput}
+                  onChange={e => setNewPassInput(e.target.value)}
+                  placeholder="Enter new password"
+                  className={`w-full px-4 py-2.5 rounded-xl text-sm border outline-none ${dm ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${dm ? 'text-gray-400' : 'text-gray-600'}`}>Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmNewPassInput}
+                  onChange={e => setConfirmNewPassInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleChangePassword()}
+                  placeholder="Confirm new password"
+                  className={`w-full px-4 py-2.5 rounded-xl text-sm border outline-none ${dm ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setChangePassOpen(false)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${dm ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : 'border-gray-200 text-gray-700 hover:bg-gray-100'}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleChangePassword}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#CFA18D] to-[#A67B66] hover:opacity-90 transition-opacity shadow-md"
+                >
+                  Update Password
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
