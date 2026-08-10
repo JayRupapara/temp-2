@@ -41,9 +41,30 @@ const formatDate = (dateVal: any) => {
   }
 };
 
+const formatDisplayDate = (isoStr: string) => {
+  if (!isoStr) return '';
+  try {
+    const [y, m, d] = isoStr.split('-');
+    if (y && m && d) {
+      const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+      return dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    return isoStr;
+  } catch (e) {
+    return isoStr;
+  }
+};
+
 // Inline Row Component
 function OrderRow({ order, darkMode, onCustomerClick, copyCustomerDetails, onSaveOrder, onDeleteOrder }: any) {
   const [localCost, setLocalCost] = useState(order.productCost || 0);
+  const [isConfirmingInline, setIsConfirmingInline] = useState(false);
+  const [confirmAdmin, setConfirmAdmin] = useState<string>(order.confirmedBy || "Jay");
+  const [deliveryDateInput, setDeliveryDateInput] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 5);
+    return d.toISOString().split('T')[0];
+  });
 
   const handleCostBlur = () => {
     const num = Number(localCost) || 0;
@@ -169,33 +190,91 @@ function OrderRow({ order, darkMode, onCustomerClick, copyCustomerDetails, onSav
         </div>
       </td>
 
-      <td className="px-4 py-4 min-w-[120px]">
+      <td className="px-4 py-4 min-w-[170px]">
         {order.status === 'NEW' ? (
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => onSaveOrder(order, { status: 'CONFIRMED' })}
-              className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors dark:bg-emerald-900/30 dark:border-emerald-800/50 dark:text-emerald-400"
-            >
-              <Check size={12} /> Yes
-            </button>
-            <button 
-              onClick={() => onSaveOrder(order, { status: 'CANCELLED' })}
-              className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400"
-            >
-              <X size={12} /> No
-            </button>
-          </div>
+          !isConfirmingInline ? (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsConfirmingInline(true)}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors dark:bg-emerald-900/30 dark:border-emerald-800/50 dark:text-emerald-400"
+              >
+                <Check size={13} /> Yes
+              </button>
+              <button 
+                onClick={() => onSaveOrder(order, { status: 'CANCELLED' })}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400"
+              >
+                <X size={13} /> No
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 p-2 bg-stone-100 dark:bg-stone-800/90 rounded-xl border border-stone-200 dark:border-stone-700 min-w-[180px]">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Confirm Order</div>
+              
+              {/* Admin Selection */}
+              <select
+                value={confirmAdmin}
+                onChange={e => setConfirmAdmin(e.target.value)}
+                className={`text-xs p-1.5 border rounded-lg outline-none ${darkMode ? 'bg-stone-900 border-stone-700 text-stone-200' : 'bg-white border-[#E6E2DB] text-[#3D2B1F]'}`}
+              >
+                <option value="Jay">Jay</option>
+                <option value="Kashyap">Kashyap</option>
+              </select>
+
+              {/* Delivery Date Picker */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-medium text-stone-400">Est. Delivery Date:</label>
+                <input 
+                  type="date" 
+                  value={deliveryDateInput}
+                  onChange={e => setDeliveryDateInput(e.target.value)}
+                  className={`text-xs p-1.5 border rounded-lg outline-none ${darkMode ? 'bg-stone-900 border-stone-700 text-stone-200' : 'bg-white border-[#E6E2DB] text-[#3D2B1F]'}`}
+                />
+              </div>
+
+              {/* Confirm & Cancel Buttons */}
+              <div className="flex items-center gap-1.5 pt-1">
+                <button
+                  onClick={() => {
+                    const formattedEstDate = formatDisplayDate(deliveryDateInput);
+                    onSaveOrder(order, { 
+                      status: 'CONFIRMED', 
+                      confirmedBy: confirmAdmin as any,
+                      estimatedDeliveryDate: formattedEstDate
+                    });
+                    setIsConfirmingInline(false);
+                  }}
+                  className="flex-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm"
+                >
+                  <Check size={12} /> Confirm & Send Mail
+                </button>
+                <button
+                  onClick={() => setIsConfirmingInline(false)}
+                  className="p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                  title="Cancel"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           <div className="flex flex-col gap-1.5">
             <select
               value={order.confirmedBy || ""}
               onChange={e => onSaveOrder(order, { confirmedBy: e.target.value })}
-              className={`text-xs p-1 border rounded outline-none ${darkMode ? 'bg-stone-800 border-stone-700 text-stone-200' : 'bg-[#F8F6F2] border-[#E6E2DB] text-[#3D2B1F]'}`}
+              className={`text-xs p-1 border rounded-lg outline-none ${darkMode ? 'bg-stone-800 border-stone-700 text-stone-200' : 'bg-[#F8F6F2] border-[#E6E2DB] text-[#3D2B1F]'}`}
             >
               <option value="">Assign Admin</option>
               <option value="Jay">Jay</option>
               <option value="Kashyap">Kashyap</option>
             </select>
+
+            {order.estimatedDeliveryDate && (
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50 w-fit">
+                Est: {order.estimatedDeliveryDate}
+              </span>
+            )}
           </div>
         )}
       </td>

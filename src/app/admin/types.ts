@@ -41,6 +41,7 @@ export interface AdminOrder {
   notes: string;
   customer: OrderCustomer;
   items: OrderItem[];
+  estimatedDeliveryDate?: string;
   // Internal references
   ref?: DocumentReference;
   isManual?: boolean;

@@ -25,6 +25,11 @@ export default function ChartsSection({ orders, darkMode }: ChartsSectionProps) 
     // Exclude cancelled just in case, though parent should have filtered
     const validOrders = orders.filter(o => o.status !== 'CANCELLED');
 
+    const getOrderMargin = (o: AdminOrder) => {
+      if (typeof o.margin === 'number' && o.margin !== 0) return o.margin;
+      return (o.total || 0) - (o.productCost || 0) - (o.courierCost || 0) - (o.otherExpense || 0);
+    };
+
     // 1 & 2. Monthly Data
     const monthlyMap = new Map<string, { month: string, sales: number, margin: number }>();
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -46,7 +51,7 @@ export default function ChartsSection({ orders, darkMode }: ChartsSectionProps) 
       }
       const m = monthlyMap.get(monthKey)!;
       m.sales += (order.total || 0);
-      m.margin += (order.margin || 0);
+      m.margin += getOrderMargin(order);
     });
     
     const monthlyData = Array.from(monthlyMap.values());
@@ -61,7 +66,7 @@ export default function ChartsSection({ orders, darkMode }: ChartsSectionProps) 
       if (order.confirmedBy === 'Kashyap' || order.confirmedBy === 'Jay') {
         partnerMap[order.confirmedBy].orders += 1;
         partnerMap[order.confirmedBy].sales += (order.total || 0);
-        partnerMap[order.confirmedBy].margin += (order.margin || 0);
+        partnerMap[order.confirmedBy].margin += getOrderMargin(order);
       }
     });
     const partnerData = [partnerMap.Kashyap, partnerMap.Jay];

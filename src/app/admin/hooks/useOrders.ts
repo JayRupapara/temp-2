@@ -45,6 +45,7 @@ function normalizeWebsiteOrder(data: any, ref: any): AdminOrder {
       price: Number(i.product?.price || i.price) || 0,
       image: i.product?.image || i.image || "",
     })),
+    estimatedDeliveryDate: data.estimatedDeliveryDate || "",
     ref,
     isManual: false,
   };
@@ -66,6 +67,7 @@ function normalizeManualOrder(data: any, ref: any): AdminOrder {
     notes: data.notes || "",
     customer: data.customer || { name: "", phone: "", email: "", address: "", city: "", state: "", pincode: "" },
     items: data.items || [],
+    estimatedDeliveryDate: data.estimatedDeliveryDate || "",
     ref,
     isManual: true,
   };
@@ -86,6 +88,7 @@ async function sendOrderStatusEmail(order: AdminOrder, status: string) {
       total: order.total,
       delivery: order.customer,
       items: (order.items || []).map(i => ({ qty: i.qty, product: { name: i.name, price: i.price } })),
+      estimatedDeliveryDate: order.estimatedDeliveryDate || "",
     };
 
     await fetch(APPS_SCRIPT_URL, {

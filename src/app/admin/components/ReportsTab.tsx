@@ -17,13 +17,19 @@ interface ReportsTabProps {
 
 export default function ReportsTab({ orders, darkMode }: ReportsTabProps) {
   const [filters, setFilters] = useState<ReportFilters>({
-    dateRange: 'month',
+    dateRange: 'all',
     partner: 'all',
     source: 'all',
     status: 'all'
   });
   
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+  // Helper to dynamically get margin if order.margin is undefined/0
+  const getOrderMargin = (o: AdminOrder) => {
+    if (typeof o.margin === 'number' && o.margin !== 0) return o.margin;
+    return (o.total || 0) - (o.productCost || 0) - (o.courierCost || 0) - (o.otherExpense || 0);
+  };
 
   // Filter orders based on filter state
   const filteredOrders = useMemo(() => {
@@ -77,7 +83,7 @@ export default function ReportsTab({ orders, darkMode }: ReportsTabProps) {
       acc.totalProductCost += order.productCost || 0;
       acc.totalCourierCost += order.courierCost || 0;
       acc.totalOtherExpenses += order.otherExpense || 0;
-      acc.totalMargin += order.margin || 0;
+      acc.totalMargin += getOrderMargin(order);
       return acc;
     }, {
       totalOrders: 0,
@@ -96,18 +102,19 @@ export default function ReportsTab({ orders, darkMode }: ReportsTabProps) {
     const combined = { orders: 0, sales: 0, margin: 0 };
 
     validOrdersForCalc.forEach(order => {
+      const margin = getOrderMargin(order);
       combined.orders += 1;
       combined.sales += order.total || 0;
-      combined.margin += order.margin || 0;
+      combined.margin += margin;
 
       if (order.confirmedBy === 'Kashyap') {
         kashyap.orders += 1;
         kashyap.sales += order.total || 0;
-        kashyap.margin += order.margin || 0;
+        kashyap.margin += margin;
       } else if (order.confirmedBy === 'Jay') {
         jay.orders += 1;
         jay.sales += order.total || 0;
-        jay.margin += order.margin || 0;
+        jay.margin += margin;
       }
     });
 
@@ -128,7 +135,7 @@ export default function ReportsTab({ orders, darkMode }: ReportsTabProps) {
         const mIndex = date.getMonth();
         data[mIndex].orders += 1;
         data[mIndex].sales += order.total || 0;
-        data[mIndex].margin += order.margin || 0;
+        data[mIndex].margin += getOrderMargin(order);
       }
     });
 

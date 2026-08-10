@@ -124,6 +124,12 @@ if (typeof window !== "undefined") {
     const msg = typeof reason === "string" ? reason : reason?.message || "Unhandled Promise Rejection";
     const stack = reason?.stack || "";
 
+    // Filter out internal Firebase Auth SDK noise when session/popup state checks fail harmlessly in browser
+    if (msg.includes("INTERNAL ASSERTION FAILED") || msg.includes("Pending promise was never set")) {
+      console.warn("[SystemLogger] Ignored Firebase Auth internal SDK assertion noise:", msg);
+      return;
+    }
+
     // Extract component/file source from stack trace
     let source = "Unknown";
     const srcMatch = stack.match(/src\/app\/([^\s?:]+)/);
