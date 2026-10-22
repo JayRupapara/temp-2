@@ -41,7 +41,7 @@ import insta3 from "../imports/insta 3.webp";
 import insta4 from "../imports/insta 4.webp";
 import insta5 from "../imports/insta 5.webp";
 import insta6 from "../imports/insta 6.webp";
-import rakshabandhanImg from "../imports/rakshabndhan sale.png";
+import diwaliImg from "../imports/diwali sale.svg";
 import under199Img from "../imports/under 199.png";
 import under299Img from "../imports/under 299.png";
 import under499Img from "../imports/under 499.png";
@@ -1107,8 +1107,8 @@ function ShopPage() {
     if (isSale) {
       if (isPriceSale) return c.price <= maxPrice && c.price > minPrice;
       if (!c.festival) return false;
-      if (Array.isArray(c.festival)) return c.festival.some(f => String(f).toLowerCase() === saleTargetStr);
-      return String(c.festival).toLowerCase() === saleTargetStr;
+      if (Array.isArray(c.festival)) return c.festival.some(f => String(f).toLowerCase() === saleTargetStr || (saleTargetStr === 'diwali' && String(f).toLowerCase() === 'rakshabandhan'));
+      return String(c.festival).toLowerCase() === saleTargetStr || (saleTargetStr === 'diwali' && String(c.festival).toLowerCase() === 'rakshabandhan');
     }
     if (shopCategory === "combos") return true;
     return getComboCategory(c) === shopCategory;
@@ -1118,8 +1118,8 @@ function ShopPage() {
     if (isSale) {
       if (isPriceSale) return p.price <= maxPrice && p.price > minPrice;
       if (!p.festival) return false;
-      if (Array.isArray(p.festival)) return p.festival.some(f => String(f).toLowerCase() === saleTargetStr);
-      return String(p.festival).toLowerCase() === saleTargetStr;
+      if (Array.isArray(p.festival)) return p.festival.some(f => String(f).toLowerCase() === saleTargetStr || (saleTargetStr === 'diwali' && String(f).toLowerCase() === 'rakshabandhan'));
+      return String(p.festival).toLowerCase() === saleTargetStr || (saleTargetStr === 'diwali' && String(p.festival).toLowerCase() === 'rakshabandhan');
     }
     if (shopCategory === "combos") return false;
     return normalizeCategory(p.category) === shopCategory;
@@ -2145,7 +2145,7 @@ function HomePage() {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const visibleProducts = products.filter(p => !p.isHidden);
   
-  const [activeSaleTab, setActiveSaleTab] = useState<number | string>("Rakshabandhan");
+  const [activeSaleTab, setActiveSaleTab] = useState<number | string>("Diwali");
   
   const sale199 = visibleProducts.filter(p => p.price <= 199);
   const sale299 = visibleProducts.filter(p => p.price > 199 && p.price <= 299);
@@ -2154,8 +2154,10 @@ function HomePage() {
   const activeSaleProducts = typeof activeSaleTab === 'string' 
     ? visibleProducts.filter(p => {
         if (!p.festival) return false;
-        if (Array.isArray(p.festival)) return p.festival.some(f => typeof f === 'string' && f.toLowerCase() === activeSaleTab.toLowerCase());
-        return String(p.festival).toLowerCase() === activeSaleTab.toLowerCase();
+        if (Array.isArray(p.festival)) return p.festival.some(f => typeof f === 'string' && (f.toLowerCase() === activeSaleTab.toLowerCase() || (activeSaleTab.toLowerCase() === 'diwali' && f.toLowerCase() === 'rakshabandhan')));
+        const fest = activeSaleTab.toLowerCase();
+        const pFest = String(p.festival).toLowerCase();
+        return pFest === fest || (fest === 'diwali' && pFest === 'rakshabandhan');
       }) 
     : activeSaleTab === 199 ? sale199 : activeSaleTab === 299 ? sale299 : sale499;
 
@@ -2188,7 +2190,7 @@ function HomePage() {
   };
 
   // Explicitly set only the requested 4 tabs
-  const saleTabs = ["Rakshabandhan", 199, 299, 499];
+  const saleTabs = ["Diwali", 199, 299, 499];
 
   return (
     <>
@@ -2209,7 +2211,7 @@ function HomePage() {
             {saleTabs.map(tier => {
               let imgSrc = "";
               let label = "";
-              if (tier === "Rakshabandhan") { imgSrc = rakshabandhanImg; label = "Rakshabandhan Sale"; }
+              if (tier === "Diwali") { imgSrc = diwaliImg; label = "Diwali Sale"; }
               else if (tier === 199) { imgSrc = under199Img; label = "Under ₹199"; }
               else if (tier === 299) { imgSrc = under299Img; label = "Under ₹299"; }
               else if (tier === 499) { imgSrc = under499Img; label = "Under ₹499"; }

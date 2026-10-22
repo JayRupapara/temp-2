@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <defs>
+    <radialGradient id="diwaliBg" cx="50%" cy="45%" r="62%">
+      <stop offset="0%" stop-color="#C0262D"/>
+      <stop offset="55%" stop-color="#9E1B21"/>
+      <stop offset="100%" stop-color="#721014"/>
+    </radialGradient>
+    <radialGradient id="goldGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF3C4" stop-opacity="1"/>
+      <stop offset="40%" stop-color="#F5B041" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#D4AC0D" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="diyaGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="glow"/>
+      <feComposite in="SourceGraphic" in2="glow" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Solid Festive Red Circle Background -->
+  <circle cx="400" cy="400" r="400" fill="url(#diwaliBg)"/>
+  
+  <!-- Subtle decorative inner golden ring -->
+  <circle cx="400" cy="400" r="378" fill="none" stroke="#F5CBA7" stroke-width="2.5" stroke-opacity="0.35" stroke-dasharray="8,6"/>
+
+  <!-- Festive Sparkles -->
+  <g fill="#FAD7A0">
+    <!-- Star sparkle left -->
+    <path d="M 220 270 Q 235 270 235 255 Q 235 270 250 270 Q 235 270 235 285 Q 235 270 220 270 Z" opacity="0.85"/>
+    <!-- Star sparkle right -->
+    <path d="M 550 270 Q 565 270 565 255 Q 565 270 580 270 Q 565 270 565 285 Q 565 270 550 270 Z" opacity="0.85"/>
+    <!-- Small star sparkles -->
+    <path d="M 285 490 Q 295 490 295 480 Q 295 490 305 490 Q 295 490 295 500 Q 295 490 285 490 Z" opacity="0.7"/>
+    <path d="M 495 490 Q 505 490 505 480 Q 505 490 515 490 Q 505 490 505 500 Q 505 490 495 490 Z" opacity="0.7"/>
+    <circle cx="190" cy="380" r="3.5" fill="#FFF" opacity="0.9"/>
+    <circle cx="610" cy="380" r="3.5" fill="#FFF" opacity="0.9"/>
+  </g>
+
+  <!-- Decorative Traditional Diya -->
+  <g transform="translate(400, 205)">
+    <!-- Golden aura around flame -->
+    <circle cx="0" cy="-12" r="26" fill="url(#goldGlow)" opacity="0.6"/>
+    <!-- Flame outer -->
+    <path d="M 0 -26 C -8 -13 -6 -3 0 0 C 6 -3 8 -13 0 -26 Z" fill="#F39C12" filter="url(#diyaGlow)"/>
+    <!-- Flame core -->
+    <path d="M 0 -20 C -4 -10 -3 -2 0 0 C 3 -2 4 -10 0 -20 Z" fill="#FFF7D6"/>
+    <!-- Diya base -->
+    <path d="M -26 4 C -18 17 18 17 26 4 C 18 13 -18 13 -26 4 Z" fill="#F5B041"/>
+    <ellipse cx="0" cy="4" rx="26" ry="4" fill="#D68910"/>
+  </g>
+
+  <!-- Text "DIWALI" -->
+  <text x="400" y="325" 
+        font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" 
+        font-size="64" 
+        font-weight="800" 
+        letter-spacing="9" 
+        fill="#FFFFFF" 
+        text-anchor="middle">
+    DIWALI
+  </text>
+
+  <!-- Text "SALE" -->
+  <text x="400" y="445" 
+        font-family="'Cinzel', 'Playfair Display', 'Montserrat', sans-serif" 
+        font-size="105" 
+        font-weight="900" 
+        letter-spacing="5" 
+        fill="#FFFFFF" 
+        text-anchor="middle">
+    SALE
+  </text>
+
+  <!-- Subtitle: Year / Accent -->
+  <g transform="translate(0, 500)">
+    <line x1="250" y1="0" x2="335" y2="0" stroke="#FAD7A0" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="345" cy="0" r="2.5" fill="#FAD7A0"/>
+    <text x="400" y="8" 
+          font-family="'Montserrat', sans-serif" 
+          font-size="28" 
+          font-weight="800" 
+          letter-spacing="7" 
+          fill="#FAD7A0" 
+          text-anchor="middle">
+      2026
+    </text>
+    <circle cx="455" cy="0" r="2.5" fill="#FAD7A0"/>
+    <line x1="465" y1="0" x2="550" y2="0" stroke="#FAD7A0" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -120,7 +120,7 @@ export default function PaymentSettingsTab({ darkMode }: { darkMode: boolean }) 
                   <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full font-bold">DISABLED</span>
                 )}
               </h3>
-              <p className={`text-xs ${textSub}`}>Show or hide the Rakshabandhan / Festival Sale on the homepage.</p>
+              <p className={`text-xs ${textSub}`}>Show or hide the Diwali / Festival Sale on the homepage.</p>
             </div>
             
             <button 
